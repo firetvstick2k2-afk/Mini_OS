@@ -1965,3 +1965,15 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Die Änderung betrifft nur die Darstellung der Seite „BAND WÄHLEN“ in `firmware/ats-mini-os/src/display/DisplayDriver.cpp`. Banddefinitionen, Abstimmung und sonstige Menüseiten bleiben unverändert.
 - Code-Commit: `0e3cd9732b910d3dbc8fc2ed531cf6182b0759e4`.
 - **Status:** Quelltext committed; Build/Compile und Hardwareanzeige noch nicht geprüft. Kein GitHub-Actions-Workflow gestartet und nichts geflasht.
+
+
+## Build #13 – veraltete WLAN-Testkonfiguration im Logo-Dienst entfernt – 2026-11-08
+
+- GitHub Actions Run: https://github.com/firetvstick2k2-afk/Mini_OS/actions/runs/42522701799
+- Ergebnis: fehlgeschlagen im Schritt „Compile ATS Mini OS scaffold“.
+- Eindeutiger Compilerfehler: `StationLogoClient.cpp:6:10: fatal error: ../network/WifiTestConfig.h: No such file or directory`.
+- Ursache: `WifiTestConfig.h` war zuvor bewusst gelöscht worden, um fest codierte WLAN-Testzugangsdaten zu entfernen. Der Logo-Dienst enthielt noch den alten Include, verwendete `WifiTestConfig::SSID/PASSWORD` und startete eine eigene temporäre WLAN-Verbindung.
+- Korrektur in `firmware/ats-mini-os/src/logo/StationLogoClient.cpp`: veralteten Include und den gesamten `TemporaryLogoWifi`-Hilfsmechanismus entfernt. Der Logo-Dienst nutzt für Remote-Abfragen ausschließlich eine bereits bestehende WLAN-Verbindung. Aufbau, Zugangsdaten, AP/STA-Modus und Wiederverbindung bleiben ausschließlich Aufgabe des zentralen `WifiClient`.
+- Es wurden keine Zugangsdaten ergänzt und keine anderen WLAN-/Logo-Funktionen verändert.
+- Code-Commit: `17b7d76da267229661b08fb79a7a27c1d8994f0d`.
+- **Status:** Änderung gespeichert. Noch nicht kompiliert und nicht auf Hardware getestet. Nutzer startet den nächsten Build manuell; kein Workflow wurde von uns gestartet.
