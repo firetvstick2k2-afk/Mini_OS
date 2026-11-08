@@ -2010,3 +2010,13 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - S-Meter, PS-/RT-Zeilen, EiBi-Anzeige, Band-/Modulationslogik und FM-Layout wurden nicht verändert.
 - Code-Commit: `438a59ca0ed3c532c881242fb7806cd5111c420d`.
 - **Status:** gespeichert und anschließend erneut abgerufen; nicht kompiliert und nicht auf Hardware geprüft. Nutzer startet den nächsten Build manuell.
+
+
+## Bootzähler und BOOT-Diagnose entfernt – 2026-11-08
+
+- In `firmware/ats-mini-os/ats-mini-os.ino` wurde das Lesen, Hochzählen und Schreiben von `/ats-mini-os.boot` entfernt.
+- Ein bereits vorhandenes `/ats-mini-os.boot` wird beim Start nach erfolgreichem LittleFS-Mount einmalig gelöscht.
+- Der zusätzliche Diagnoseeintrag `BOOT` in `/ats-mini-os.log` wird nicht mehr geschrieben.
+- Die allgemeine Diagnose-Logfunktion und andere bestehende Ereignisse (z. B. `BAND_SELECT`) bleiben erhalten.
+- Code-Commit: `5a098f8d8a13c69984f3085004cb06ea69823fd0`.
+- **Status:** Quelltext gespeichert; noch nicht kompiliert oder auf Hardware geprüft. Kein Build gestartet.
