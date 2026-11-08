@@ -82,11 +82,11 @@ bool PerformanceManager::anyLeaseActive() const {
 }
 
 void PerformanceManager::applyPolicy() {
-  // The waterfall always gets the maximum supported ATS Mini V4 clock.
+  // The waterfall uses 160 MHz as a lower-power performance compromise.
   // Leaving it restores the user's selected fixed profile, or the startup
   // clock when Auto is selected.
   uint32_t targetMHz = autoClockMHz_ ? autoClockMHz_ : 240;
-  if (waterfallActive_) targetMHz = 240;
+  if (waterfallActive_) targetMHz = 160;
   else {
     switch (selectedProfile_) {
       case CpuProfile::FixedLow: targetMHz = 80; break;
