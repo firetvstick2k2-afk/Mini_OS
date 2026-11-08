@@ -15,35 +15,14 @@
 #include "src/storage/FileManager.h"
 #include "src/settings/SettingsStore.h"
 #include "src/menus/MenuSSB.h"
+#include "src/system/DiagnosticLog.h"
 
 namespace {
 constexpr uint32_t SERIAL_BAUD = 115200;
 constexpr const char* DIAGNOSTIC_LOG_PATH = "/ats-mini-os.log";
 constexpr const char* DIAGNOSTIC_LOG_OLD_PATH = "/ats-mini-os.log.1";
 
-void writeDiagnosticLog(const char* event, const char* details = "") {
-  if (!StorageDiscovery::ready()) return;
-  // Keep the log bounded so repeated resets cannot consume the LittleFS partition.
-  if (LittleFS.exists(DIAGNOSTIC_LOG_PATH)) {
-    File current = LittleFS.open(DIAGNOSTIC_LOG_PATH, "r");
-    const size_t size = current ? current.size() : 0;
-    if (current) current.close();
-    if (size > 48U * 1024U) {
-      LittleFS.remove(DIAGNOSTIC_LOG_OLD_PATH);
-      LittleFS.rename(DIAGNOSTIC_LOG_PATH, DIAGNOSTIC_LOG_OLD_PATH);
-    }
-  }
-  File logFile = LittleFS.open(DIAGNOSTIC_LOG_PATH, "a");
-  if (!logFile) {
-    Serial.println("[LOG] LittleFS diagnostic log could not be opened");
-    return;
-  }
-  logFile.printf("%lu ms | %s | %s\n",
-    static_cast<unsigned long>(millis()), event ? event : "event",
-    details ? details : "");
-  logFile.flush();
-  logFile.close();
-}
+
 constexpr uint32_t DEFAULT_FM_FREQUENCY_KHZ = 95400;
 PerformanceManager performance;
 ClockService systemClock;
@@ -108,6 +87,31 @@ void fmParent(){ if(strcmp(fmPath,"/")==0)return; char* p=strrchr(fmPath,47); if
 void fmOpen(){ fmMode=0; fmSelection=0; fmActionSelection=0; fmMessageSet(""); fmRefresh(); menuPage=6; menuSelection=0; }
 void fmChoose(uint8_t visual){ if(visual==0){ if(fmMode==3)return; fmParent(); return; } if(fmMode==0 && visual==fmCount+1){fmPendingAction=5;fmEditName[0]=0;fmEditCursor=0;fmMode=4;return;} if(fmMode==0 && visual==fmCount+2){menuOpen=false;menuPage=0;menuSelection=0;fmMessageSet("Dateimanager beendet");return;} uint8_t i=visual-1; if(i>=fmCount)return; if(fmEntries[i].directory){strncpy(fmPath,fmEntries[i].path,sizeof(fmPath)-1);fmPath[sizeof(fmPath)-1]=0;fmSelection=0;fmRefresh();} else {strncpy(fmSelectedPath,fmEntries[i].path,sizeof(fmSelectedPath)-1);fmSelectedPath[sizeof(fmSelectedPath)-1]=0;strncpy(fmSelectedName,fmEntries[i].name,sizeof(fmSelectedName)-1);fmSelectedName[sizeof(fmSelectedName)-1]=0;fmMode=1;fmActionSelection=0;} }
 }
+
+void writeDiagnosticLog(const char* event, const char* details) {
+  if (!StorageDiscovery::ready()) return;
+  // Keep the diagnostic log bounded; retain one previous segment for recovery.
+  if (LittleFS.exists(DIAGNOSTIC_LOG_PATH)) {
+    File current = LittleFS.open(DIAGNOSTIC_LOG_PATH, "r");
+    const size_t size = current ? current.size() : 0;
+    if (current) current.close();
+    if (size > 48U * 1024U) {
+      LittleFS.remove(DIAGNOSTIC_LOG_OLD_PATH);
+      LittleFS.rename(DIAGNOSTIC_LOG_PATH, DIAGNOSTIC_LOG_OLD_PATH);
+    }
+  }
+  File logFile = LittleFS.open(DIAGNOSTIC_LOG_PATH, "a");
+  if (!logFile) {
+    Serial.println("[LOG] LittleFS diagnostic log could not be opened");
+    return;
+  }
+  logFile.printf("%lu ms | %s | %s\\n",
+    static_cast<unsigned long>(millis()), event ? event : "event",
+    details ? details : "");
+  logFile.flush();
+  logFile.close();
+}
+
 void setup() {
   Serial.begin(SERIAL_BAUD); delay(250); performance.begin();
   // Capture the previous ESP32 reset cause. The SI4735 can keep playing
@@ -123,13 +127,30 @@ void setup() {
   PartitionDiagnostics::printToSerial();
   StorageDiscovery::begin();
   FileManager::begin();
-  char bootDetails[128];
+  uint32_t bootCount = 1;
+  const char* bootCountPath = "/ats-mini-os.boot";
+  if (LittleFS.exists(bootCountPath)) {
+    File countFile = LittleFS.open(bootCountPath, "r");
+    if (countFile) {
+      bootCount = static_cast<uint32_t>(countFile.parseInt()) + 1U;
+      countFile.close();
+    }
+  }
+  File countFile = LittleFS.open(bootCountPath, "w");
+  if (countFile) {
+    countFile.printf("%lu\\n", static_cast<unsigned long>(bootCount));
+    countFile.flush();
+    countFile.close();
+  }
+  char bootDetails[192];
   snprintf(bootDetails, sizeof(bootDetails),
-    "reset_reason=%d free_heap=%u largest_block=%u fs=%s",
+    "boot=%lu reset_reason=%d free_heap=%u largest_block=%u fs=%s cpu_mhz=%u",
+    static_cast<unsigned long>(bootCount),
     static_cast<int>(esp_reset_reason()),
     static_cast<unsigned>(ESP.getFreeHeap()),
     static_cast<unsigned>(ESP.getMaxAllocHeap()),
-    StorageDiscovery::ready() ? StorageDiscovery::partitionLabel() : "unavailable");
+    StorageDiscovery::ready() ? StorageDiscovery::partitionLabel() : "unavailable",
+    static_cast<unsigned>(ESP.getCpuFreqMHz()));
   writeDiagnosticLog("BOOT", bootDetails);
   stationLogoClient.begin();
 
