@@ -114,12 +114,27 @@ template<class C> void drawSMeter(C& d,const RadioSnapshot& s,bool ready,bool wi
 }
 template<class C> void drawDecoder(C& d,const RadioSnapshot& s,bool ready,bool wifi) {
   d.fillScreen(BG);
-  header(d,s,wifi);
-  frequency(d,s,8,26,0.70f);
-  d.setFont(&lgfx::fonts::FreeSansBold9pt7b);
-  d.setTextColor(GREEN,BG);
-  d.drawCenterString(s.stationName[0]?s.stationName:(ready?"":"RADIO OFFLINE"),160,88);
-
+  d.setTextDatum(TC_DATUM); d.setTextColor(WHITE,BG);
+  d.setFont(&lgfx::fonts::Orbitron_Light_24);
+  const char* mode=s.modulation==RadioModulation::FM?"FM":(s.modulation==RadioModulation::AM?"AM":(s.modulation==RadioModulation::USB?"USB":"LSB"));
+  char bandMode[24]; snprintf(bandMode,sizeof(bandMode),"%s %s",s.bandName,mode);
+  d.drawString(bandMode,145,8);
+  d.setTextDatum(TL_DATUM); d.setFont(&lgfx::fonts::Font7); d.setTextColor(WHITE,BG);
+  char freq[24];
+  if(s.modulation==RadioModulation::FM) snprintf(freq,sizeof(freq),"%lu.%02lu",(unsigned long)(s.frequencyKHz/1000UL),(unsigned long)((s.frequencyKHz%1000UL)/10UL));
+  else if(s.modulation==RadioModulation::USB || s.modulation==RadioModulation::LSB) snprintf(freq,sizeof(freq),"%lu.000",(unsigned long)s.frequencyKHz);
+  else snprintf(freq,sizeof(freq),"%lu",(unsigned long)s.frequencyKHz);
+  d.setTextSize(s.modulation==RadioModulation::FM?0.78f:((s.modulation==RadioModulation::USB || s.modulation==RadioModulation::LSB)?0.56f:0.68f));
+  d.drawString(freq,8,43); d.setTextSize(1.0f);
+  d.setFont(&lgfx::fonts::FreeSansBold9pt7b); d.setTextColor(WHITE,BG);
+  d.drawString(s.modulation==RadioModulation::FM?"MHz":"kHz",245,67);
+  if(s.modulation==RadioModulation::FM) {
+    d.setTextDatum(TL_DATUM); d.setTextColor(s.stereo?GREEN:RED,BG);
+    d.setFont(&lgfx::fonts::FreeSans9pt7b); d.drawString(s.stereo?"STEREO":"MONO",240,62);
+  }
+  d.setTextDatum(TC_DATUM); d.setFont(&lgfx::fonts::FreeSansBold9pt7b); d.setTextColor(GREEN,BG);
+  const char* station=s.stationName[0]?s.stationName:(ready?"":"RADIO OFFLINE");
+  if(station && *station) d.drawString(station,145,90);
   // Original ATS Mini DEV waterfall: 280 x 26 px frame, 278 x 23 px sprite.
   // The scrolling, RSSI mapping, three-color bands and +/-2 px artificial
   // jitter intentionally follow Layout-Decoder.cpp without visual redesign.
@@ -177,108 +192,36 @@ template<class C> void drawDecoder(C& d,const RadioSnapshot& s,bool ready,bool w
 template<class C> void drawTiny(C& d,const RadioSnapshot& s,bool ready,bool wifi) {
   constexpr uint16_t DIM=0x8410;
   d.fillScreen(BG);
-
-  // TinyRadio reference geometry: all coordinates target the physical 320x170 panel.
-  // The OS snapshot has no battery/Bluetooth/AGC/BW state, so unavailable
-  // controls are intentionally not fabricated.
-  const char* bands[]={"LW","MW","SW","VHF","BT","WEB"};
-  const int bandX[]={2,37,72,107,142,177};
+  const char* bands[]={"LW","MW","SW","VHF","BT","WEB"}; const int bx[]={2,37,72,107,142,177};
   for(int i=0;i<6;i++) {
-    bool selected=false;
-    if(i==0) selected=strncmp(s.bandName,"LW",2)==0;
-    else if(i==1) selected=strncmp(s.bandName,"MW",2)==0;
-    else if(i==2) selected=(strncmp(s.bandName,"SW",2)==0 || strncmp(s.bandName,"KW",2)==0);
-    else if(i==3) selected=strncmp(s.bandName,"VHF",3)==0;
-    const uint16_t color=selected?CYAN:DIM;
-    d.drawRect(bandX[i],3,32,17,color);
-    d.setTextColor(color,BG);
-    d.setTextDatum(MC_DATUM);
-    d.setFont(&lgfx::fonts::Font0);
-    d.drawString(bands[i],bandX[i]+16,11);
+    const bool selected=(i==0 && strncmp(s.bandName,"LW",2)==0)||(i==1 && strncmp(s.bandName,"MW",2)==0)||(i==2 && (strncmp(s.bandName,"SW",2)==0||strncmp(s.bandName,"KW",2)==0))||(i==3 && strncmp(s.bandName,"VHF",3)==0);
+    const uint16_t color=selected?CYAN:DIM; d.drawRect(bx[i],3,32,17,color);
+    d.setTextColor(color,BG); d.setTextDatum(MC_DATUM); d.setFont(&lgfx::fonts::Font0); d.drawString(bands[i],bx[i]+16,11);
   }
-  d.setTextDatum(TR_DATUM);
-  d.setTextColor(wifi?CYAN:DIM,BG);
-  d.drawString(wifi?"WLAN+":"WLAN-",312,6);
-
-  // Keep frequency and unit together, using the original TinyRadio formatting.
+  d.setTextDatum(TR_DATUM); d.setTextColor(wifi?CYAN:DIM,BG); d.drawString(wifi?"WLAN+":"WLAN-",312,6);
   char freq[32];
-  if(s.modulation==RadioModulation::USB || s.modulation==RadioModulation::LSB) {
-    snprintf(freq,sizeof(freq),"%lu.000 kHz",
-      static_cast<unsigned long>(s.frequencyKHz));
-  } else {
-    snprintf(freq,sizeof(freq),"%lu kHz",
-      static_cast<unsigned long>(s.frequencyKHz));
-  }
-  d.setTextColor(YELLOW,BG);
-  d.setTextDatum(TL_DATUM);
-  d.setFont(&lgfx::fonts::Font7);
-  d.setTextSize(0.82f);
-  d.drawString(freq,8,36);
-  d.setTextSize(1.0f);
-
-  // Modulation selector row, with the current receiver mode highlighted.
-  const char* modes[]={"FM","AM","LSB","USB"};
-  const RadioModulation values[]={RadioModulation::FM,RadioModulation::AM,
-                                  RadioModulation::LSB,RadioModulation::USB};
-  const int modeX[]={3,43,83,123};
-  for(int i=0;i<4;i++) {
-    const bool active=s.modulation==values[i];
-    const uint16_t color=active?CYAN:DIM;
-    d.drawRect(modeX[i],66,36,21,color);
-    d.setTextColor(color,BG);
-    d.setTextDatum(MC_DATUM);
-    d.setFont(&lgfx::fonts::Font0);
-    d.drawString(modes[i],modeX[i]+18,76);
-  }
-
-  // Compact live receiver status; only values present in RadioSnapshot are shown.
-  const int signal=constrain(static_cast<int>(s.rssi),0,80);
-  for(int i=0;i<8;i++)
-    d.fillRect(5+i*6,93,4,8,i<(signal>0?(signal>80?8:signal/10):0)?GREEN:DIM);
-  d.setTextDatum(TL_DATUM);
-  d.setFont(&lgfx::fonts::Font0);
-  d.setTextColor(WHITE,BG);
-  char stats[20];
-  if(s.rssi>=0) snprintf(stats,sizeof(stats),"%ddBuV",s.rssi);
-  else snprintf(stats,sizeof(stats),"RSSI --");
-  d.drawString(stats,56,91);
-  if(s.snr>=0) snprintf(stats,sizeof(stats),"SN%d",s.snr);
-  else snprintf(stats,sizeof(stats),"SN--");
-  d.drawString(stats,112,91);
-  d.setTextColor(ready?GREEN:YELLOW,BG);
-  d.drawString(ready?"VALID":"OFFLINE",158,91);
-  d.setTextColor(WHITE,BG);
-  d.drawString(s.stereo?"ST":"MO",224,91);
-
-  // Station name and RadioText are centered, as in the original TinyRadio layout.
-  d.setTextDatum(TC_DATUM);
-  d.setFont(&lgfx::fonts::Font0);
-  d.setTextColor(CYAN,BG);
-  if(s.stationName[0]) d.drawString(s.stationName,160,104);
-  d.setTextColor(WHITE,BG);
-  if(s.radioText[0]) d.drawString(s.radioText,160,119);
-
-  // Original 320-pixel frequency ruler with a fixed center marker at x=160.
-  d.drawFastHLine(0,142,320,WHITE);
-  const int32_t centerFreq=static_cast<int32_t>(s.frequencyKHz);
-  for(int i=0;i<=20;i++) {
-    const int px=i*16;
-    const bool major=(i%4)==0;
-    d.drawFastVLine(px,142,major?12:6,DIM);
-    if(major) {
-      const int32_t tick=centerFreq+(i-10)*50;
-      char label[16];
-      if(tick>=1000)
-        snprintf(label,sizeof(label),"%ld.%ldM",static_cast<long>(tick/1000),
-                 static_cast<long>((tick%1000)/100));
-      else
-        snprintf(label,sizeof(label),"%ldk",static_cast<long>(tick));
-      d.setTextColor(WHITE,BG);
-      d.setTextDatum(TC_DATUM);
-      d.drawString(label,px,155);
-    }
-  }
-  d.fillCircle(160,142,6,RED);
-  d.setTextDatum(TL_DATUM);
+  if(s.modulation==RadioModulation::FM) snprintf(freq,sizeof(freq),"%lu.%02lu MHz",(unsigned long)(s.frequencyKHz/1000UL),(unsigned long)((s.frequencyKHz%1000UL)/10UL));
+  else if(s.modulation==RadioModulation::USB||s.modulation==RadioModulation::LSB) snprintf(freq,sizeof(freq),"%lu.000 kHz",(unsigned long)s.frequencyKHz);
+  else snprintf(freq,sizeof(freq),"%lu kHz",(unsigned long)s.frequencyKHz);
+  d.setTextColor(YELLOW,BG); d.setTextDatum(TL_DATUM); d.setFont(&lgfx::fonts::Font7);
+  d.setTextSize((s.modulation==RadioModulation::USB||s.modulation==RadioModulation::LSB)?0.58f:0.82f);
+  d.drawString(freq,8,36); d.setTextSize(1.0f);
+  const char* modes[]={"FM","AM","LSB","USB"}; const RadioModulation vals[]={RadioModulation::FM,RadioModulation::AM,RadioModulation::LSB,RadioModulation::USB}; const int mx[]={3,43,83,123};
+  for(int i=0;i<4;i++){bool active=s.modulation==vals[i];uint16_t col=active?CYAN:DIM;d.drawRect(mx[i],66,36,21,col);d.setTextColor(col,BG);d.setTextDatum(MC_DATUM);d.setFont(&lgfx::fonts::Font0);d.drawString(modes[i],mx[i]+18,76);}
+  // BW/AGC/SM controls are not displayed because these states are not exposed by RadioSnapshot.
+  const int rssi=constrain((int)s.rssi,0,80); for(int i=0;i<8;i++)d.fillRect(5+i*6,93,4,8,i<(rssi/10)?GREEN:DIM);
+  d.setTextDatum(TL_DATUM);d.setFont(&lgfx::fonts::Font0);d.setTextColor(WHITE,BG);char stats[20];
+  if(s.rssi>=0)snprintf(stats,sizeof(stats),"%ddBuV",s.rssi);else snprintf(stats,sizeof(stats),"RSSI --");d.drawString(stats,56,91);
+  if(s.snr>=0)snprintf(stats,sizeof(stats),"SN%d",s.snr);else snprintf(stats,sizeof(stats),"SN--");d.drawString(stats,105,91);
+  d.setTextColor(ready?GREEN:YELLOW,BG);d.drawString(ready?"VALID":"OFFLINE",145,91);
+  d.setTextColor(WHITE,BG);const char* status=s.modulation==RadioModulation::FM?(s.stereo?"STEREO":"MONO"):(s.modulation==RadioModulation::AM?"AM":(s.modulation==RadioModulation::USB?"USB":"LSB"));d.drawString(status,198,91);d.drawString("OK",230,91);d.drawString("RF0",256,91);
+  const char* station=s.stationName[0]?s.stationName:(ready?"":"RADIO OFFLINE");d.setTextDatum(TC_DATUM);d.setFont(&lgfx::fonts::Font0);d.setTextColor(CYAN,BG);if(station&&*station)d.drawString(station,160,104);
+  d.setTextColor(WHITE,BG);if(s.modulation==RadioModulation::FM&&s.radioText[0])d.drawString(s.radioText,160,119);
+  d.drawFastHLine(0,142,320,WHITE);const int32_t centerFreq=(int32_t)s.frequencyKHz;
+  for(int i=0;i<=20;i++){int px=i*16;bool major=(i%4)==0;d.drawFastVLine(px,142,major?12:6,DIM);if(major){int32_t delta=(i-10)*(s.modulation==RadioModulation::FM?100:50);int32_t tick=centerFreq+delta;char label[16];
+    if(s.modulation==RadioModulation::FM)snprintf(label,sizeof(label),"%ld.%02ld",(long)(tick/1000),(long)((tick%1000)/10));
+    else if(tick>=1000)snprintf(label,sizeof(label),"%ld.%ldM",(long)(tick/1000),(long)((tick%1000)/100));else snprintf(label,sizeof(label),"%ldk",(long)tick);
+    d.setTextColor(WHITE,BG);d.setTextDatum(TC_DATUM);d.drawString(label,px,155);}}
+  d.fillCircle(160,142,6,RED);d.setTextDatum(TL_DATUM);
 }
 } // namespace SWLayouts
