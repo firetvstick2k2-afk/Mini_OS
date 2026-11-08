@@ -3,6 +3,7 @@
 // #include "DisplayLayoutAM.h"  // Legacy LW/MW/KW layout disabled; retained as source only.
 #include "DisplayLayoutHJB.h"
 #include "DisplayLayoutSW.h"
+#include "DisplayStatusBar.h"
 #include "../radio/BandManager.h"
 #include "../menus/MenuSSB.h"
 #include <LittleFS.h>
@@ -551,7 +552,8 @@ void drawLayout(Canvas& canvas,const RadioSnapshot& s,bool radioReady,bool wifiC
   canvas.fillScreen(BLACK);
 
   // Header: band, future RDS clock position, WLAN and estimated battery.
-  text(canvas,s.bandName,10,5,GREEN,&lgfx::fonts::Font2);
+  drawNetworkBatteryStatus(canvas,wifiConnected);
+  centered(canvas,s.bandName,w/2,5,GREEN,&lgfx::fonts::Font2);
   // Show only a valid RDS CT clock; otherwise keep the center completely blank.
   if (s.rdsClockValid) {
     char clockText[6];
@@ -560,16 +562,7 @@ void drawLayout(Canvas& canvas,const RadioSnapshot& s,bool radioReady,bool wifiC
       static_cast<unsigned>(s.rdsClockMinute));
     centered(canvas,clockText,w/2,5,WHITE,&lgfx::fonts::Font2);
   }
-  text(canvas,wifiConnected?"WLAN+":"WLAN-",w-91,7,wifiConnected?CYAN:MUTED,&lgfx::fonts::Font0);
 
-  uint32_t adcTotal=0;
-  for(uint8_t i=0;i<10;++i) adcTotal+=analogRead(4);
-  const float batteryVolts=(static_cast<float>(adcTotal)/10.0f)*1.702f/1000.0f;
-  int batteryPercent=static_cast<int>((batteryVolts-3.30f)*100.0f/0.90f+0.5f);
-  batteryPercent=constrain(batteryPercent,0,100);
-  char batteryText[8];
-  snprintf(batteryText,sizeof(batteryText),"%d%%",batteryPercent);
-  text(canvas,batteryText,w-43,7,batteryPercent<=15?YELLOW:GREEN,&lgfx::fonts::Font0);
   canvas.drawFastHLine(8,25,w-16,DARK_GREEN);
 
   // Keep the station-name row inside the right-hand content area so it
