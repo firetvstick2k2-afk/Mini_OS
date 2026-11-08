@@ -340,9 +340,29 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     labelWidth=canvas.textWidth(displayLabel,menuFont);
   }
   const bool showLevel = (page == 1 && selection == 1) || (page == 2 && selection == 1);
-  const int labelY = showLevel ? 101 : (h/2)-12;
+  const bool showBandRange = page == 8 && selection > 0;
+  const int labelY = showLevel ? 101 : (showBandRange ? 53 : (h/2)-12);
   const int labelX=(w-labelWidth)/2;
   drawMenuDigitalText(canvas,displayLabel,labelX,labelY,menuCyan,menuFont);
+
+  // Show the selected band's exact configured limits below its name.
+  // BandManager stores every limit in kHz; display MHz for ranges >= 1 MHz.
+  if (showBandRange) {
+    const RadioBandDefinition& band = BandManager::at(static_cast<uint8_t>(selection-1));
+    char rangeText[40];
+    if (band.maximumKHz >= 1000) {
+      snprintf(rangeText, sizeof(rangeText), "%.3f - %.3f MHz",
+        band.minimumKHz / 1000.0f, band.maximumKHz / 1000.0f);
+    } else {
+      snprintf(rangeText, sizeof(rangeText), "%lu - %lu kHz",
+        static_cast<unsigned long>(band.minimumKHz),
+        static_cast<unsigned long>(band.maximumKHz));
+    }
+    canvas.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+    canvas.setTextDatum(MC_DATUM);
+    canvas.setTextColor(menuCyan, BLACK);
+    canvas.drawCenterString(rangeText, w/2, 101);
+  }
 
   // Show the numeric level above the selected menu label.
   if (showLevel) {
