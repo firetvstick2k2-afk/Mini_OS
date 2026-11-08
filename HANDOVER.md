@@ -1758,3 +1758,15 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - Code-Commit: `93c19e69ccc81159a02fd65acff4cc9d6dd3eede`.
 - **Status:** Änderung über GitHub erneut abgerufen und zentrale Korrekturmarker geprüft. Noch nicht kompiliert und nicht auf Hardware getestet. Kein Workflow gestartet, nichts geflasht.
 - Nächster Schritt: Nutzer startet den manuellen QSPI-/OSPI-Compile-only-Build und prüft TinyRadio sowie Waterfall am Gerät. HJB-Uhr/Frequenz-Verhalten kann anschließend bei Bedarf separat angepasst werden.
+
+
+## Encoder-Beschleunigung auf Frequenzabstimmung begrenzt – 2026-11-08
+
+- Die Encoder-Beschleunigung bleibt beim normalen Abstimmen der Frequenz im Radiolayout aktiv.
+- In sämtlichen Menüs wird jede Rastung jetzt nur noch als ein Schritt verarbeitet. Das gilt für Menünavigation, Dateimanager, Auswahlfelder sowie Lautstärke-/Helligkeitsregler.
+- Auch die separate BFO-Einstellung außerhalb des Menüs verwendet keine Scrollbeschleunigung mehr; sie reagiert pro Rastung mit dem vorgesehenen 10-Hz-Schritt.
+- Geändert: `firmware/ats-mini-os/ats-mini-os.ino`.
+- Code-Commit: `aa3dc177bc0a5aa2ac4a3cbe4847e6acdbfa38e3`.
+- **Status:** Änderung committed. Noch nicht kompiliert und nicht auf dem ATS Mini V4 getestet. Kein GitHub-Workflow gestartet, nichts geflasht.
+- Hinweis: Diese Änderung verändert nur die Encoder-Schrittweite außerhalb der Frequenzabstimmung. Sie ist noch kein nachgewiesener Fix für den zuvor gemeldeten Radio-Reset.
+- Nächster Schritt: Nutzer startet den manuellen QSPI-/OSPI-Compile-only-Build und prüft, dass Menüs unabhängig von der Drehgeschwindigkeit pro Rastung weiterschalten und die Frequenzabstimmung im Radiolayout weiterhin beschleunigt ist.
