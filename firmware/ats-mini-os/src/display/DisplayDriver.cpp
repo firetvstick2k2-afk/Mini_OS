@@ -775,7 +775,7 @@ void drawTef6686FmVersion(Canvas& c, const RadioSnapshot& s, bool wifiConnected)
   }
 }
 
-void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnected,const char* lastInputEvent,uint32_t inputEventCount,const uint8_t* logoData,size_t logoLength,bool logoIsJpg,bool logoSearching,int16_t radioTextOffset,bool scrollRadioText,bool frequencyBlue) {
+void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnected,const char* lastInputEvent,uint32_t inputEventCount,const uint8_t* logoData,size_t logoLength,bool logoIsJpg,bool logoSearching,int16_t radioTextOffset,bool scrollRadioText,bool frequencyBlue,const char* eibiStation,const char* eibiStatus,bool eibiAvailable,bool eibiDownloading) {
   // FM and AM/SSB keep independent layout selections. The established
   // FM logo/RDS screen remains untouched as the DAB Style option.
   if (s.modulation == RadioModulation::FM) {
