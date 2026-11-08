@@ -105,7 +105,7 @@ void writeDiagnosticLog(const char* event, const char* details) {
     Serial.println("[LOG] LittleFS diagnostic log could not be opened");
     return;
   }
-  logFile.printf("%lu ms | %s | %s\\n",
+  logFile.printf("%lu ms | %s | %s\n",
     static_cast<unsigned long>(millis()), event ? event : "event",
     details ? details : "");
   logFile.flush();
@@ -138,7 +138,7 @@ void setup() {
   }
   File countFile = LittleFS.open(bootCountPath, "w");
   if (countFile) {
-    countFile.printf("%lu\\n", static_cast<unsigned long>(bootCount));
+    countFile.printf("%lu\n", static_cast<unsigned long>(bootCount));
     countFile.flush();
     countFile.close();
   }
