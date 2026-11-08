@@ -202,7 +202,7 @@ void loop() {
               Serial.printf("[MENU] volume=%u/63\n", static_cast<unsigned>(radio.volume()));
           } else {
             const int16_t itemCount = menuPage == 0 ? 21 :
-              menuPage == 2 ? 4 : menuPage == 5 ? 7 : menuPage == 13 ? 3 :
+              menuPage == 2 ? 4 : menuPage == 5 ? 8 : menuPage == 13 ? 3 :
               ((menuPage == 14) ? 3 : (menuPage == 15) ? 9 :
               menuPage == 10 ? 4 : menuPage == 11 ?
               (radio.snapshot().modulation == RadioModulation::FM ? 10 : 14) :
@@ -255,7 +255,7 @@ void loop() {
           } else {
             closeMenuToRadio("slider adjustment finished");
           }
-        } else if ((menuPage==5 && menuSelection==3)) {fmOpen();
+        } else if ((menuPage==5 && menuSelection==4)) {fmOpen();
         } else if (menuPage == 0) {
             // ATS Mini Dev main-menu order and labels are preserved exactly.
             // Unsupported entries are marked with * in the renderer and stay inert.
@@ -313,12 +313,18 @@ void loop() {
           Serial.printf("[SETTINGS] LW/MW/KW layout=%s %s\\n",
             layoutNames[layout], saved ? "saved" : "save failed");
           closeMenuToRadio("LW/MW/KW layout selected");
-        } else if (menuPage == 5 && menuSelection == 5) {
+        } else if (menuPage == 5 && menuSelection == 1) {
+          menuPage = 2;
+          menuSelection = 0;
+        } else if (menuPage == 5 && menuSelection == 6) {
           menuPage = 14;
           menuSelection = display.fmLayout() == 2 ? 2 : 1;
-        } else if (menuPage == 5 && menuSelection == 6) {
+        } else if (menuPage == 5 && menuSelection == 7) {
           menuPage = 15;
           menuSelection = static_cast<uint8_t>(display.amLayout() + 1);
+        } else if (menuPage == 2 && menuSelection == 0) {
+          menuPage = 5;
+          menuSelection = 1;
         } else if (menuPage == 2 && menuSelection == 3) {
           menuPage = 10;
           menuSelection = static_cast<uint8_t>(display.themeIndex() + 1);
