@@ -125,6 +125,11 @@ void EiBiService::update(bool wifiConnected, bool clockSynchronized, const struc
              static_cast<uint8_t>(utc.tm_min));
     }
   }
+  else if (!downloading_) {
+    stationName_[0] = '\0';
+    lastLookupMinute_ = UINT32_MAX;
+    lastLookupFrequency_ = UINT32_MAX;
+  }
 }
 
 void EiBiService::processLine() {
