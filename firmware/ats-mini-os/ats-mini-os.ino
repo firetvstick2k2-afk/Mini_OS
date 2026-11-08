@@ -127,31 +127,10 @@ void setup() {
   StorageDiscovery::begin();
   eibi.begin();
   FileManager::begin();
-  uint32_t bootCount = 1;
-  const char* bootCountPath = "/ats-mini-os.boot";
-  if (LittleFS.exists(bootCountPath)) {
-    File countFile = LittleFS.open(bootCountPath, "r");
-    if (countFile) {
-      bootCount = static_cast<uint32_t>(countFile.parseInt()) + 1U;
-      countFile.close();
-    }
+  // Remove the legacy boot counter file if it exists; no boot counter or BOOT log is maintained.
+  if (StorageDiscovery::ready() && LittleFS.exists("/ats-mini-os.boot")) {
+    LittleFS.remove("/ats-mini-os.boot");
   }
-  File countFile = LittleFS.open(bootCountPath, "w");
-  if (countFile) {
-    countFile.printf("%lu\n", static_cast<unsigned long>(bootCount));
-    countFile.flush();
-    countFile.close();
-  }
-  char bootDetails[192];
-  snprintf(bootDetails, sizeof(bootDetails),
-    "boot=%lu reset_reason=%d free_heap=%u largest_block=%u fs=%s cpu_mhz=%u",
-    static_cast<unsigned long>(bootCount),
-    static_cast<int>(esp_reset_reason()),
-    static_cast<unsigned>(ESP.getFreeHeap()),
-    static_cast<unsigned>(ESP.getMaxAllocHeap()),
-    StorageDiscovery::ready() ? StorageDiscovery::partitionLabel() : "unavailable",
-    static_cast<unsigned>(ESP.getCpuFreqMHz()));
-  writeDiagnosticLog("BOOT", bootDetails);
   stationLogoClient.begin();
 
   encoder.begin();
