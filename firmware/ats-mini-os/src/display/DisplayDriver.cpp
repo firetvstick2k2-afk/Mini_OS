@@ -831,10 +831,10 @@ void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnect
   }
   if (useSprite_) {
     sprite_.fillSprite(BLACK);
-    drawLayout(sprite_,s,radioReady,wifiConnected,lastInputEvent,inputEventCount,logoData,logoLength,logoIsJpg,logoSearching,radioTextOffset,scrollRadioText,frequencyBlue);
+    drawLayout(sprite_,s,radioReady,wifiConnected,lastInputEvent,inputEventCount,logoData,logoLength,logoIsJpg,logoSearching,radioTextOffset,scrollRadioText,frequencyBlue,eibiStation,eibiStatus,eibiAvailable,eibiDownloading);
     sprite_.pushSprite(0,0);
   } else {
     device_.fillScreen(BLACK);
-    drawLayout(device_,s,radioReady,wifiConnected,lastInputEvent,inputEventCount,logoData,logoLength,logoIsJpg,logoSearching,radioTextOffset,scrollRadioText,frequencyBlue);
+    drawLayout(device_,s,radioReady,wifiConnected,lastInputEvent,inputEventCount,logoData,logoLength,logoIsJpg,logoSearching,radioTextOffset,scrollRadioText,frequencyBlue,eibiStation,eibiStatus,eibiAvailable,eibiDownloading);
   }
 }
