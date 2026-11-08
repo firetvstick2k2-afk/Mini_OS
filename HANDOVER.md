@@ -1730,3 +1730,31 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
   - `README.md`: https://github.com/ep3mhb/resonik-ats-mini/blob/v2.45-r1/README.md
 - **Verwendung für ATS Mini OS:** Als Referenz für CW-Modus, USB-/BFO-Abstimmung, Filterbandbreite, Tonhöhenwahl und IARU-Bandplan heranziehen. Nicht als bereits vorhandenen Morse-Textdecoder behandeln. Für den eigentlichen CW-Decoder weiterhin separat den Ansatz von HJ Berndt / PocketSI4735DualCoreDecoder untersuchen.
 - Referenz wurde nur gelesen; keine Dateien aus diesem Repository kopiert oder verändert. Kein Build oder Hardwaretest im Zusammenhang mit dieser Referenz.
+
+
+## TinyRadio / Waterfall – Referenzkorrektur und Layout-Audit – 2026-11-08
+
+- Nutzerfotos direkt mit den alten ATS Mini DEV-Referenzdateien verglichen:
+  - `13HN2709/ats-mini-dev`, Branch `development`, `ats-mini/Layout-TinyRadio.cpp`
+  - `13HN2709/ats-mini-dev`, Branch `development`, `ats-mini/Layout-Decoder.cpp`
+- In `firmware/ats-mini-os/src/display/DisplayLayoutSW.h` wurden `SWLayouts::drawTiny()` und `SWLayouts::drawDecoder()` gezielt korrigiert.
+- TinyRadio:
+  - Frequenzformat berücksichtigt jetzt die OS-Einheit `frequencyKHz`: FM wird als MHz mit zwei Dezimalstellen und Einheit angezeigt, AM als kHz und USB/LSB mit drei Nachkommastellen.
+  - Frequenzschriftgröße für FM/AM und SSB getrennt; Positionen und Zeilen folgen enger dem DEV-Layout.
+  - Modulationsauswahl bleibt sichtbar; Statuszeile enthält RSSI, SNR, VALID/OFFLINE und den aktuellen Modus.
+  - FM-Frequenzskala verwendet 100-kHz-Schritte und FM-Formatierung; KW/AM bleibt bei 50-kHz-Schritten.
+  - Sendername/RadioText bleiben in den DEV-Zeilen. RadioText wird nur bei FM gezeigt.
+  - BW/AGC/Soft-Mute-Felder werden nicht vorgetäuscht, da diese Zustände im aktuellen `RadioSnapshot` nicht vorhanden sind.
+- Waterfall:
+  - Kopfzeile folgt wieder dem DEV-Prinzip mit Band + Modulationsart (z. B. `VHF FM`), großer Font7-Frequenz und passender Einheit.
+  - Bei FM wird STEREO/MONO aus dem Snapshot angezeigt.
+  - Sendername bleibt auf der DEV-Position; der Waterfall-Sprite-/Scroll-/Farbmechanismus selbst wurde nicht verändert.
+- Layout-Audit (TEF6686 und DAB Style ausdrücklich ausgenommen):
+  - `DisplayLayoutAM.h`: eigene AM/SSB-Frequenzdarstellung mit Font7 und kHz-Einheit; keine FM-Darstellung vorgesehen.
+  - `DisplayLayoutHJB.h`: FM-Frequenz wird als MHz-Zahl dargestellt, Nicht-FM als kHz; bei gültiger RDS-Uhr ersetzt die Uhr derzeit die zentrale Frequenzanzeige. Das ist eine bestehende Layoutentscheidung und sollte separat beurteilt werden, bevor die HJB-Optik geändert wird.
+  - SW Default/Clean/NewUI/SMeter teilen die SW-Frequenzroutine; sie sind für LW/MW/SW/SSB gedacht. Sie zeigen die kHz-Frequenz, SSB mit `.000`. Keine FM-MHz-Darstellung in diesen Nicht-FM-Layouts erforderlich.
+  - TinyRadio war der auffällige Formatierungsfehler: FM wurde vorher fälschlich wie eine kHz-Frequenz behandelt und die Einheit an die große Frequenz angehängt. Waterfall hatte Band/Modulation und die passende FM-/Nicht-FM-Einheit nicht im Kopfbereich.
+- Geändert wurde ausschließlich `DisplayLayoutSW.h`; HJB, AM, TEF6686, DAB Style und FM-Standardrenderer blieben unangetastet.
+- Code-Commit: `93c19e69ccc81159a02fd65acff4cc9d6dd3eede`.
+- **Status:** Änderung über GitHub erneut abgerufen und zentrale Korrekturmarker geprüft. Noch nicht kompiliert und nicht auf Hardware getestet. Kein Workflow gestartet, nichts geflasht.
+- Nächster Schritt: Nutzer startet den manuellen QSPI-/OSPI-Compile-only-Build und prüft TinyRadio sowie Waterfall am Gerät. HJB-Uhr/Frequenz-Verhalten kann anschließend bei Bedarf separat angepasst werden.
