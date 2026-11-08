@@ -16,11 +16,6 @@ public:
   uint8_t progressPercent() const { return progressPercent_; }
 
 private:
-  static constexpr const char* kUrl = "http://eibispace.de/dx/eibi.txt";
-  static constexpr const char* kSchedulePath = "/schedules.bin";
-  static constexpr const char* kTempPath = "/schedules.tmp";
-  static constexpr const char* kBackupPath = "/schedules.bak";
-
   struct ScheduleEntry {
     uint16_t frequencyKHz;
     int8_t startHour;
