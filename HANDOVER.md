@@ -1859,3 +1859,34 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
   - `a59b9807b4a39234d3839f64c7e9ae953eea62e4` – Menüauswahl und gespeicherte Layout-IDs angepasst
 - **Status:** Änderungen committed und werden nachfolgend erneut abgerufen/geprüft. Noch kein Compile-Build und kein Hardwaretest. Kein GitHub-Actions-Workflow gestartet, nichts geflasht.
 - Nächster Schritt: Nutzer startet den manuellen QSPI-/OSPI-Compile-only-Build und prüft TinyRadio, Wasserfall und HJB für AM/USB/LSB.
+
+
+## WLAN-Konfiguration und gemeinsame Statusleiste – 2026-11-08
+
+- Die bisherige fest codierte WLAN-Testverbindung (S22) wurde aus dem Verbindungsablauf entfernt; `WifiTestConfig.h` wurde gelöscht. Es verbleiben keine Zugangsdaten im Quelltext.
+- `WifiClient` verwaltet nun drei persistente WLAN-Netzwerkplätze im dedizierten NVS-Bereich `settings` / Namespace `network`.
+- Eine lokale Browser-Konfigurationsseite ist über das offene Einrichtungs-WLAN `ATS-Mini-OS-Setup` unter `http://10.1.1.1/` erreichbar. Sie erlaubt SSID/Passwort für bis zu drei Netze zu speichern, zeigt den Verbindungsstatus und lässt ein leeres Passwortfeld unverändert, damit ein gespeichertes Passwort nicht versehentlich offengelegt oder überschrieben wird.
+- Der Webserver läuft im `WifiClient` und bleibt auch ohne Routerverbindung über den Setup-Access-Point erreichbar. Der alte, nur bei STA-Verbindung gestartete Diagnose-Webserver wurde aus dem Hauptloop entfernt.
+- Gemeinsame Statusanzeige `DisplayStatusBar.h` ergänzt. HJB, SW-Layouts und die DAB-/TEF-FM-Renderer nutzen die gemeinsame WLAN-/Akku-Berechnung. Das TinyRadio-Layout reserviert den rechten oberen Bereich für WLAN und Akku, damit seine sechs Bandfelder erhalten bleiben.
+- Das bereits vorhandene KW/MW/LW-TEF6686-Layout (ID 8) wurde in der Menüauswahl vollständig freigeschaltet; die Auswahl wird jetzt auch in NVS als ID 8 gespeichert. Die KW/MW/LW-Menürotation wurde auf die tatsächlich fünf Einträge begrenzt.
+- Geänderte Dateien:
+  - `firmware/ats-mini-os/src/network/WifiClient.cpp`
+  - `firmware/ats-mini-os/src/network/WifiClient.h`
+  - `firmware/ats-mini-os/ats-mini-os.ino`
+  - `firmware/ats-mini-os/src/network/WifiTestConfig.h` (gelöscht)
+  - `firmware/ats-mini-os/src/display/DisplayStatusBar.h` (neu)
+  - `firmware/ats-mini-os/src/display/DisplayLayoutHJB.h`
+  - `firmware/ats-mini-os/src/display/DisplayLayoutSW.h`
+  - `firmware/ats-mini-os/src/display/DisplayDriver.cpp`
+  - `firmware/ats-mini-os/src/settings/SettingsStore.cpp`
+- Code-Commits:
+  - `c507f9687da5de6f41bb9dd7cf16d8724e9cab7b` – WLAN-Client-Schnittstelle
+  - `e66260d22371b33f7ac12880a6b5f6e016c73b1a` – WLAN-Browserseite und Verbindungslogik
+  - `5327bd50dae617320d9af919c8f9f6b98fda58b1` – Webserver-Lifecycle in den WLAN-Dienst verlagert
+  - `6b5bba0cc716f610688aaafcb6f326521ba6b9b6` – IPAddress-Initialisierung angepasst
+  - `61ea7e043af36d8a5b176c57d732a3b1ab35cd0b` – fest codierte Test-Zugangsdaten entfernt
+  - `e6080fa836e05c75e59b158343a4f0c52f111ffc` – gemeinsame Statusleistenfunktion
+  - `96852b4c47166f17fd56c08549203ad1ddef8a47`, `6ae63007beb32ab33f2b4929f4820c6eb97cee4`, `159c1270bb155b389d9af567e40d3f97a276a672` – Statusanzeige in Layouts vereinheitlicht
+  - `d00fbe64bd9f696f453b4e529ce72c55273a02be`, `0ce2177886fdc17685dba67ab5cf2efe93b9aeef` – KW/MW/LW-TEF-Layout im Menü auswählbar und speicherbar
+- **Status:** GitHub-Schreibvorgänge bestätigt. Noch nicht kompiliert, nicht auf dem Gerät getestet, kein GitHub-Actions-Workflow gestartet und nichts geflasht. Die WLAN-Webseite und die AP-/STA-Umschaltung müssen im nächsten Build besonders geprüft werden.
+- **Offen:** EiBi-Download/Parser, PS-/RT-Anzeige der EiBi-Treffer und der dedizierte EiBi-Menüpunkt sind noch nicht implementiert. Vor der Umsetzung die aktuelle offizielle CSV-Datei und ihre Felder/Zeitzonenregeln verifizieren. Die TEF6686-KW/MW/LW-Ansicht ist freigeschaltet, aber die EiBi-Datenversorgung fehlt noch.
