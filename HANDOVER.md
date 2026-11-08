@@ -1678,3 +1678,14 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - Geändert: `firmware/ats-mini-os/src/display/DisplayDriver.cpp`.
 - Commit: `37cd3f4bc4d1bdb9f15c30df3c524a5fe8b6a85b`.
 - Status: Änderung auf GitHub verifiziert; noch nicht kompiliert und nicht auf Hardware getestet. Der Nutzer startet QSPI-/OSPI-Compile-only-Workflows manuell.
+
+
+## Waterfall-Port – 2026-11-08
+
+- Nutzer hat den Port des originalen Waterfalls ausdrücklich freigegeben.
+- Originalreferenz read-only abgerufen: `13HN2709/ats-mini-dev`, Branch `development`, `ats-mini/Layout-Decoder.cpp`, Blob SHA `9c6955c5862e02e0219a139a6c189a229982a185`.
+- In `firetvstick2k2-afk/Mini_OS`, Branch `dev/first-build-preparation`, wurde `firmware/ats-mini-os/src/display/DisplayLayoutSW.h` aktualisiert. Der bisherige statische RSSI-Liniengraph in `drawDecoder()` wurde durch den Original-Waterfallmechanismus ersetzt: 280×26 px Rahmen, 278×23 px 16-Bit-PSRAM-Sprite, Scroll um 1 px nach unten, RSSI-Mapping, grüner Kern, gelbe Übergänge, rote Außenkanten und künstlicher Jitter `rand()%5 - 2`.
+- Die Anpassung verwendet den OS-`RadioSnapshot` statt direktem Zugriff auf `rx`; die originale FM-/Nicht-FM-Grenze bleibt in der Abbildung erhalten.
+- Vorhandene `PerformanceManager`-Logik geprüft: Waterfall erzwingt 240 MHz auch bei fest eingestelltem niedrigerem CPU-Profil; beim Verlassen wird das ausgewählte feste Profil wiederhergestellt. Die Waterfall-Aktivierung erfolgt nur bei sichtbarem ALL-BAND Decoder-Layout.
+- Commit: `012e1b5350a7883bf8cc766e4df386bf646ca8ac`.
+- **Status:** Code übertragen, aber noch nicht kompiliert und nicht am Gerät geprüft. Kein GitHub-Workflow gestartet, kein Flashvorgang durchgeführt. Nächster Schritt: Nutzer startet den Compile-Workflow selbst; anschließend Wasserfall-Scrolltempo, Jitter, Farbverlauf und CPU-Rückstellung am ATS Mini V4 prüfen.
