@@ -1780,3 +1780,24 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - Fix-Commit: a39ddb21bbf6ccea33bff9fec148d41b110594b8.
 - Status: Scope-Korrektur committed. Ein erneuter Compile-Build steht noch aus; kein Hardwaretest und kein Flash erfolgt.
 - Nächster Schritt: Compile-only-Workflow erneut ausführen. Erst nach erfolgreichem Build den Encoder-Test am ATS Mini V4 durchführen.
+
+
+## Diagnose: Frequenzabstimmung / Software-Reset – 2026-11-08
+
+- Reset-Ursache weiterhin offen. Die bisherigen Startlogs zeigen `reset_reason=3` (ESP32 Software-Reset), aber noch keinen auslösenden Stacktrace oder die letzte Aktion vor dem Neustart.
+- Codeprüfung:
+  - `RadioCore::nextChannel()` berechnet den Schritt mit 64-Bit-Zwischenwerten und begrenzt ihn über den Bandbereich.
+  - `RadioCore::tune()` prüft die Bandgrenzen und reicht die Frequenz an `TunerDriver::tune()` weiter.
+  - `TunerDriver::tune()` ruft für AM/SSB `radio_.setFrequency(frequencyKHz)` auf; FM wird in 10-kHz-Einheiten übergeben.
+- Zur Eingrenzung wurden gezielte `[TUNE_TRACE]`-Seriellogs ergänzt, ausschließlich wenn aktuelle oder Ziel-Frequenz im Bereich 14–22 MHz liegt:
+  - `RadioCore.cpp`: berechnete aktuelle Frequenz, Encoder-Delta, Schrittweite, Bandgrenzen, Span, Offset, Ziel und Ergebnis.
+  - `TunerDriver.cpp`: Meldung unmittelbar vor und nach dem SI4735-`setFrequency()`-Aufruf.
+- Geänderte Dateien:
+  - `firmware/ats-mini-os/src/radio/RadioCore.cpp`
+  - `firmware/ats-mini-os/src/tuner/TunerDriver.cpp`
+- Commits:
+  - `8f908c8fed619822c41034c36cc6e4b93c949edf` – RadioCore-Rechenweg protokollieren
+  - `801960656a76145252dbdfad115f67cd349e431d` – SI4735-Abstimmaufruf protokollieren
+- Die Abstimmungslogik wurde nicht verändert; es handelt sich um Diagnoseausgaben, keine behauptete Fehlerbehebung.
+- **Status:** Auf GitHub committed; noch nicht kompiliert, geflasht oder auf Hardware getestet. Kein Workflow gestartet.
+- Nächster Schritt: Nutzer startet den Compile-only-Build und testet danach das zügige Abstimmen durch 20–16 MHz. Bei einem Reset bitte den vollständigen seriellen Logausschnitt ab `[TUNE_TRACE] NEXT` bis zum Neustart senden. Die letzte Trace-Zeile grenzt den Fehlerpfad ein.
