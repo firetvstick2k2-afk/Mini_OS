@@ -43,9 +43,9 @@ void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifi
   d.setTextColor(YELLOW,BG);
   d.setFont(&lgfx::fonts::Font7);
   d.setTextSize(1.12f);
-  if(clockText[0]) d.drawString(clockText,160,32);
-  else if(s.modulation==RadioModulation::FM) d.drawFloat(s.frequencyKHz/1000.0f,2,160,32);
-  else d.drawNumber(s.frequencyKHz,160,32);
+  if(clockText[0]) d.drawString(clockText,160,56);
+  else if(s.modulation==RadioModulation::FM) d.drawFloat(s.frequencyKHz/1000.0f,2,160,56);
+  else d.drawNumber(s.frequencyKHz,160,56);
   d.setTextSize(1.0f);
 
   // SSB carrier precision is intentionally kept small below the RSSI/SNR area
