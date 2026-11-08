@@ -228,7 +228,7 @@ void loop() {
           } else {
             const int16_t itemCount = menuPage == 0 ? 21 :
               menuPage == 2 ? 4 : menuPage == 5 ? 8 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
-              ((menuPage == 14) ? 3 : (menuPage == 15) ? 9 :
+              ((menuPage == 14) ? 3 : (menuPage == 15) ? 5 :
               menuPage == 10 ? 4 : menuPage == 11 ?
               (radio.snapshot().modulation == RadioModulation::FM ? 10 : 14) :
               menuPage == 3 ? 7 :
@@ -314,7 +314,7 @@ void loop() {
           menuSelection = display.fmLayout() == 2 ? 2 : 1;
         } else if (menuPage == 13 && menuSelection == 2) {
           menuPage = 15;
-           menuSelection = display.amLayout() == 4 ? 2 : (display.amLayout() == 7 ? 3 : 1);
+           menuSelection = display.amLayout() == 4 ? 2 : (display.amLayout() == 7 ? 3 : (display.amLayout() == 8 ? 4 : 1));
         } else if ((menuPage == 14 || menuPage == 15) && menuSelection == 0) {
           const bool returningFromFm = menuPage == 14;
           menuPage = 5;
