@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include "../radio/RadioSnapshot.h"
 #include <string.h>
+#include "DisplayStatusBar.h"
 
 // ATS Mini DEV LW/MW/KW layouts adapted to the OS RadioSnapshot contract.
 // Each renderer is isolated from the FM/DAB and TEF6686 renderers.
@@ -10,10 +11,10 @@ constexpr uint16_t BG=0x0000, WHITE=0xFFFF, GREEN=0x07E0, CYAN=0x07FF;
 constexpr uint16_t YELLOW=0xFFE0, RED=0xF800, GREY=0x7BEF, BLUE=0x001F;
 
 template<class C> void header(C& d,const RadioSnapshot& s,bool wifi) {
-  d.setTextDatum(TL_DATUM); d.setTextColor(GREEN,BG);
-  d.setFont(&lgfx::fonts::FreeSansBold9pt7b); d.drawString(s.bandName,8,3);
-  d.setFont(&lgfx::fonts::Font0); d.setTextColor(wifi?CYAN:GREY,BG);
-  d.drawRightString(wifi?"WLAN+":"WLAN-",312,5);
+  drawNetworkBatteryStatus(d, wifi);
+  d.setTextDatum(MC_DATUM); d.setTextColor(GREEN,BG);
+  d.setFont(&lgfx::fonts::FreeSansBold9pt7b); d.drawString(s.bandName,160,3);
+  d.setTextDatum(TL_DATUM);
 }
 template<class C> void frequency(C& d,const RadioSnapshot& s,int x,int y,
                          float scale=0.72f,int unitX=250,int unitY=78) {
@@ -126,7 +127,8 @@ template<class C> void drawDecoder(C& d,const RadioSnapshot& s,bool ready,bool w
   d.setFont(&lgfx::fonts::Orbitron_Light_24);
   const char* mode=s.modulation==RadioModulation::FM?"FM":(s.modulation==RadioModulation::AM?"AM":(s.modulation==RadioModulation::USB?"USB":"LSB"));
   char bandMode[24]; snprintf(bandMode,sizeof(bandMode),"%s %s",s.bandName,mode);
-  d.drawString(bandMode,160,8);
+  drawNetworkBatteryStatus(d, wifi, 8);
+  d.drawString(bandMode,160,22);
   d.setTextDatum(TL_DATUM); d.setFont(&lgfx::fonts::Font7); d.setTextColor(WHITE,BG);
   char freq[24];
   if(s.modulation==RadioModulation::FM) snprintf(freq,sizeof(freq),"%lu.%02lu",(unsigned long)(s.frequencyKHz/1000UL),(unsigned long)((s.frequencyKHz%1000UL)/10UL));
@@ -206,7 +208,7 @@ template<class C> void drawTiny(C& d,const RadioSnapshot& s,bool ready,bool wifi
     const uint16_t color=selected?CYAN:DIM; d.drawRect(bx[i],3,32,17,color);
     d.setTextColor(color,BG); d.setTextDatum(MC_DATUM); d.setFont(&lgfx::fonts::Font0); d.drawString(bands[i],bx[i]+16,11);
   }
-  d.setTextDatum(TR_DATUM); d.setTextColor(wifi?CYAN:DIM,BG); d.drawString(wifi?"WLAN+":"WLAN-",312,6);
+  drawNetworkBatteryStatus(d, wifi, 218);
   char freq[32];
   if(s.modulation==RadioModulation::FM) snprintf(freq,sizeof(freq),"%lu.%02lu MHz",(unsigned long)(s.frequencyKHz/1000UL),(unsigned long)((s.frequencyKHz%1000UL)/10UL));
   else if(s.modulation==RadioModulation::USB||s.modulation==RadioModulation::LSB) snprintf(freq,sizeof(freq),"%lu.000 kHz",(unsigned long)s.frequencyKHz);
