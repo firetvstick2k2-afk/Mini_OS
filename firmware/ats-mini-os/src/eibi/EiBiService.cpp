@@ -12,7 +12,12 @@ constexpr uint16_t kMinimumScheduleFrequency = 100;
 constexpr uint16_t kMaximumScheduleFrequency = 60000;
 }
 
-void EiBiService::begin() {\n  available_ = StorageDiscovery::ready() && LittleFS.exists(kSchedulePath);\n  if (available_) strncpy(statusText_, "EiBi schedule ready", sizeof(statusText_) - 1);\n}\n\nbool EiBiService::beginDownload(bool wifiConnected) {
+void EiBiService::begin() {
+  available_ = StorageDiscovery::ready() && LittleFS.exists(kSchedulePath);
+  if (available_) strncpy(statusText_, "EiBi schedule ready", sizeof(statusText_) - 1);
+}
+
+bool EiBiService::beginDownload(bool wifiConnected) {
   if (downloading_) return false;
   if (!wifiConnected || WiFi.status() != WL_CONNECTED) {
     strncpy(statusText_, "EiBi: WLAN unavailable", sizeof(statusText_) - 1);
@@ -52,7 +57,8 @@ void EiBiService::begin() {\n  available_ = StorageDiscovery::ready() && LittleF
   downloading_ = true;
   strncpy(statusText_, "Downloading EiBi Schedules ...", sizeof(statusText_) - 1);
   statusText_[sizeof(statusText_) - 1] = '\0';
-  Serial.printf("[EIBI] download started: %s\n", kUrl);
+  Serial.printf("[EIBI] download started: %s
+", kUrl);
   return true;
 }
 
@@ -68,7 +74,8 @@ void EiBiService::update(bool wifiConnected, bool clockSynchronized, const struc
         if (value < 0) break;
         ++bytesRead_;
         const char c = static_cast<char>(value);
-        if (c == '\n') {
+        if (c == '
+') {
           line_[lineLength_] = '\0';
           processLine();
           lineLength_ = 0;
@@ -262,14 +269,16 @@ void EiBiService::finishDownload(bool success, const char* message) {
     progressPercent_ = 100;
     lastLookupFrequency_ = UINT32_MAX;
     strncpy(statusText_, message, sizeof(statusText_) - 1);
-    Serial.printf("[EIBI] updated: %lu entries, %lu bytes\n",
+    Serial.printf("[EIBI] updated: %lu entries, %lu bytes
+",
                   static_cast<unsigned long>(entryCount_),
                   static_cast<unsigned long>(bytesRead_));
   } else {
     LittleFS.remove(kTempPath);
     available_ = LittleFS.exists(kSchedulePath);
     strncpy(statusText_, message, sizeof(statusText_) - 1);
-    Serial.printf("[EIBI] failed: %s (%lu bytes, %lu entries)\n", message,
+    Serial.printf("[EIBI] failed: %s (%lu bytes, %lu entries)
+", message,
                   static_cast<unsigned long>(bytesRead_),
                   static_cast<unsigned long>(entryCount_));
   }
