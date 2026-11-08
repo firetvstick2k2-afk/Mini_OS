@@ -2001,3 +2001,12 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Geänderte Dateien: `DisplayLayoutHJB.h` und `DisplayLayoutSW.h`.
 - Commits: `cf45e09d06a56510f4ae5dc3ec9941c90ae61d14` (HJB), `b6850d2955c6b9832c4d0eab893c64f4dc06cafa` (Wasserfall/Tiny).
 - **Status:** Quelltext gespeichert; nicht kompiliert, kein Workflow gestartet und nicht auf Hardware geprüft. Nächster Schritt ist der manuelle Build durch den Nutzer und anschließend die Sichtprüfung der drei Layouts.
+
+
+## TEF6686 LW/MW/KW Frequenzposition – 2026-11-08
+
+- In `firmware/ats-mini-os/src/display/DisplayLayoutSW.h`, Renderer `drawTef6686SW()`, wurde ausschließlich die große Frequenzanzeige von Position (185, 47) auf (165, 56) verschoben.
+- Ziel: Frequenz weiter links und tiefer platzieren, sodass ihre Unterkante möglichst bündig mit der rechts stehenden Einheit `kHz` abschließt. Die `kHz`-Position bleibt unverändert.
+- S-Meter, PS-/RT-Zeilen, EiBi-Anzeige, Band-/Modulationslogik und FM-Layout wurden nicht verändert.
+- Code-Commit: `438a59ca0ed3c532c881242fb7806cd5111c420d`.
+- **Status:** gespeichert und anschließend erneut abgerufen; nicht kompiliert und nicht auf Hardware geprüft. Nutzer startet den nächsten Build manuell.
