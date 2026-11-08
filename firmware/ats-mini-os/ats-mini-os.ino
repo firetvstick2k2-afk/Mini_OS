@@ -5,6 +5,7 @@
 #include "src/radio/RadioCore.h"
 #include "src/system/PerformanceManager.h"
 #include "src/system/ClockService.h"
+#include "src/eibi/EiBiService.h"
 #include "src/display/DisplayDriver.h"
 #include "src/input/EncoderInput.h"
 #include "src/network/WifiClient.h"
@@ -25,6 +26,7 @@ constexpr const char* DIAGNOSTIC_LOG_OLD_PATH = "/ats-mini-os.log.1";
 constexpr uint32_t DEFAULT_FM_FREQUENCY_KHZ = 95400;
 PerformanceManager performance;
 ClockService systemClock;
+EiBiService eibi;
 RadioCore radio;
 DisplayDriver display;
 SettingsStore settingsStore;
@@ -123,6 +125,7 @@ void setup() {
   Serial.println("First milestone: display, SI4735 audio, RDS. No memories/EiBi storage.");
   PartitionDiagnostics::printToSerial();
   StorageDiscovery::begin();
+  eibi.begin();
   FileManager::begin();
   uint32_t bootCount = 1;
   const char* bootCountPath = "/ats-mini-os.boot";
@@ -192,6 +195,9 @@ void loop() {
   performance.update();
   wifi.update();
   systemClock.update(wifi.connected());
+  struct tm utcNow{};
+  const bool utcValid = systemClock.getUtc(utcNow);
+  eibi.update(wifi.connected(), utcValid, utcNow, radio.snapshot().frequencyKHz);
   // WifiClient owns and services the local setup/status web server.
   encoder.update();
   EncoderEvent inputEvent;
@@ -222,7 +228,7 @@ void loop() {
               Serial.printf("[MENU] volume=%u/63\n", static_cast<unsigned>(radio.volume()));
           } else {
             const int16_t itemCount = menuPage == 0 ? 21 :
-              menuPage == 2 ? 4 : menuPage == 5 ? 8 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
+              menuPage == 2 ? 4 : menuPage == 5 ? 9 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
               ((menuPage == 14) ? 3 : (menuPage == 15) ? 5 :
               menuPage == 10 ? 4 : menuPage == 11 ?
               (radio.snapshot().modulation == RadioModulation::FM ? 10 : 14) :
@@ -336,6 +342,10 @@ void loop() {
               layoutNames[index], saved ? "saved" : "save failed");
             closeMenuToRadio("LW/MW/KW layout selected");
           }
+        } else if (menuPage == 5 && menuSelection == 8) {
+          const bool started = eibi.beginDownload(wifi.connected());
+          Serial.printf("[EIBI] download request %s: %s\\n", started ? "accepted" : "rejected", eibi.statusText());
+          closeMenuToRadio("EiBi schedule download");
         } else if (menuPage == 5 && menuSelection == 2) {
           menuPage = 17;
           menuSelection = static_cast<uint8_t>(performance.profile()) + 1;
@@ -546,7 +556,7 @@ void loop() {
   const bool waterfallVisible = !menuOpen && currentSnapshot.modulation != RadioModulation::FM && display.amLayout() == 4;
   performance.setWaterfallActive(waterfallVisible);
   stationLogoClient.update(currentSnapshot, wifi.connected());
-  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive);
+  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading());
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
     lastStatusMs=now; const RadioSnapshot& s=radio.snapshot();
