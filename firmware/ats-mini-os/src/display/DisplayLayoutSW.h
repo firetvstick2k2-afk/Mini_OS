@@ -53,6 +53,7 @@ inline const char* bandplan(uint32_t f) {
   return "MIXED";
 }
 
+#if 0  // Retired legacy LW/MW/KW layout; kept as reference for future redesign.
 template<class C> void drawDefault(C& d,const RadioSnapshot& s,bool ready,bool wifi) {
   d.fillScreen(BG); header(d,s,wifi);
   d.setTextColor(WHITE,BG); d.setFont(&lgfx::fonts::Font7); d.setTextSize(0.85f);
@@ -64,6 +65,8 @@ template<class C> void drawDefault(C& d,const RadioSnapshot& s,bool ready,bool w
   d.setFont(&lgfx::fonts::Font0); d.setTextColor(WHITE,BG);
   d.drawString(s.radioText,8,143);
 }
+#endif
+#if 0  // Retired legacy LW/MW/KW layout; kept as reference for future redesign.
 template<class C> void drawClean(C& d,const RadioSnapshot& s,bool ready,bool wifi) {
   d.fillScreen(BG); header(d,s,wifi);
   d.fillRoundRect(9,22,50,19,4,GREEN); d.setFont(&lgfx::fonts::FreeSansBold9pt7b);
@@ -78,6 +81,8 @@ template<class C> void drawClean(C& d,const RadioSnapshot& s,bool ready,bool wif
   d.setTextDatum(TL_DATUM); meter(d,s,50,151,220);
   if(!ready){d.setFont(&lgfx::fonts::Font0);d.setTextColor(YELLOW,BG);d.drawString("RADIO OFFLINE",8,82);}
 }
+#endif
+#if 0  // Retired legacy LW/MW/KW layout; kept as reference for future redesign.
 template<class C> void drawNewUI(C& d,const RadioSnapshot& s,bool ready,bool wifi) {
   d.fillScreen(BG); header(d,s,wifi);
   d.setFont(&lgfx::fonts::FreeSansBold9pt7b); d.setTextColor(WHITE,BG);
@@ -95,6 +100,8 @@ template<class C> void drawNewUI(C& d,const RadioSnapshot& s,bool ready,bool wif
   }
   d.setTextDatum(TL_DATUM); d.setFont(&lgfx::fonts::Font0);
 }
+#endif
+#if 0  // Retired legacy LW/MW/KW layout; kept as reference for future redesign.
 template<class C> void drawSMeter(C& d,const RadioSnapshot& s,bool ready,bool wifi) {
   d.fillScreen(BG); header(d,s,wifi);
   frequency(d,s,8,28,0.72f);
@@ -112,20 +119,21 @@ template<class C> void drawSMeter(C& d,const RadioSnapshot& s,bool ready,bool wi
   char sn[16];snprintf(sn,sizeof(sn),"SNR %d",s.snr);d.drawString(sn,75,140);
   d.setTextColor(WHITE,BG);d.drawString(s.radioText,12,155);
 }
+#endif
 template<class C> void drawDecoder(C& d,const RadioSnapshot& s,bool ready,bool wifi) {
   d.fillScreen(BG);
   d.setTextDatum(TC_DATUM); d.setTextColor(WHITE,BG);
   d.setFont(&lgfx::fonts::Orbitron_Light_24);
   const char* mode=s.modulation==RadioModulation::FM?"FM":(s.modulation==RadioModulation::AM?"AM":(s.modulation==RadioModulation::USB?"USB":"LSB"));
   char bandMode[24]; snprintf(bandMode,sizeof(bandMode),"%s %s",s.bandName,mode);
-  d.drawString(bandMode,145,8);
+  d.drawString(bandMode,160,8);
   d.setTextDatum(TL_DATUM); d.setFont(&lgfx::fonts::Font7); d.setTextColor(WHITE,BG);
   char freq[24];
   if(s.modulation==RadioModulation::FM) snprintf(freq,sizeof(freq),"%lu.%02lu",(unsigned long)(s.frequencyKHz/1000UL),(unsigned long)((s.frequencyKHz%1000UL)/10UL));
   else if(s.modulation==RadioModulation::USB || s.modulation==RadioModulation::LSB) snprintf(freq,sizeof(freq),"%lu.000",(unsigned long)s.frequencyKHz);
   else snprintf(freq,sizeof(freq),"%lu",(unsigned long)s.frequencyKHz);
   d.setTextSize(s.modulation==RadioModulation::FM?0.78f:((s.modulation==RadioModulation::USB || s.modulation==RadioModulation::LSB)?0.56f:0.68f));
-  d.drawString(freq,8,43); d.setTextSize(1.0f);
+  d.setTextDatum(MC_DATUM); d.drawString(freq,160,43); d.setTextSize(1.0f);
   d.setFont(&lgfx::fonts::FreeSansBold9pt7b); d.setTextColor(WHITE,BG);
   d.drawString(s.modulation==RadioModulation::FM?"MHz":"kHz",245,67);
   if(s.modulation==RadioModulation::FM) {
@@ -205,7 +213,7 @@ template<class C> void drawTiny(C& d,const RadioSnapshot& s,bool ready,bool wifi
   else snprintf(freq,sizeof(freq),"%lu kHz",(unsigned long)s.frequencyKHz);
   d.setTextColor(YELLOW,BG); d.setTextDatum(TL_DATUM); d.setFont(&lgfx::fonts::Font7);
   d.setTextSize((s.modulation==RadioModulation::USB||s.modulation==RadioModulation::LSB)?0.58f:0.82f);
-  d.drawString(freq,8,36); d.setTextSize(1.0f);
+  d.setTextDatum(MC_DATUM); d.drawString(freq,160,36); d.setTextSize(1.0f);
   const char* modes[]={"FM","AM","LSB","USB"}; const RadioModulation vals[]={RadioModulation::FM,RadioModulation::AM,RadioModulation::LSB,RadioModulation::USB}; const int mx[]={3,43,83,123};
   for(int i=0;i<4;i++){bool active=s.modulation==vals[i];uint16_t col=active?CYAN:DIM;d.drawRect(mx[i],66,36,21,col);d.setTextColor(col,BG);d.setTextDatum(MC_DATUM);d.setFont(&lgfx::fonts::Font0);d.drawString(modes[i],mx[i]+18,76);}
   // BW/AGC/SM controls are not displayed because these states are not exposed by RadioSnapshot.
