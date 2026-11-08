@@ -1977,3 +1977,17 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Es wurden keine Zugangsdaten ergänzt und keine anderen WLAN-/Logo-Funktionen verändert.
 - Code-Commit: `17b7d76da267229661b08fb79a7a27c1d8994f0d`.
 - **Status:** Änderung gespeichert. Noch nicht kompiliert und nicht auf Hardware getestet. Nutzer startet den nächsten Build manuell; kein Workflow wurde von uns gestartet.
+
+
+## Build #14 – EiBi-Zeichenliterale und Display-Aufrufsignatur korrigiert – 2026-11-08
+
+- GitHub Actions Run: https://github.com/firetvstick2k2-afk/Mini_OS/actions/runs/42523400093
+- Ergebnis: Compile-Schritt fehlgeschlagen; WLAN-Altverweis aus Build #13 ist nicht mehr der gemeldete Blocker.
+- Fehler 1 in `firmware/ats-mini-os/src/eibi/EiBiService.cpp`: Vier C++-Literale enthielten echte Zeilenumbrüche statt der Escape-Sequenz `\\n`: drei `Serial.printf`-Formatstrings und der Vergleich auf Zeilenende. Das führte zu den Meldungen „missing terminating quote“ und zahlreichen Parser-Folgefehlern.
+- Korrektur: die drei Formatstrings verwenden jetzt `\\n`; der Zeilenabschluss wird korrekt mit `'\\n'` verglichen.
+- Fehler 2 in `firmware/ats-mini-os/src/display/DisplayDriver.cpp`: die generische `drawLayout()`-Funktion erwartet 17 Parameter (einschließlich EiBi-Status), während die beiden Aufrufstellen nur 13 übergaben.
+- Korrektur: beide Aufrufstellen reichen jetzt zusätzlich `eibiStation`, `eibiStatus`, `eibiAvailable` und `eibiDownloading` weiter.
+- Code-Commits:
+  - `f4541c50b3740e8360518f67c7cd00b1c61e8d2c` – EiBi-Literale korrigiert
+  - `3d58f16522c05b92492c449636bc185229cc370b` – Display-Argumente vervollständigt
+- **Status:** Änderungen gespeichert. Noch nicht erneut kompiliert und nicht auf Hardware getestet. Nutzer startet den nächsten Build manuell; kein Workflow wurde gestartet.
