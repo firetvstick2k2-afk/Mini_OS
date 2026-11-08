@@ -15,7 +15,8 @@ template<class C> void header(C& d,const RadioSnapshot& s,bool wifi) {
   d.setFont(&lgfx::fonts::Font0); d.setTextColor(wifi?CYAN:GREY,BG);
   d.drawRightString(wifi?"WLAN+":"WLAN-",312,5);
 }
-template<class C> void frequency(C& d,const RadioSnapshot& s,int x,int y,float scale=0.72f) {
+template<class C> void frequency(C& d,const RadioSnapshot& s,int x,int y,
+                         float scale=0.72f,int unitX=250,int unitY=78) {
   char f[24];
   if(s.modulation==RadioModulation::USB || s.modulation==RadioModulation::LSB)
     snprintf(f,sizeof(f),"%lu.000",static_cast<unsigned long>(s.frequencyKHz));
@@ -23,7 +24,7 @@ template<class C> void frequency(C& d,const RadioSnapshot& s,int x,int y,float s
   d.setFont(&lgfx::fonts::Font7); d.setTextColor(GREEN,BG); d.setTextDatum(TL_DATUM);
   d.setTextSize(scale); d.drawString(f,x,y); d.setTextSize(1.0f);
   d.setFont(&lgfx::fonts::FreeSansBold9pt7b); d.setTextColor(WHITE,BG);
-  d.drawString("kHz",250,78);
+  d.drawString("kHz",unitX,unitY);
 }
 template<class C> void meter(C& d,const RadioSnapshot& s,int x,int y,int width) {
   const int v=constrain(static_cast<int>(s.rssi),0,60);
@@ -132,7 +133,7 @@ template<class C> void drawTiny(C& d,const RadioSnapshot& s,bool ready,bool wifi
   const char* labels[]={"LW","MW","KW"}; const int xx[]={4,42,80};
   for(int i=0;i<3;i++){const bool selected=strcmp(s.bandName,labels[i])==0;d.drawRect(xx[i],3,34,18,selected?CYAN:GREY);d.setTextDatum(MC_DATUM);d.setTextColor(selected?CYAN:GREY,BG);d.drawString(labels[i],xx[i]+17,8);}
   d.setTextDatum(TR_DATUM);d.setTextColor(wifi?CYAN:GREY,BG);d.drawString(wifi?"WLAN+":"WLAN-",312,6);
-  frequency(d,s,8,34,0.80f);
+  frequency(d,s,8,34,0.70f,250,52);
   d.setFont(&lgfx::fonts::FreeSansBold9pt7b);d.setTextDatum(TL_DATUM);d.setTextColor(CYAN,BG);
   d.drawString(s.modulation==RadioModulation::AM?"AM":s.modulation==RadioModulation::USB?"USB":"LSB",8,72);
   d.setTextColor(GREEN,BG);d.drawString(s.stationName[0]?s.stationName:(ready?"":"RADIO OFFLINE"),8,98);
