@@ -1,4 +1,5 @@
 #include "TunerDriver.h"
+#include "../system/DiagnosticLog.h"
 #include <Wire.h>
 #include "ssb_patch.h"
 
@@ -315,19 +316,23 @@ bool TunerDriver::tune(uint32_t frequencyKHz, const RadioBandDefinition& band) {
   if (!ready_ || frequencyKHz < band.minimumKHz || frequencyKHz > band.maximumKHz) return false;
   const bool trace = frequencyKHz >= 14000 && frequencyKHz <= 22000;
   if (trace) {
-    Serial.printf("[TUNE_TRACE] DRIVER_BEGIN target=%lu min=%lu max=%lu mode=%u\\n",
+    char details[128];
+    snprintf(details, sizeof(details), "target=%lu min=%lu max=%lu mode=%u raw=%u",
       static_cast<unsigned long>(frequencyKHz),
       static_cast<unsigned long>(band.minimumKHz),
       static_cast<unsigned long>(band.maximumKHz),
-      static_cast<unsigned>(band.modulation));
+      static_cast<unsigned>(band.modulation),
+      static_cast<unsigned>(band.modulation == RadioModulation::FM ? frequencyKHz / 10UL : frequencyKHz));
+    writeDiagnosticLog("TUNE_DRIVER_BEGIN", details);
   }
   if (band.modulation == RadioModulation::FM)
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz / 10UL));
   else
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz));
   if (trace) {
-    Serial.printf("[TUNE_TRACE] DRIVER_SET_FREQUENCY_RETURN target=%lu\\n",
-      static_cast<unsigned long>(frequencyKHz));
+    char details[64];
+    snprintf(details, sizeof(details), "target=%lu", static_cast<unsigned long>(frequencyKHz));
+    writeDiagnosticLog("TUNE_DRIVER_RETURN", details);
   }
   haveTextFlag_ = false;
   return true;
