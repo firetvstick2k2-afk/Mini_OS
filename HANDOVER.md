@@ -1956,3 +1956,12 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - **Nicht kompiliert und nicht auf Hardware getestet.** Kein GitHub-Actions-Workflow gestartet und nichts geflasht. Der Nutzer startet jetzt den Build.
 - Beim ersten Build besonders auf ESP32-Core-3.3.12-Kompatibilität von `HTTPClient::getStreamPtr()`, den HTTP-Streamabschluss und den tatsächlichen Empfang/Parser der EiBi-Zeilen achten.
 - Nach erfolgreichem Build auf dem Gerät testen: WLAN verbunden, Menüpunkt auswählen, Downloadanzeige sehen, UTC-Synchronisation abwarten, MW/KW-Frequenz mit aktivem EiBi-Eintrag einstellen und PS-Namen prüfen. Zusätzlich HTTP-/WLAN-Abbruch testen und kontrollieren, dass eine vorhandene `/schedules.bin` erhalten bleibt.
+
+## Bandauswahl: Frequenzbereiche sichtbar – 2026-11-08
+
+- In der Bandauswahl wird unter dem ausgewählten Bandnamen jetzt zusätzlich dessen konfigurierter Frequenzbereich angezeigt.
+- Die Werte stammen direkt aus `BandManager::at()` (`minimumKHz` / `maximumKHz`); es gibt keine separat gepflegte zweite Liste und damit keine abweichenden Anzeigewerte.
+- Bereiche ab 1 MHz werden mit drei Nachkommastellen in MHz dargestellt (z. B. `7.000 - 7.300 MHz`); darunter in kHz (z. B. `100 - 495 kHz`).
+- Die Änderung betrifft nur die Darstellung der Seite „BAND WÄHLEN“ in `firmware/ats-mini-os/src/display/DisplayDriver.cpp`. Banddefinitionen, Abstimmung und sonstige Menüseiten bleiben unverändert.
+- Code-Commit: `0e3cd9732b910d3dbc8fc2ed531cf6182b0759e4`.
+- **Status:** Quelltext committed; Build/Compile und Hardwareanzeige noch nicht geprüft. Kein GitHub-Actions-Workflow gestartet und nichts geflasht.
