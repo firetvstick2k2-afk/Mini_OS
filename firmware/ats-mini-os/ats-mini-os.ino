@@ -139,7 +139,9 @@ void setup() {
   const uint8_t savedBrightness = settingsStore.displayBrightness(180);
   const uint8_t savedTheme = settingsStore.displayTheme(0);
   const uint8_t savedFmLayout = settingsStore.displayFmLayout(0);
-  const uint8_t savedAmLayout = settingsStore.displayAmLayout(0);\n  const uint8_t savedCpuProfile = settingsStore.cpuProfile(0);\n  performance.setProfile(static_cast<CpuProfile>(savedCpuProfile));
+  const uint8_t savedAmLayout = settingsStore.displayAmLayout(0);
+  const uint8_t savedCpuProfile = settingsStore.cpuProfile(0);
+  performance.setProfile(static_cast<CpuProfile>(savedCpuProfile));
   if (display.begin(savedBrightness)) {
     display.setTheme(savedTheme);
     display.setFmLayout(savedFmLayout);
@@ -313,6 +315,19 @@ void loop() {
           Serial.printf("[SETTINGS] LW/MW/KW layout=%s %s\\n",
             layoutNames[layout], saved ? "saved" : "save failed");
           closeMenuToRadio("LW/MW/KW layout selected");
+        } else if (menuPage == 5 && menuSelection == 2) {
+          menuPage = 17;
+          menuSelection = static_cast<uint8_t>(performance.profile()) + 1;
+        } else if (menuPage == 17 && menuSelection == 0) {
+          menuPage = 5;
+          menuSelection = 2;
+        } else if (menuPage == 17 && menuSelection > 0) {
+          const CpuProfile selected = static_cast<CpuProfile>(menuSelection - 1);
+          if (performance.setProfile(selected)) {
+            const bool saved = settingsStore.saveCpuProfile(menuSelection - 1);
+            Serial.printf("[SETTINGS] CPU profile=%s %s\\n", performance.profileName(), saved ? "saved" : "save failed");
+            closeMenuToRadio("CPU profile selected");
+          }
         } else if (menuPage == 5 && menuSelection == 1) {
           menuPage = 2;
           menuSelection = 0;
@@ -506,7 +521,10 @@ void loop() {
     }
   }
   radio.update();
-  stationLogoClient.update(radio.snapshot(), wifi.connected());
+  const RadioSnapshot& currentSnapshot = radio.snapshot();
+  const bool waterfallVisible = !menuOpen && currentSnapshot.modulation != RadioModulation::FM && display.amLayout() == 4;
+  performance.setWaterfallActive(waterfallVisible);
+  stationLogoClient.update(currentSnapshot, wifi.connected());
   display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive);
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
