@@ -31,11 +31,49 @@ jobs:
           version: 1.4.1
 
       - name: Configure ESP32 package index
+        shell: bash
         run: |
+          set -euo pipefail
           arduino-cli config init --overwrite
           arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
           arduino-cli core update-index
-          arduino-cli core install esp32:esp32@3.3.12
+
+          install_log="$RUNNER_TEMP/esp32-core-install.log"
+          installed=false
+
+          # Retry transient Espressif download timeouts, but stop on real errors.
+          for attempt in 1 2 3 4; do
+            echo "Installing ESP32 core 3.3.12 (attempt $attempt/4)..."
+
+            if arduino-cli core install esp32:esp32@3.3.12 2>&1 | tee "$install_log"; then
+              installed=true
+              break
+            else
+              status=$?
+            fi
+
+            if ! grep -Eqi 'HTTP response: 504|504 Gateway Timeout|Gateway Timeout|timed out|timeout' "$install_log"; then
+              echo "ESP32 core installation failed for a non-transient reason."
+              exit "$status"
+            fi
+
+            if [ "$attempt" -eq 4 ]; then
+              echo "ESP32 core installation still fails after 4 attempts."
+              exit "$status"
+            fi
+
+            delay=$((attempt * 30))
+            echo "Temporary download timeout. Retrying in ${delay}s..."
+            sleep "$delay"
+          done
+
+          if [ "$installed" != true ]; then
+            echo "ERROR: ESP32 core was not installed."
+            exit 1
+          fi
+
+          arduino-cli core list
+
 
       - name: Install SI4735 tuner library
         env:
