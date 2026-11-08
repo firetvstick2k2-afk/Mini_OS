@@ -317,7 +317,7 @@ void loop() {
           menuSelection = display.fmLayout() == 2 ? 2 : 1;
         } else if (menuPage == 13 && menuSelection == 2) {
           menuPage = 15;
-          menuSelection = static_cast<uint8_t>(display.amLayout() + 1);
+           menuSelection = display.amLayout() == 4 ? 2 : (display.amLayout() == 7 ? 3 : 1);
         } else if ((menuPage == 14 || menuPage == 15) && menuSelection == 0) {
           const bool returningFromFm = menuPage == 14;
           menuPage = 5;
@@ -330,17 +330,14 @@ void loop() {
             layout == 2 ? "TEF6686 -FM Version" : "DAB Style", saved ? "saved" : "save failed");
           closeMenuToRadio("FM layout selected");
         } else if (menuPage == 15 && menuSelection > 0) {
-          // Menu index 1 selects the original OS layout; 2 selects HJB;
-          // 3-8 select the six adapted ATS Mini DEV layouts.
-          const uint8_t layout = static_cast<uint8_t>(menuSelection - 1);
-          static const char* const layoutNames[] = {
-            "Standard", "HJB", "Default", "Clean", "Decoder / Wasserfall",
-            "New UI", "S-Meter", "TinyRadio"
-          };
+          // Only the three retained LW/MW/KW layouts are selectable.
+          // Keep their legacy stored IDs so existing settings remain compatible.
+          const uint8_t layout = menuSelection == 1 ? 1 : (menuSelection == 2 ? 4 : 7);
+          static const char* const layoutNames[] = { "HJB", "Decoder / Wasserfall", "TinyRadio" };
           display.setAmLayout(layout);
           const bool saved = settingsStore.saveDisplayAmLayout(layout);
           Serial.printf("[SETTINGS] LW/MW/KW layout=%s %s\\n",
-            layoutNames[layout], saved ? "saved" : "save failed");
+            layoutNames[menuSelection-1], saved ? "saved" : "save failed");
           closeMenuToRadio("LW/MW/KW layout selected");
         } else if (menuPage == 5 && menuSelection == 2) {
           menuPage = 17;
@@ -363,7 +360,7 @@ void loop() {
           menuSelection = display.fmLayout() == 2 ? 2 : 1;
         } else if (menuPage == 5 && menuSelection == 7) {
           menuPage = 15;
-          menuSelection = static_cast<uint8_t>(display.amLayout() + 1);
+           menuSelection = display.amLayout() == 4 ? 2 : (display.amLayout() == 7 ? 3 : 1);
         } else if (menuPage == 2 && menuSelection == 0) {
           menuPage = 5;
           menuSelection = 1;
