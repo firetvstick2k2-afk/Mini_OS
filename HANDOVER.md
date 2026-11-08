@@ -1821,3 +1821,12 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - Ergänzende Korrekturen zur Diagnoseinstrumentierung:
   - `301265342446ddb0c46b829b9485b262515fefbf` – echte Zeilenumbrüche in der LittleFS-Logdatei und Boot-Zählerdatei sichergestellt.
   - `9e94953d1de318c3a622f20a34d36a4c76e004eb` – explizites `stdio.h` für die neuen `snprintf`-Aufrufe im Tuner-Treiber ergänzt.
+
+
+## Band-Auswahl: ungültiger Menü-Arrayzugriff behoben – 2026-11-08
+- Fehlerbild laut Nutzervideo: Im DAB-Style-Menü „Band wählen“ steht zunächst „VHF“. Beim Weiterdrehen wird „Zurück“ erreicht; ohne Encoder-Klick führt weiteres Drehen zum ESP32-Neustart.
+- Ursache im Code gefunden: `drawMenu()` setzte für Seite 8 zwar die Anzahl anhand von `BandManager::count()+1`, ließ den Zeiger `items` aber auf dem deutlich kürzeren `mainItems`-Array stehen. Vor der speziellen Bandnamen-Ausgabe wurde `items[selection]` gelesen. Beim Umlauf auf den letzten Bandindex konnte dadurch außerhalb von `mainItems` gelesen werden.
+- Korrektur in `firmware/ats-mini-os/src/display/DisplayDriver.cpp`: Für Seite 8 wird der sichere Label-Startwert „Zurück“ verwendet; Bandnamen werden anschließend ausschließlich über `BandManager::at(selection-1)` geladen. Kein Zugriff mehr auf `mainItems[selection]` in der Bandauswahl.
+- Code-Commit: `d64455b087d36bfa1c33e412f68da533b34a857e`.
+- Änderung betrifft nur die Menü-Label-Ermittlung der Bandauswahl; keine Radio-/Tunerlogik und keine Layout-Renderer geändert.
+- Status: Änderung in GitHub gespeichert; noch nicht kompiliert, kein GitHub-Actions-Build gestartet und nicht auf Hardware getestet. Nächster Schritt: Nutzer startet Build und prüft die Bandauswahl durch Drehen über „Zurück“ hinaus.
