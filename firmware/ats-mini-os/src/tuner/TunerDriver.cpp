@@ -313,10 +313,22 @@ bool TunerDriver::setModulation(const RadioBandDefinition& band, RadioModulation
 }
 bool TunerDriver::tune(uint32_t frequencyKHz, const RadioBandDefinition& band) {
   if (!ready_ || frequencyKHz < band.minimumKHz || frequencyKHz > band.maximumKHz) return false;
+  const bool trace = frequencyKHz >= 14000 && frequencyKHz <= 22000;
+  if (trace) {
+    Serial.printf("[TUNE_TRACE] DRIVER_BEGIN target=%lu min=%lu max=%lu mode=%u\\n",
+      static_cast<unsigned long>(frequencyKHz),
+      static_cast<unsigned long>(band.minimumKHz),
+      static_cast<unsigned long>(band.maximumKHz),
+      static_cast<unsigned>(band.modulation));
+  }
   if (band.modulation == RadioModulation::FM)
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz / 10UL));
   else
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz));
+  if (trace) {
+    Serial.printf("[TUNE_TRACE] DRIVER_SET_FREQUENCY_RETURN target=%lu\\n",
+      static_cast<unsigned long>(frequencyKHz));
+  }
   haveTextFlag_ = false;
   return true;
 }
