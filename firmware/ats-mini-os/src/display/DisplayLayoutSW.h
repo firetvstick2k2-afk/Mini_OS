@@ -113,20 +113,66 @@ template<class C> void drawSMeter(C& d,const RadioSnapshot& s,bool ready,bool wi
   d.setTextColor(WHITE,BG);d.drawString(s.radioText,12,155);
 }
 template<class C> void drawDecoder(C& d,const RadioSnapshot& s,bool ready,bool wifi) {
-  d.fillScreen(BG); header(d,s,wifi);
+  d.fillScreen(BG);
+  header(d,s,wifi);
   frequency(d,s,8,26,0.70f);
-  d.setFont(&lgfx::fonts::FreeSansBold9pt7b);d.setTextColor(GREEN,BG);
+  d.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  d.setTextColor(GREEN,BG);
   d.drawCenterString(s.stationName[0]?s.stationName:(ready?"":"RADIO OFFLINE"),160,88);
-  constexpr int x=20,y=126,w=280,h=34;
-  d.drawRect(x,y,w,h,WHITE);
-  static uint8_t history[w]={}; static uint32_t last=0;
-  if(millis()-last>=120){for(int i=0;i<w-1;i++)history[i]=history[i+1];history[w-1]=static_cast<uint8_t>(constrain(s.rssi,0,60));last=millis();}
-  for(int i=1;i<w;i++){
-    const int y1=y+h-2-map(history[i-1],0,60,0,h-5);
-    const int y2=y+h-2-map(history[i],0,60,0,h-5);
-    d.drawLine(x+i-1,y1,x+i,y2,history[i]>40?RED:GREEN);
+
+  // Original ATS Mini DEV waterfall: 280 x 26 px frame, 278 x 23 px sprite.
+  // The scrolling, RSSI mapping, three-color bands and +/-2 px artificial
+  // jitter intentionally follow Layout-Decoder.cpp without visual redesign.
+  constexpr int wfX=20, wfY=132, wfW=280, wfH=26;
+  d.drawRect(wfX,wfY,wfW,wfH,WHITE);
+  d.drawFastHLine(wfX+1,wfY+1,wfW-2,WHITE);
+
+  constexpr int wfInnerW=wfW-2;
+  constexpr int wfInnerH=wfH-3;
+  static lgfx::LGFX_Sprite wfSpr(&d);
+  static bool wfInitialized=false;
+
+  if(!wfInitialized || wfSpr.width()!=wfInnerW || wfSpr.height()!=wfInnerH) {
+    if(wfInitialized) wfSpr.deleteSprite();
+    wfSpr.setPsram(true);
+    wfSpr.setColorDepth(16);
+    wfSpr.createSprite(wfInnerW,wfInnerH);
+    wfSpr.fillScreen(BLUE);
+    wfInitialized=true;
   }
-  d.setFont(&lgfx::fonts::Font0);d.setTextColor(WHITE,BG);
+
+  // One new signal row enters at the top; older rows move down exactly one px.
+  wfSpr.scroll(0,1);
+  wfSpr.fillRect(0,0,wfInnerW,1,BLUE);
+
+  const uint8_t currentRssi=static_cast<uint8_t>(constrain(s.rssi,0,255));
+  const int center=wfInnerW/2;
+  const int maxRssi=(s.modulation==RadioModulation::FM)?35:45;
+  constexpr int maxHalfWidth=55;
+  const int baseWidth=map(currentRssi,0,maxRssi,4,maxHalfWidth);
+  const int jitter=(rand()%5)-2;
+  const int halfWidth=constrain(baseWidth+jitter,4,maxHalfWidth);
+
+  // Green core.
+  const int coreW=max(2,halfWidth);
+  wfSpr.fillRect(center-coreW/2,0,coreW,1,GREEN);
+
+  // Yellow transition bands.
+  const int yellowW=max(2,halfWidth/3);
+  wfSpr.fillRect(center-coreW/2-yellowW,0,yellowW,1,YELLOW);
+  wfSpr.fillRect(center+coreW/2,0,yellowW,1,YELLOW);
+
+  // Red outer edges.
+  constexpr int redW=3;
+  const int leftRedX=center-coreW/2-yellowW-redW;
+  const int rightRedX=center+coreW/2+yellowW;
+  if(leftRedX>=0) wfSpr.fillRect(leftRedX,0,redW,1,RED);
+  if(rightRedX+redW<=wfInnerW) wfSpr.fillRect(rightRedX,0,redW,1,RED);
+
+  wfSpr.pushSprite(&d,wfX+1,wfY+2);
+  d.setTextDatum(TL_DATUM);
+  d.setFont(&lgfx::fonts::Font0);
+  d.setTextColor(WHITE,BG);
 }
 template<class C> void drawTiny(C& d,const RadioSnapshot& s,bool ready,bool wifi) {
   d.fillScreen(BG);
