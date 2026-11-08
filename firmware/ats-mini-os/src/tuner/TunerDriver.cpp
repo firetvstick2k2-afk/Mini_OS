@@ -1,6 +1,7 @@
 #include "TunerDriver.h"
 #include "../system/DiagnosticLog.h"
 #include <Wire.h>
+#include <stdio.h>
 #include "ssb_patch.h"
 
 namespace {
