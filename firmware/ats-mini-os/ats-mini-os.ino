@@ -192,12 +192,7 @@ void loop() {
   performance.update();
   wifi.update();
   systemClock.update(wifi.connected());
-  if (wifi.connected() && !diagnosticsServerStarted) {
-    diagnosticsServer.begin();
-    diagnosticsServerStarted = true;
-    Serial.printf("[DIAG] Web status server: http://%s/ logo status only\n", WiFi.localIP().toString().c_str());
-  }
-  if (diagnosticsServerStarted) diagnosticsServer.handleClient();
+  // WifiClient owns and services the local setup/status web server.
   encoder.update();
   EncoderEvent inputEvent;
   while (encoder.poll(inputEvent)) {
@@ -327,15 +322,20 @@ void loop() {
             layout == 2 ? "TEF6686 -FM Version" : "DAB Style", saved ? "saved" : "save failed");
           closeMenuToRadio("FM layout selected");
         } else if (menuPage == 15 && menuSelection > 0) {
-          // Only the three retained LW/MW/KW layouts are selectable.
-          // Keep their legacy stored IDs so existing settings remain compatible.
-          const uint8_t layout = menuSelection == 1 ? 1 : (menuSelection == 2 ? 4 : 7);
-          static const char* const layoutNames[] = { "HJB", "Decoder / Wasserfall", "TinyRadio" };
-          display.setAmLayout(layout);
-          const bool saved = settingsStore.saveDisplayAmLayout(layout);
-          Serial.printf("[SETTINGS] LW/MW/KW layout=%s %s\\n",
-            layoutNames[menuSelection-1], saved ? "saved" : "save failed");
-          closeMenuToRadio("LW/MW/KW layout selected");
+          // Preserve the legacy layout IDs and include the independent TEF6686 SW renderer.
+          static const uint8_t layoutIds[] = { 1, 4, 7, 8 };
+          static const char* const layoutNames[] = {
+            "HJB", "Decoder / Wasserfall", "TinyRadio", "TEF6686 - KW/MW/LW"
+          };
+          const uint8_t index = static_cast<uint8_t>(menuSelection - 1);
+          if (index < sizeof(layoutIds) / sizeof(layoutIds[0])) {
+            const uint8_t layout = layoutIds[index];
+            display.setAmLayout(layout);
+            const bool saved = settingsStore.saveDisplayAmLayout(layout);
+            Serial.printf("[SETTINGS] LW/MW/KW layout=%s %s\\n",
+              layoutNames[index], saved ? "saved" : "save failed");
+            closeMenuToRadio("LW/MW/KW layout selected");
+          }
         } else if (menuPage == 5 && menuSelection == 2) {
           menuPage = 17;
           menuSelection = static_cast<uint8_t>(performance.profile()) + 1;
@@ -357,7 +357,7 @@ void loop() {
           menuSelection = display.fmLayout() == 2 ? 2 : 1;
         } else if (menuPage == 5 && menuSelection == 7) {
           menuPage = 15;
-           menuSelection = display.amLayout() == 4 ? 2 : (display.amLayout() == 7 ? 3 : 1);
+           menuSelection = display.amLayout() == 4 ? 2 : (display.amLayout() == 7 ? 3 : (display.amLayout() == 8 ? 4 : 1));
         } else if (menuPage == 2 && menuSelection == 0) {
           menuPage = 5;
           menuSelection = 1;
