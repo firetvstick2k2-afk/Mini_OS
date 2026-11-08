@@ -1,8 +1,8 @@
 #include "PerformanceManager.h"
 
 void PerformanceManager::begin() {
-  // Keep the framework's safe startup clock until supported operating points
-  // and power/timing behavior are verified on both OSPI and QSPI variants.
+  // Remember the board/core startup clock as the normal Auto baseline.
+  autoClockMHz_ = getCpuFrequencyMhz();
   applyPolicy();
 }
 
@@ -42,7 +42,11 @@ bool PerformanceManager::request(PerformanceReason reason, uint32_t timeoutMs) {
   if (index >= static_cast<uint8_t>(PerformanceReason::Count) || timeoutMs == 0) {
     return false;
   }
-  // Fixed modes accept the request but intentionally do not create a lease or alter the user's selected clock.
+  // A waterfall boost is a hard override, including in fixed-profile mode.
+  if (reason == PerformanceReason::Waterfall) {
+    setWaterfallActive(true);
+    return true;
+  }
   if (selectedProfile_ == CpuProfile::Auto) {
     leases_[index].active = true;
     leases_[index].expiresAt = millis() + timeoutMs;
@@ -52,12 +56,22 @@ bool PerformanceManager::request(PerformanceReason reason, uint32_t timeoutMs) {
 }
 
 void PerformanceManager::release(PerformanceReason reason) {
+  if (reason == PerformanceReason::Waterfall) {
+    setWaterfallActive(false);
+    return;
+  }
   const auto index = static_cast<uint8_t>(reason);
   if (index >= static_cast<uint8_t>(PerformanceReason::Count)) return;
   if (leases_[index].active) {
     leases_[index].active = false;
     applyPolicy();
   }
+}
+
+void PerformanceManager::setWaterfallActive(bool active) {
+  if (waterfallActive_ == active) return;
+  waterfallActive_ = active;
+  applyPolicy();
 }
 
 bool PerformanceManager::anyLeaseActive() const {
@@ -68,8 +82,25 @@ bool PerformanceManager::anyLeaseActive() const {
 }
 
 void PerformanceManager::applyPolicy() {
-  // Deliberately no setCpuFrequencyMhz() call yet. First verify supported
-  // clock points and power/timing constraints for the target Arduino-ESP32
-  // core. The four-mode API and lease policy are in place for integration.
-  (void)anyLeaseActive();
+  // The waterfall always gets the maximum supported ATS Mini V4 clock.
+  // Leaving it restores the user's selected fixed profile, or the startup
+  // clock when Auto is selected.
+  uint32_t targetMHz = autoClockMHz_ ? autoClockMHz_ : 240;
+  if (waterfallActive_) targetMHz = 240;
+  else {
+    switch (selectedProfile_) {
+      case CpuProfile::FixedLow: targetMHz = 80; break;
+      case CpuProfile::FixedMedium: targetMHz = 160; break;
+      case CpuProfile::FixedHigh: targetMHz = 240; break;
+      case CpuProfile::Auto:
+        if (anyLeaseActive()) targetMHz = 240;
+        break;
+    }
+  }
+  if (getCpuFrequencyMhz() != targetMHz) {
+    const bool applied = setCpuFrequencyMhz(targetMHz);
+    Serial.printf("[CPU] target=%lu MHz applied=%s waterfall=%s profile=%s\\n",
+      static_cast<unsigned long>(targetMHz), applied ? "yes" : "no",
+      waterfallActive_ ? "yes" : "no", profileName());
+  }
 }
