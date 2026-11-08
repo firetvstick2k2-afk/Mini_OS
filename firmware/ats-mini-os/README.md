@@ -66,3 +66,10 @@ Die Umsetzung erfolgt bewusst in kleinen, prüfbaren Etappen – nicht erst alle
 3. **Anschließend die übrigen Funktionen ergänzen:** weitere Layout-Varianten, RadioDNS-/Logo-Verbesserungen, zusätzliche Bedien- und Radiofunktionen sowie die restlichen Betriebsarten schrittweise integrieren und testen.
 
 Diese Reihenfolge ersetzt die frühere Planung, ALL-BAND erst nach vollständigem Abschluss sämtlicher FM-Funktionen zu beginnen. Das erste FM-Layout bleibt der unmittelbare Schwerpunkt; das erste ALL-BAND-Layout folgt direkt danach.
+
+
+## Original ATS Mini DEV waterfall port – 2026-11-08
+
+The Decoder layout now contains the original waterfall rendering mechanics from the read-only reference `13HN2709/ats-mini-dev`, branch `development`, file `ats-mini/Layout-Decoder.cpp`. The port preserves the 280×26 px frame, 278×23 px 16-bit PSRAM sprite, one-pixel downward scrolling, RSSI-to-width mapping, green/yellow/red bands and artificial random jitter of −2…+2 px. It is adapted to the OS `RadioSnapshot` and LovyanGFX canvas.
+
+The existing Performance Manager already provides the requested CPU behavior: the Waterfall view forces 240 MHz even when a fixed lower profile is selected; leaving the view restores the selected fixed profile. No workflow/build was started and no hardware test has been performed. Compile and on-device visual validation remain pending.
