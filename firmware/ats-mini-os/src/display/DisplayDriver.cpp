@@ -246,7 +246,8 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   static const char* const cpuProfileItems[] = { "Zurück", "Auto", "80 MHz", "160 MHz", "240 MHz" };
   static const char* const systemItems[] = {
     "Zurück", "Anzeige", "CPU-Profil", "Systeminfo (später)", "Dateimanager",
-    "UTC+01:00 * (Sommer +02:00)", "UKW / FM Layouts", "KW / MW / LW Layouts"
+    "UTC+01:00 * (Sommer +02:00)", "UKW / FM Layouts", "KW / MW / LW Layouts",
+    "EiBi Fahrplan laden"
   };
   const char* const* items = mainItems;
   uint8_t count = sizeof(mainItems) / sizeof(mainItems[0]);
