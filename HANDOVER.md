@@ -1699,3 +1699,15 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - Commit: `28ca57ffa9e36c68c9b8d11215d49a06771ebda0`.
 - **Status:** Änderung auf GitHub committed; noch nicht kompiliert und nicht auf dem ATS Mini V4 getestet. Kein Build/Workflow durch den Assistenten gestartet, nichts geflasht.
 - Nächster Schritt: Nutzer testet den Waterfall bei 160 MHz. Dabei auf flüssiges Scrollen, Aussetzer/Artefakte und subjektiven Akkuverbrauch achten. Falls 160 MHz nicht ausreichen, kann die Einstellung nach dem Test angepasst werden.
+
+## TinyRadio-Layout an ATS Mini DEV angeglichen – 2026-11-08
+
+- Nutzer hat die Portierung des TinyRadio-Layouts aus der alten DEV-Firmware ausdrücklich freigegeben.
+- Originalreferenz read-only geprüft: `13HN2709/ats-mini-dev`, Branch `development`, Datei `ats-mini/Layout-TinyRadio.cpp`.
+- In `firetvstick2k2-afk/Mini_OS`, Branch `dev/first-build-preparation`, wurde ausschließlich `firmware/ats-mini-os/src/display/DisplayLayoutSW.h` in `SWLayouts::drawTiny()` angepasst.
+- Übernommen wurde die 320×170-Geometrie der Referenz: sechs obere Band-/Statusfelder, Frequenz und Einheit als gemeinsamer Text, Modulationsfelder, kompakte Statuszeile, zentrierter Stationsname/RadioText und 320-Pixel-Frequenzskala mit festem roten Marker bei X=160.
+- Die Portierung nutzt ausschließlich Werte aus `RadioSnapshot`. Die Referenz zeigt Batterie-, Bluetooth-, BW- und AGC-Informationen; diese wurden nicht künstlich nachgebildet, da der aktuelle OS-Snapshot diese Zustände nicht bereitstellt.
+- DAB-, TEF6686-, HJB- und Waterfall-Renderer wurden nicht geändert. Die allgemeine Zentrierung der Frequenzanzeigen in den übrigen Layouts bleibt ein separater, noch offener Auftrag.
+- Commit: `54df3f6d2015329b0f213552d7e332cde8234169`.
+- **Status:** Änderung committed und auf GitHub erneut abgerufen; grundlegende Struktur-/Inhaltsmarker geprüft. Noch nicht kompiliert und nicht auf dem ATS Mini V4 getestet. Kein Build/Workflow gestartet, nichts geflasht.
+- Nächster Schritt: Nutzer prüft den TinyRadio-Bildschirm auf dem Gerät. Danach ggf. Feinabstimmung von Schriftgröße, Abständen und verfügbaren Statusfeldern anhand eines Fotos.
