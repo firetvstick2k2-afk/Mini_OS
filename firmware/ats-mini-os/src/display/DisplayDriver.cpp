@@ -302,7 +302,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   canvas.setFont(&lgfx::fonts::Font0);
   canvas.drawString(counter, w-12, 27);
 
-  const char* selectedLabel = (selection < count) ? items[selection] : "";
+  // Band page builds its labels from BandManager below; `items` still points\n  // to the main-menu array here, which is shorter than the band list. Never\n  // index that unrelated array while rendering the band selector.\n  const char* selectedLabel = (page == 8) ? "Zurück" :\n    ((selection < count) ? items[selection] : "");
   char displayLabel[72];
   snprintf(displayLabel, sizeof(displayLabel), "%s", selectedLabel);
   for (size_t i=0; displayLabel[i]; ++i) {
