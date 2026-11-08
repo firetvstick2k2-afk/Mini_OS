@@ -34,6 +34,8 @@ public:
   bool saveSsbBandwidthChoice(uint8_t choice);
   int16_t bfoOffsetHz(int16_t fallback = 0);
   bool saveBfoOffsetHz(int16_t offsetHz);
+  uint8_t cpuProfile(uint8_t fallback = 0);
+  bool saveCpuProfile(uint8_t profile);
   bool isReady() const { return ready_; }
 
 private:
@@ -49,6 +51,7 @@ private:
   static constexpr char kAvcGainKey[] = "rx_avc";
   static constexpr char kSsbBandwidthKey[] = "ssb_bw";
   static constexpr char kBfoOffsetKey[] = "ssb_bfo";
+  static constexpr char kCpuProfileKey[] = "cpu_prof";
 
   Preferences preferences_;
   bool ready_ = false;
