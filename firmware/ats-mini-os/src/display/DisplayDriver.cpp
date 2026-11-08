@@ -447,7 +447,7 @@ void DisplayDriver::setAmLayout(uint8_t mode) {
 void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConnected,
                            const char* lastInputEvent,uint32_t inputEventCount,
                            StationLogoClient* logoClient, bool menuOpen,
-                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive) {
+                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading) {
   if(!ready_)return;
   const uint32_t now=millis();
   const bool returningToRadio = !menuOpen && lastMenuOpen_;
@@ -528,7 +528,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   const bool logoSearching = useFmStandard && !logoLocked && logoClient && logoClient->isLookupPending(logoKey);
   draw(s,radioReady,wifiConnected,lastInputEvent,inputEventCount,
        logoLocked ? logoData : nullptr,logoLocked ? logoLength : 0,logoIsJpg,logoSearching,
-       radioTextOffset_, scrollRadioText, millis() < tuningUntilMs_);
+       radioTextOffset_, scrollRadioText, millis() < tuningUntilMs_, eibiStation, eibiStatus, eibiAvailable, eibiDownloading);
   if (logoLocked) logoClient->unlockLogo();
 }
 
@@ -538,7 +538,7 @@ template <typename Canvas>
 void drawLayout(Canvas& canvas,const RadioSnapshot& s,bool radioReady,bool wifiConnected,
                 const char* lastInputEvent,uint32_t inputEventCount,
                 const uint8_t* logoData,size_t logoLength,bool logoIsJpg,bool logoSearching,
-                int16_t radioTextOffset,bool scrollRadioText,bool frequencyBlue) {
+                int16_t radioTextOffset,bool scrollRadioText,bool frequencyBlue,const char* eibiStation,const char* eibiStatus,bool eibiAvailable,bool eibiDownloading) {
   const int w=canvas.width();
   const int h=canvas.height();
   (void)lastInputEvent; (void)inputEventCount;
@@ -794,7 +794,7 @@ void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnect
         case 1: drawHJBLayout(canvas, s, radioReady, wifiConnected); break;
         case 4: SWLayouts::drawDecoder(canvas, s, radioReady, wifiConnected); break;
         case 7: SWLayouts::drawTiny(canvas, s, radioReady, wifiConnected); break;
-        case 8: SWLayouts::drawTef6686SW(canvas, s, radioReady, wifiConnected); break;
+        case 8: SWLayouts::drawTef6686SW(canvas, s, radioReady, wifiConnected, eibiStation, eibiStatus, eibiAvailable, eibiDownloading); break;
         default: drawHJBLayout(canvas, s, radioReady, wifiConnected); break;
       }
     };
