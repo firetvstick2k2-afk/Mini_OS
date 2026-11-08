@@ -243,7 +243,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     "Zurück", "WLAN-Modus (später)", "Web Control (später)"
   };
   static const char* const systemItems[] = {
-    "Zurück", "CPU-Profil (später)", "Systeminfo (später)", "Dateimanager",
+    "Zurück", "Anzeige", "CPU-Profil (später)", "Systeminfo (später)", "Dateimanager",
     "UTC+01:00 * (Sommer +02:00)", "UKW / FM Layouts", "KW / MW / LW Layouts"
   };
   const char* const* items = mainItems;
