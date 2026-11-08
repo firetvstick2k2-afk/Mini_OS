@@ -1830,3 +1830,13 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - Code-Commit: `d64455b087d36bfa1c33e412f68da533b34a857e`.
 - Änderung betrifft nur die Menü-Label-Ermittlung der Bandauswahl; keine Radio-/Tunerlogik und keine Layout-Renderer geändert.
 - Status: Änderung in GitHub gespeichert; noch nicht kompiliert, kein GitHub-Actions-Build gestartet und nicht auf Hardware getestet. Nächster Schritt: Nutzer startet Build und prüft die Bandauswahl durch Drehen über „Zurück“ hinaus.
+
+
+## Build #10 – Compilefehler in Bandauswahl-Korrektur – 2026-11-08
+- GitHub Actions Run: https://github.com/firetvstick2k2-afk/Mini_OS/actions/runs/42514840104
+- Ergebnis: fehlgeschlagen im Schritt „Compile ATS Mini OS scaffold“ (Job `esp32s3-ospi`).
+- Compilerfehler: `DisplayDriver.cpp:307:54: error: 'selectedLabel' was not declared in this scope`.
+- Ursache: Beim Einfügen des Kommentars/der Deklaration waren Zeilenumbrüche versehentlich als literale `\\n` in einer einzigen Kommentarzeile gespeichert. Dadurch wurde die Deklaration mit auskommentiert.
+- Korrektur: echte Zeilenumbrüche für Kommentar und `selectedLabel`-Deklaration in `firmware/ats-mini-os/src/display/DisplayDriver.cpp` wiederhergestellt.
+- Korrektur-Commit: `0be07a9f2ed45c6562136f3c95f304ef3944b762`.
+- Status: Quelltextkorrektur gespeichert; noch nicht erneut kompiliert oder auf Hardware getestet. Build #10 bestätigt daher noch nicht die Funktion der Bandauswahl-Korrektur.
