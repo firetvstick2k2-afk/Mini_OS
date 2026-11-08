@@ -308,7 +308,7 @@ template<class C> void drawTef6686SW(C& d, const RadioSnapshot& s, bool ready, b
   d.setTextColor(TEF_CYAN,BG);
   d.drawString("RT:",rtX+5,rtY+3);
   const char* rt = eibiDownloading ? "Downloading EiBi Schedules ..." :
-    ((!eibiAvailable && eibiStatus && strncmp(eibiStatus,"EiBi:",5)==0) ? eibiStatus : "");
+    ((eibiStatus && strncmp(eibiStatus,"EiBi:",5)==0) ? eibiStatus : "");
   if(rt[0]){
     d.setTextColor(eibiDownloading ? TEF_YELLOW : RED,BG);
     d.setClipRect(rtX+38,rtY+1,rtW-43,rtH-2);
