@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <esp_system.h>
-#include <WebServer.h>
 #include <LovyanGFX.hpp>
 #include <LittleFS.h>
 #include "src/radio/RadioCore.h"
@@ -34,8 +33,6 @@ bool themeSavePending = false;
 EncoderInput encoder;
 WifiClient wifi;
 StationLogoClient stationLogoClient;
-WebServer diagnosticsServer(80);
-bool diagnosticsServerStarted = false;
 uint32_t lastStatusMs = 0;
 uint32_t encoderEventCount = 0;
 const char* lastEncoderEvent = "WAIT";
