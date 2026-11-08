@@ -257,7 +257,8 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     case 15: items=amLayoutItems; count=sizeof(amLayoutItems)/sizeof(amLayoutItems[0]); title="KW / MW / LW LAYOUTS"; break;
     case 3: items=radioItems; count=sizeof(radioItems)/sizeof(radioItems[0]); title="RADIO"; break;
     case 4: items=wifiItems; count=sizeof(wifiItems)/sizeof(wifiItems[0]); title="WLAN"; break;
-    case 5: items=systemItems; count=sizeof(systemItems)/sizeof(systemItems[0]); title="EINSTELLUNGEN"; break;\n    case 17: items=cpuProfileItems; count=sizeof(cpuProfileItems)/sizeof(cpuProfileItems[0]); title="CPU-PROFIL"; break;
+    case 5: items=systemItems; count=sizeof(systemItems)/sizeof(systemItems[0]); title="EINSTELLUNGEN"; break;
+    case 17: items=cpuProfileItems; count=sizeof(cpuProfileItems)/sizeof(cpuProfileItems[0]); title="CPU-PROFIL"; break;
     case 7:
       if (modulation == RadioModulation::FM) { items=fmBandwidthItems; count=sizeof(fmBandwidthItems)/sizeof(fmBandwidthItems[0]); }
       else if (modulation == RadioModulation::AM) { items=amBandwidthItems; count=sizeof(amBandwidthItems)/sizeof(amBandwidthItems[0]); }
