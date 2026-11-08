@@ -1801,3 +1801,19 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - Die Abstimmungslogik wurde nicht verändert; es handelt sich um Diagnoseausgaben, keine behauptete Fehlerbehebung.
 - **Status:** Auf GitHub committed; noch nicht kompiliert, geflasht oder auf Hardware getestet. Kein Workflow gestartet.
 - Nächster Schritt: Nutzer startet den Compile-only-Build und testet danach das zügige Abstimmen durch 20–16 MHz. Bei einem Reset bitte den vollständigen seriellen Logausschnitt ab `[TUNE_TRACE] NEXT` bis zum Neustart senden. Die letzte Trace-Zeile grenzt den Fehlerpfad ein.
+
+
+## 2026-11-08 – LittleFS-Tuningdiagnose erweitert
+
+- Nutzer hat bestätigt, dass für die Fehleranalyse ausschließlich die auf LittleFS gespeicherte Logdatei zugänglich ist. Daher werden die relevanten Tuning-Diagnosen nun dauerhaft in `/ats-mini-os.log` geschrieben und jeweils vor Rückkehr geflusht/geschlossen.
+- Neue gemeinsame Schnittstelle: `firmware/ats-mini-os/src/system/DiagnosticLog.h`; die zentrale Implementierung bleibt in `ats-mini-os.ino`. Logrotation behält weiterhin die aktuelle und eine vorherige Datei (`/ats-mini-os.log.1`).
+- Beim Start wird zusätzlich ein persistenter Boot-Zähler in `/ats-mini-os.boot` erhöht. Der BOOT-Eintrag enthält jetzt Bootnummer, ESP32-Resetgrund, freien Heap, größten freien Block, Dateisystemkennung und CPU-Takt.
+- Für den kritischen Bereich 14–22 MHz werden die berechnete Frequenzänderung (`TUNE_NEXT`: aktuelle Frequenz, Delta, Schrittweite, Bandgrenzen, Span, Offset, Ziel, Modulation und Band), der Eintritt in `TunerDriver::tune()` (`TUNE_DRIVER_BEGIN`, einschließlich SI4735-Rohwert) sowie die Rückkehr aus `setFrequency()` (`TUNE_DRIVER_RETURN`) und das Gesamtergebnis (`TUNE_RESULT`) gespeichert.
+- Die vorhandenen seriellen Diagnoseausgaben bleiben nicht die einzige Quelle; die LittleFS-Datei enthält nun die für die nächste Eingrenzung entscheidenden Ereignisse.
+- Änderungen auf Branch `dev/first-build-preparation`:
+  - `802d87b93eb7eaa6ecfe273487c1c4b05e50ceaf` – gemeinsame Logger-Schnittstelle
+  - `22d463adaf72c22658e38b6eb351dae3b26cc45f` – Boot-Zähler und erweiterter BOOT-Eintrag
+  - `fcacaca04d52bc5801e4778a7c73e1c2b7904eca` – berechnetes Tuningziel in LittleFS protokollieren
+  - `2c04bbb620b069ac16639fed58a7f5eb93a67f8b` – SI4735-Tuner-Grenze in LittleFS protokollieren
+- **Status:** Quelltextänderungen auf GitHub geschrieben und anschließend erneut abgerufen/geprüft. Noch nicht kompiliert, kein GitHub-Actions-Build gestartet und nicht auf Hardware getestet. Dies ist Diagnoseinstrumentierung, keine Fehlerbehebung.
+- **Nächster Schritt:** Nutzer startet einen neuen OSPI-/QSPI-Build und testet anschließend das Herunterdrehen durch 20–16 MHz. Danach die komplette Datei `/ats-mini-os.log` (und falls vorhanden `.log.1`) auslesen; besonders auf den letzten Eintrag vor dem nächsten BOOT achten.
