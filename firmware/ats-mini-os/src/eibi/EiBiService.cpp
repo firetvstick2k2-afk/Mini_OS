@@ -10,6 +10,10 @@
 namespace {
 constexpr uint16_t kMinimumScheduleFrequency = 100;
 constexpr uint16_t kMaximumScheduleFrequency = 60000;
+constexpr char kEiBiUrl[] = "http://eibispace.de/dx/eibi.txt";
+constexpr char kSchedulePath[] = "/schedules.bin";
+constexpr char kTempPath[] = "/schedules.tmp";
+constexpr char kBackupPath[] = "/schedules.bak";
 }
 
 void EiBiService::begin() {
@@ -30,7 +34,7 @@ bool EiBiService::beginDownload(bool wifiConnected) {
 
   http_.setTimeout(12000);
   http_.setConnectTimeout(12000);
-  if (!http_.begin(kUrl)) {
+  if (!http_.begin(kEiBiUrl)) {
     strncpy(statusText_, "EiBi: HTTP init failed", sizeof(statusText_) - 1);
     return false;
   }
@@ -58,7 +62,7 @@ bool EiBiService::beginDownload(bool wifiConnected) {
   strncpy(statusText_, "Downloading EiBi Schedules ...", sizeof(statusText_) - 1);
   statusText_[sizeof(statusText_) - 1] = '\0';
   Serial.printf("[EIBI] download started: %s
-", kUrl);
+", kEiBiUrl);
   return true;
 }
 
