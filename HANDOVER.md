@@ -1991,3 +1991,13 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
   - `f4541c50b3740e8360518f67c7cd00b1c61e8d2c` – EiBi-Literale korrigiert
   - `3d58f16522c05b92492c449636bc185229cc370b` – Display-Argumente vervollständigt
 - **Status:** Änderungen gespeichert. Noch nicht erneut kompiliert und nicht auf Hardware getestet. Nutzer startet den nächsten Build manuell; kein Workflow wurde gestartet.
+
+
+## Display-Feinjustierung HJB, Wasserfall und Tiny – 2026-11-08
+
+- HJB: Die große Frequenzanzeige wurde ausschließlich in der Y-Position von 32 auf 56 verschoben. Die separate SSB-Präzisionsanzeige `.000` bleibt unterhalb des RSSI-/SNR-Bereichs. Encoder-, Frequenz- und Abstimmungslogik wurden nicht verändert.
+- Wasserfall/Decoder: Frequenzanzeige leicht nach unten verschoben (Y=51); die Einheit MHz/kHz weiter nach rechts und etwas nach unten gesetzt (X=270, Y=73), damit mehr Abstand zur Frequenz entsteht.
+- Tiny: Frequenzanzeige leicht nach unten verschoben (Y=41) und linksbündig bei X=8 ausgerichtet.
+- Geänderte Dateien: `DisplayLayoutHJB.h` und `DisplayLayoutSW.h`.
+- Commits: `cf45e09d06a56510f4ae5dc3ec9941c90ae61d14` (HJB), `b6850d2955c6b9832c4d0eab893c64f4dc06cafa` (Wasserfall/Tiny).
+- **Status:** Quelltext gespeichert; nicht kompiliert, kein Workflow gestartet und nicht auf Hardware geprüft. Nächster Schritt ist der manuelle Build durch den Nutzer und anschließend die Sichtprüfung der drei Layouts.
