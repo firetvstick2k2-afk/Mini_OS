@@ -174,7 +174,29 @@ bool RadioCore::nextChannel(int16_t acceleratedDelta) {
   offset += static_cast<int64_t>(acceleratedDelta) * step;
   offset %= span;
   if (offset < 0) offset += span;
-  return tune(minimum + static_cast<uint32_t>(offset));
+  const uint32_t targetKHz = minimum + static_cast<uint32_t>(offset);
+
+  // Focused diagnostics for the reported reset region (14–22 MHz).
+  if ((snapshot_.frequencyKHz >= 14000 && snapshot_.frequencyKHz <= 22000) ||
+      (targetKHz >= 14000 && targetKHz <= 22000)) {
+    Serial.printf("[TUNE_TRACE] NEXT current=%lu delta=%d step=%lu min=%lu max=%lu span=%lld offset=%lld target=%lu mode=%u band=%s\\n",
+      static_cast<unsigned long>(snapshot_.frequencyKHz),
+      static_cast<int>(acceleratedDelta),
+      static_cast<unsigned long>(step),
+      static_cast<unsigned long>(minimum),
+      static_cast<unsigned long>(maximum),
+      static_cast<long long>(span),
+      static_cast<long long>(offset),
+      static_cast<unsigned long>(targetKHz),
+      static_cast<unsigned>(snapshot_.modulation), band.name);
+  }
+  const bool tuned = tune(targetKHz);
+  if ((targetKHz >= 14000 && targetKHz <= 22000) ||
+      (snapshot_.frequencyKHz >= 14000 && snapshot_.frequencyKHz <= 22000)) {
+    Serial.printf("[TUNE_TRACE] NEXT_RESULT ok=%u snapshot=%lu\\n",
+      tuned ? 1U : 0U, static_cast<unsigned long>(snapshot_.frequencyKHz));
+  }
+  return tuned;
 }
 
 bool RadioCore::setAgcAutomatic(bool automatic) { return ready_ && tuner_.setAgcAutomatic(automatic); }
