@@ -154,7 +154,7 @@ bool EiBiService::parseLine(const char* line, ScheduleEntry& entry) const {
 
   int sh = -1, sm = 0, eh = -1, em = 0;
   if (sscanf(timeText, "%2d%2d-%2d%2d", &sh, &sm, &eh, &em) != 4 ||
-      sh < 0 || sh > 23 || eh < 0 || eh > 23 || sm < 0 || sm > 59 || em < 0 || em > 59)
+      sh < 0 || sh > 23 || eh < 0 || eh > 24 || (eh == 24 && em != 0) || sm < 0 || sm > 59 || em < 0 || em > 59)
     return false;
 
   if (strstr(nameText, "Jammer")) return false;
