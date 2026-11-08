@@ -3,7 +3,6 @@
 #include <WiFi.h>
 #include <LittleFS.h>
 #include "../storage/StorageDiscovery.h"
-#include "../network/WifiTestConfig.h"
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <esp_heap_caps.h>
@@ -16,37 +15,6 @@ namespace {
 constexpr size_t kMaxLogoBytes = 220000;
 constexpr size_t kMaxSearchBytes = 45000;
 struct LookupJob { StationLogoClient* self; RadioSnapshot state; };
-struct TemporaryLogoWifi {
-  wifi_mode_t previousMode = WiFi.getMode();
-  bool restoreMode = false;
-
-  TemporaryLogoWifi() {
-    if (WiFi.isConnected()) return;
-    if (previousMode == WIFI_OFF) {
-      WiFi.mode(WIFI_STA);
-      restoreMode = true;
-    } else if (previousMode == WIFI_AP) {
-      WiFi.mode(WIFI_AP_STA);
-      restoreMode = true;
-    }
-    WiFi.persistent(false);
-    WiFi.setAutoReconnect(false);
-    WiFi.begin(WifiTestConfig::SSID, WifiTestConfig::PASSWORD);
-    const uint32_t started = millis();
-    while (!WiFi.isConnected() && millis() - started < 15000)
-      vTaskDelay(pdMS_TO_TICKS(250));
-  }
-
-  ~TemporaryLogoWifi() {
-    if (restoreMode) {
-      WiFi.disconnect(false, false);
-      WiFi.mode(previousMode);
-      Serial.println("[LOGO] temporary Wi-Fi stopped; previous mode restored");
-    }
-  }
-};
-
-
 String httpGet(const String& url, size_t maxBytes, int& status) {
   status = -1;
   WiFiClientSecure secure;
@@ -255,7 +223,8 @@ void StationLogoClient::runLookup(const RadioSnapshot& state) {
 
   if (!localLogoFound) Serial.printf("[LOGO] no local file matched PI %s in /logos or /\\n", piUpper.c_str());
 
-  TemporaryLogoWifi temporaryWifi;
+  // WiFiClient owns all STA/AP lifecycle and credentials. Logo lookup only
+  // uses an already-established router connection; it never starts Wi-Fi.
   if (!WiFi.isConnected()) {
     Serial.println("[LOGO] Wi-Fi connection unavailable; remote lookup skipped");
     return;
