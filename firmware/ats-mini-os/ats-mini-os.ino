@@ -139,7 +139,7 @@ void setup() {
   const uint8_t savedBrightness = settingsStore.displayBrightness(180);
   const uint8_t savedTheme = settingsStore.displayTheme(0);
   const uint8_t savedFmLayout = settingsStore.displayFmLayout(0);
-  const uint8_t savedAmLayout = settingsStore.displayAmLayout(0);
+  const uint8_t savedAmLayout = settingsStore.displayAmLayout(0);\n  const uint8_t savedCpuProfile = settingsStore.cpuProfile(0);\n  performance.setProfile(static_cast<CpuProfile>(savedCpuProfile));
   if (display.begin(savedBrightness)) {
     display.setTheme(savedTheme);
     display.setFmLayout(savedFmLayout);
@@ -202,7 +202,7 @@ void loop() {
               Serial.printf("[MENU] volume=%u/63\n", static_cast<unsigned>(radio.volume()));
           } else {
             const int16_t itemCount = menuPage == 0 ? 21 :
-              menuPage == 2 ? 4 : menuPage == 5 ? 8 : menuPage == 13 ? 3 :
+              menuPage == 2 ? 4 : menuPage == 5 ? 8 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
               ((menuPage == 14) ? 3 : (menuPage == 15) ? 9 :
               menuPage == 10 ? 4 : menuPage == 11 ?
               (radio.snapshot().modulation == RadioModulation::FM ? 10 : 14) :
