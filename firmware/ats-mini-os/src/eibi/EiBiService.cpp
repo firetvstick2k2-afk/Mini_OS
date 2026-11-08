@@ -61,8 +61,7 @@ bool EiBiService::beginDownload(bool wifiConnected) {
   downloading_ = true;
   strncpy(statusText_, "Downloading EiBi Schedules ...", sizeof(statusText_) - 1);
   statusText_[sizeof(statusText_) - 1] = '\0';
-  Serial.printf("[EIBI] download started: %s
-", kEiBiUrl);
+  Serial.printf("[EIBI] download started: %s\n", kEiBiUrl);
   return true;
 }
 
@@ -78,8 +77,7 @@ void EiBiService::update(bool wifiConnected, bool clockSynchronized, const struc
         if (value < 0) break;
         ++bytesRead_;
         const char c = static_cast<char>(value);
-        if (c == '
-') {
+        if (c == '\n') {
           line_[lineLength_] = '\0';
           processLine();
           lineLength_ = 0;
@@ -279,16 +277,14 @@ void EiBiService::finishDownload(bool success, const char* message) {
     progressPercent_ = 100;
     lastLookupFrequency_ = UINT32_MAX;
     strncpy(statusText_, message, sizeof(statusText_) - 1);
-    Serial.printf("[EIBI] updated: %lu entries, %lu bytes
-",
+    Serial.printf("[EIBI] updated: %lu entries, %lu bytes\n",
                   static_cast<unsigned long>(entryCount_),
                   static_cast<unsigned long>(bytesRead_));
   } else {
     LittleFS.remove(kTempPath);
     available_ = LittleFS.exists(kSchedulePath);
     strncpy(statusText_, message, sizeof(statusText_) - 1);
-    Serial.printf("[EIBI] failed: %s (%lu bytes, %lu entries)
-", message,
+    Serial.printf("[EIBI] failed: %s (%lu bytes, %lu entries)\n", message,
                   static_cast<unsigned long>(bytesRead_),
                   static_cast<unsigned long>(entryCount_));
   }
