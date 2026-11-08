@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include "../radio/RadioSnapshot.h"
+#include "DisplayStatusBar.h"
 
 // HJB layout ported from ats-mini-dev/Layout-HJB.cpp.
 // It is deliberately logo-free and consumes only the published radio snapshot.
@@ -11,26 +12,14 @@ void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifi
   const int w=d.width();
   d.fillScreen(BG);
 
-  d.setTextDatum(TL_DATUM);
+  drawNetworkBatteryStatus(d, wifiConnected);
+  d.setTextDatum(MC_DATUM);
   d.setTextColor(GREEN, BG);
   d.setFont(&lgfx::fonts::FreeSansBold9pt7b);
   const char* mode=s.modulation==RadioModulation::FM?"FM":
     (s.modulation==RadioModulation::AM?"AM":
     (s.modulation==RadioModulation::USB?"USB":"LSB"));
-  d.drawString(mode,7,5);
-  d.setFont(&lgfx::fonts::Font0);
-  d.setTextColor(wifiConnected?BLUE:MUTED,BG);
-  d.drawRightString(wifiConnected?"WLAN+":"WLAN-",w-8,7);
-  // Keep the battery readout from the OS renderer; no sender-logo resources
-  // are allocated or reserved anywhere in this layout.
-  uint32_t adcTotal=0;
-  for(uint8_t i=0;i<10;++i) adcTotal+=analogRead(4);
-  const float batteryVolts=(static_cast<float>(adcTotal)/10.0f)*1.702f/1000.0f;
-  const int batteryPercent=constrain(static_cast<int>((batteryVolts-3.30f)*100.0f/0.90f+0.5f),0,100);
-  char batteryText[8];
-  snprintf(batteryText,sizeof(batteryText),"%d%%",batteryPercent);
-  d.setTextColor(batteryPercent<=15?YELLOW:GREEN,BG);
-  d.drawRightString(batteryText,w-55,7);
+  d.drawString(mode, w/2, 5);
 
   static const char* const ptyNames[32]={
     "NONE","NEWS","CURRENT AFFAIRS","INFO","SPORT","EDUCATION","DRAMA","CULTURE",
