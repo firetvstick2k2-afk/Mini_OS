@@ -265,7 +265,7 @@ template<class C> void drawTef6686SW(C& d, const RadioSnapshot& s, bool ready, b
   d.setTextColor(TEF_GREEN, BG);
   d.setTextSize((s.modulation == RadioModulation::USB || s.modulation == RadioModulation::LSB) ? 0.62f : 0.78f);
   d.setTextDatum(MC_DATUM);
-  d.drawString(freq, 185, 47);
+  d.drawString(freq, 165, 56);
   d.setTextSize(1.0f);
   d.setFont(&lgfx::fonts::FreeSansBold9pt7b);
   d.setTextColor(TEF_GREEN, BG);
