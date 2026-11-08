@@ -1890,3 +1890,31 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
   - `d00fbe64bd9f696f453b4e529ce72c55273a02be`, `0ce2177886fdc17685dba67ab5cf2efe93b9aeef` – KW/MW/LW-TEF-Layout im Menü auswählbar und speicherbar
 - **Status:** GitHub-Schreibvorgänge bestätigt. Noch nicht kompiliert, nicht auf dem Gerät getestet, kein GitHub-Actions-Workflow gestartet und nichts geflasht. Die WLAN-Webseite und die AP-/STA-Umschaltung müssen im nächsten Build besonders geprüft werden.
 - **Offen:** EiBi-Download/Parser, PS-/RT-Anzeige der EiBi-Treffer und der dedizierte EiBi-Menüpunkt sind noch nicht implementiert. Vor der Umsetzung die aktuelle offizielle CSV-Datei und ihre Felder/Zeitzonenregeln verifizieren. Die TEF6686-KW/MW/LW-Ansicht ist freigeschaltet, aber die EiBi-Datenversorgung fehlt noch.
+
+## 23. Fortsetzung Mini-OS – DEV als modulare Referenz (2026-11-08)
+
+Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) ist das Referenzlager für bewährte Funktionen.** Quellcode, Algorithmen und Datenstrukturen dürfen daraus übernommen werden, sofern sie geprüft und an die Mini-OS-Architektur angepasst werden. Mini-OS bleibt modular: klare Dienste/Module, getrennte Zuständigkeiten und definierte Schnittstellen; keine unkontrollierte Übernahme monolithischer DEV-Abhängigkeiten.
+
+### Verbindliche Referenzregel
+- DEV-Dateien dürfen als Vorlage und bei Bedarf als direkte Codequelle dienen.
+- Vor Übernahme Herkunft, Lizenz, Abhängigkeiten und Hardwareannahmen prüfen.
+- Funktionalität in Mini-OS in eigenständige Module/Dienste übertragen und über bestehende OS-Schnittstellen anbinden.
+- FM-RDS PS/RT bleibt von EiBi unabhängig; EiBi bekommt einen eigenen Daten-/Statuspfad.
+- Bestehende TEF6686-FM-Ansicht möglichst nicht verändern.
+
+### Bestätigte EiBi-Referenz aus ATS Mini DEV
+- Originalfeed: http://eibispace.de/dx/eibi.txt
+- Dateiformat: originales EiBi-Textformat mit festen Spalten, nicht CSV.
+- DEV-Referenzdateien: ats-mini/EIBI.cpp, ats-mini/EIBI.h, ats-mini/Layout-TEF6686.cpp, ats-mini/ats-mini.ino.
+- DEV-Speicherprinzip: Textfeed laden, gültige Einträge parsen und als Binär-Schedule speichern; UTC-Sendezeit inklusive über Mitternacht reichender Zeitfenster prüfen.
+- In der DEV-Implementierung werden Wochentage ignoriert. Diese Einschränkung muss in Mini-OS dokumentiert bleiben, solange sie nicht ausdrücklich erweitert wird.
+- Mini-OS-Integration ist **noch offen**: modularer EiBi-Service, Download-/Fehlerstatus, Menüaktion, Anzeige des EiBi-Senders im LW/MW/KW-TEF-Layout. Die FM-RDS-Felder dürfen nicht als EiBi-Speicher missbraucht werden.
+
+### Änderungen auf dev/first-build-preparation am 2026-11-08
+- firmware/ats-mini-os/ats-mini-os.ino:
+  - Veraltete direkte Referenzen auf diagnosticsServer / diagnosticsServerStarted aus der Loop entfernt. Der lokale HTTP-Server wird bereits vollständig durch WifiClient betrieben; der alte Codepfad hatte keine passenden Deklarationen mehr und widersprach der neuen Zuständigkeit.
+  - Auswahl und Wiederherstellung der vier LW/MW/KW-Layouts vereinheitlicht. Layout-ID 8 (TEF6686 - KW/MW/LW) ist jetzt auch im Auswahl-Handler enthalten und wird gespeichert.
+- Commit: 8d20cbfe651c3ac67daf1515e922012ce90dbeb2.
+- GitHub-Datei erneut abgerufen und geprüft: Blob-SHA 2b48d2b8b8418db699d483fa9c75a338e09107a6; veraltete Diagnostics-Referenzen nicht mehr vorhanden; Auswahlhandler enthält IDs 1, 4, 7 und 8.
+- **Build-/Hardwarestatus:** nicht kompiliert, kein Workflow gestartet, nicht geflasht und nicht auf Hardware geprüft.
+- **Nächster Schritt:** modularen EiBi-Service mit nicht blockierendem Download/Parsing/Dateispeicherung erstellen; danach dedizierten Menüpunkt und separaten EiBi-Anzeigestatus im LW/MW/KW-TEF-Layout anbinden. Erst nach Prüfung der Schnittstellen und Abhängigkeiten die vollständige Änderung committen.
