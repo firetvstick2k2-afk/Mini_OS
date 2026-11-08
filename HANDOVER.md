@@ -1840,3 +1840,22 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - Korrektur: echte Zeilenumbrüche für Kommentar und `selectedLabel`-Deklaration in `firmware/ats-mini-os/src/display/DisplayDriver.cpp` wiederhergestellt.
 - Korrektur-Commit: `0be07a9f2ed45c6562136f3c95f304ef3944b762`.
 - Status: Quelltextkorrektur gespeichert; noch nicht erneut kompiliert oder auf Hardware getestet. Build #10 bestätigt daher noch nicht die Funktion der Bandauswahl-Korrektur.
+
+
+## LW/MW/KW-Layouts vorläufig auf drei Ansichten reduziert – 2026-11-08
+
+- Auf Wunsch des Nutzers bleiben in der LW/MW/KW-Layoutauswahl vorerst nur **HJB**, **Decoder / Wasserfall** und **TinyRadio** sichtbar.
+- Die bisherigen Ansichten **Standard**, **Default**, **Clean**, **New UI** und **S-Meter** sind deaktiviert. Die vier SW-Renderer sind im Header mit `#if 0` vom Build ausgeschlossen; der separate alte AM/LW/MW/SW-Renderer wird nicht mehr eingebunden. Die Quelldatei bleibt im Repository als Referenz erhalten.
+- Die Menüauswahl zeigt nur noch HJB, Wasserfall und TinyRadio. Intern bleiben die bisherigen gespeicherten Kennungen 1, 4 und 7 erhalten, damit vorhandene Einstellungen für diese drei Layouts kompatibel bleiben. Alte/ungültige Layoutwerte fallen sicher auf HJB zurück.
+- TinyRadio: Frequenzanzeige horizontal mittig ausgerichtet.
+- Wasserfall: Band-/Modulationskopf und Frequenzanzeige horizontal mittig ausgerichtet.
+- HJB: Hauptfrequenz vergrößert und höher gesetzt; bei USB/LSB wird die kleine Zusatzanzeige `.000` separat unter dem RSSI/SNR-Bereich gezeigt. Die bisherige große kombinierte SSB-Frequenz wird nicht mehr verwendet.
+- TEF6686- und DAB-Renderer sowie deren Menüoptionen wurden nicht verändert.
+- Geänderte Dateien: `DisplayDriver.cpp`, `DisplayLayoutSW.h`, `DisplayLayoutHJB.h`, `ats-mini-os.ino`.
+- Code-Commits:
+  - `02053d68903d2e6b2b3911e80deb323dc70f16bb` – Layoutauswahl und Renderer auf drei Ansichten reduziert
+  - `000c13a92bfa52eafc8a81d281e9990edc56df8a` – Tiny/Wasserfall zentriert; alte SW-Renderer deaktiviert
+  - `d48252da16c8190ae422e3e385f67688a8a35aa6` – HJB-Frequenz vergrößert und SSB-Präzision ausgelagert
+  - `a59b9807b4a39234d3839f64c7e9ae953eea62e4` – Menüauswahl und gespeicherte Layout-IDs angepasst
+- **Status:** Änderungen committed und werden nachfolgend erneut abgerufen/geprüft. Noch kein Compile-Build und kein Hardwaretest. Kein GitHub-Actions-Workflow gestartet, nichts geflasht.
+- Nächster Schritt: Nutzer startet den manuellen QSPI-/OSPI-Compile-only-Build und prüft TinyRadio, Wasserfall und HJB für AM/USB/LSB.
