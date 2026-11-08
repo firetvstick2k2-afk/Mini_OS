@@ -135,9 +135,9 @@ template<class C> void drawDecoder(C& d,const RadioSnapshot& s,bool ready,bool w
   else if(s.modulation==RadioModulation::USB || s.modulation==RadioModulation::LSB) snprintf(freq,sizeof(freq),"%lu.000",(unsigned long)s.frequencyKHz);
   else snprintf(freq,sizeof(freq),"%lu",(unsigned long)s.frequencyKHz);
   d.setTextSize(s.modulation==RadioModulation::FM?0.78f:((s.modulation==RadioModulation::USB || s.modulation==RadioModulation::LSB)?0.56f:0.68f));
-  d.setTextDatum(MC_DATUM); d.drawString(freq,160,43); d.setTextSize(1.0f);
+  d.setTextDatum(MC_DATUM); d.drawString(freq,160,51); d.setTextSize(1.0f);
   d.setFont(&lgfx::fonts::FreeSansBold9pt7b); d.setTextColor(WHITE,BG);
-  d.drawString(s.modulation==RadioModulation::FM?"MHz":"kHz",245,67);
+  d.drawString(s.modulation==RadioModulation::FM?"MHz":"kHz",270,73);
   if(s.modulation==RadioModulation::FM) {
     d.setTextDatum(TL_DATUM); d.setTextColor(s.stereo?GREEN:RED,BG);
     d.setFont(&lgfx::fonts::FreeSans9pt7b); d.drawString(s.stereo?"STEREO":"MONO",240,62);
@@ -215,7 +215,7 @@ template<class C> void drawTiny(C& d,const RadioSnapshot& s,bool ready,bool wifi
   else snprintf(freq,sizeof(freq),"%lu kHz",(unsigned long)s.frequencyKHz);
   d.setTextColor(YELLOW,BG); d.setTextDatum(TL_DATUM); d.setFont(&lgfx::fonts::Font7);
   d.setTextSize((s.modulation==RadioModulation::USB||s.modulation==RadioModulation::LSB)?0.58f:0.82f);
-  d.setTextDatum(MC_DATUM); d.drawString(freq,160,36); d.setTextSize(1.0f);
+  d.setTextDatum(TL_DATUM); d.drawString(freq,8,41); d.setTextSize(1.0f);
   const char* modes[]={"FM","AM","LSB","USB"}; const RadioModulation vals[]={RadioModulation::FM,RadioModulation::AM,RadioModulation::LSB,RadioModulation::USB}; const int mx[]={3,43,83,123};
   for(int i=0;i<4;i++){bool active=s.modulation==vals[i];uint16_t col=active?CYAN:DIM;d.drawRect(mx[i],66,36,21,col);d.setTextColor(col,BG);d.setTextDatum(MC_DATUM);d.setFont(&lgfx::fonts::Font0);d.drawString(modes[i],mx[i]+18,76);}
   // BW/AGC/SM controls are not displayed because these states are not exposed by RadioSnapshot.
