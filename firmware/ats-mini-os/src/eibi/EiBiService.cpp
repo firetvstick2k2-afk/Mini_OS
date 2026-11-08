@@ -67,7 +67,7 @@ void EiBiService::update(bool wifiConnected, bool clockSynchronized, const struc
     if (!wifiConnected) {
       finishDownload(false, "EiBi: WLAN lost");
     } else {
-      WiFiClient* stream = http_.getStreamPtr();
+      auto* stream = http_.getStreamPtr();
       uint16_t budget = 512;
       while (stream && budget-- && stream->available()) {
         const int value = stream->read();
