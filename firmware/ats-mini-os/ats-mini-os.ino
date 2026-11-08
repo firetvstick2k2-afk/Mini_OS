@@ -187,6 +187,7 @@ void loop() {
     switch (inputEvent.type) {
       case EncoderEventType::RotateClockwise:
       case EncoderEventType::RotateCounterClockwise:
+      {
         lastEncoderEvent = inputEvent.type == EncoderEventType::RotateClockwise ? "CW" : "CCW";
         // Acceleration is reserved for live frequency tuning. Menus and BFO
         // adjustment always move one logical step per encoder detent.
@@ -236,6 +237,7 @@ void loop() {
             radio.snapshot().frequencyKHz / 1000.0f);
         }
         break;
+      }
       case EncoderEventType::ShortPress:
         lastEncoderEvent = "SHORT";
         if (bfoAdjustmentActive) {
