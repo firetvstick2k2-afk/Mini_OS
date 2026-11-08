@@ -234,4 +234,88 @@ template<class C> void drawTiny(C& d,const RadioSnapshot& s,bool ready,bool wifi
     d.setTextColor(WHITE,BG);d.setTextDatum(TC_DATUM);d.drawString(label,px,155);}}
   d.fillCircle(160,142,6,RED);d.setTextDatum(TL_DATUM);
 }
+
+template<class C> void drawTef6686SW(C& d, const RadioSnapshot& s, bool ready, bool wifi,
+                                     const char* eibiStation, const char* eibiStatus,
+                                     bool eibiAvailable, bool eibiDownloading) {
+  constexpr uint16_t TEF_BLUE=0x001F, TEF_GREEN=0xBFE0, TEF_CYAN=0x07FF;
+  constexpr uint16_t TEF_GREY=0x4208, TEF_YELLOW=0xFFE0;
+  d.fillScreen(BG);
+  drawNetworkBatteryStatus(d, wifi);
+  d.setTextDatum(MC_DATUM);
+  d.setTextColor(TEF_GREEN, BG);
+  d.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  d.drawString(s.bandName, 160, 4);
+  d.setTextDatum(TL_DATUM);
+
+  d.drawRoundRect(8, 25, 54, 20, 3, TEF_BLUE);
+  d.setTextDatum(MC_DATUM);
+  d.setTextColor(TEF_GREEN, BG);
+  const char* mode = s.modulation == RadioModulation::AM ? "AM" :
+                     s.modulation == RadioModulation::USB ? "USB" : "LSB";
+  d.drawString(mode, 35, 35);
+  d.setTextDatum(TL_DATUM);
+
+  char freq[24];
+  if (s.modulation == RadioModulation::USB || s.modulation == RadioModulation::LSB)
+    snprintf(freq, sizeof(freq), "%lu.000", static_cast<unsigned long>(s.frequencyKHz));
+  else
+    snprintf(freq, sizeof(freq), "%lu", static_cast<unsigned long>(s.frequencyKHz));
+  d.setFont(&lgfx::fonts::Font7);
+  d.setTextColor(TEF_GREEN, BG);
+  d.setTextSize((s.modulation == RadioModulation::USB || s.modulation == RadioModulation::LSB) ? 0.62f : 0.78f);
+  d.setTextDatum(MC_DATUM);
+  d.drawString(freq, 185, 47);
+  d.setTextSize(1.0f);
+  d.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  d.setTextColor(TEF_GREEN, BG);
+  d.drawString("kHz", 278, 66);
+  d.setTextDatum(TL_DATUM);
+
+  // Compact TEF-style signal meter with the familiar green/yellow/red scale.
+  constexpr int meterX=10, meterY=77, meterW=300, barX=43, barY=88, barW=250;
+  d.drawRect(meterX, meterY, meterW, 31, TEF_BLUE);
+  d.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  d.setTextColor(TEF_GREEN, BG);
+  d.drawString("S", 18, 83);
+  d.fillRect(barX, barY, barW, 8, TEF_GREY);
+  const int value=constrain(static_cast<int>(s.rssi),0,60);
+  const int fill=map(value,0,60,0,barW);
+  const int greenEnd=barW*65/100, yellowEnd=barW*82/100;
+  if(fill>0)d.fillRect(barX,barY,min(fill,greenEnd),8,TEF_GREEN);
+  if(fill>greenEnd)d.fillRect(barX+greenEnd,barY,min(fill,yellowEnd)-greenEnd,8,TEF_YELLOW);
+  if(fill>yellowEnd)d.fillRect(barX+yellowEnd,barY,fill-yellowEnd,8,RED);
+
+  // EiBi PS is deliberately independent from RadioSnapshot stationName/RDS.
+  constexpr int psX=10, psY=114, psW=300, psH=22;
+  d.drawRect(psX,psY,psW,psH,TEF_BLUE);
+  d.setFont(&lgfx::fonts::FreeSans9pt7b);
+  d.setTextColor(TEF_CYAN,BG);
+  d.setTextDatum(TL_DATUM);
+  d.drawString("PS:",psX+5,psY+3);
+  const char* ps=(eibiStation && eibiStation[0]) ? eibiStation :
+                 (eibiAvailable ? "" : "EiBi not loaded");
+  if(ps[0]){
+    d.setTextColor(TEF_GREEN,BG);
+    d.setClipRect(psX+38,psY+1,psW-43,psH-2);
+    d.drawString(ps,psX+40,psY+3);
+    d.clearClipRect();
+  }
+
+  // RT is used only for the EiBi transfer message; never borrow FM RDS text.
+  constexpr int rtX=10, rtY=141, rtW=300, rtH=22;
+  d.drawRect(rtX,rtY,rtW,rtH,TEF_BLUE);
+  d.setTextColor(TEF_CYAN,BG);
+  d.drawString("RT:",rtX+5,rtY+3);
+  const char* rt = eibiDownloading ? "Downloading EiBi Schedules ..." :
+    ((!eibiAvailable && eibiStatus && strncmp(eibiStatus,"EiBi:",5)==0) ? eibiStatus : "");
+  if(rt[0]){
+    d.setTextColor(eibiDownloading ? TEF_YELLOW : RED,BG);
+    d.setClipRect(rtX+38,rtY+1,rtW-43,rtH-2);
+    d.drawString(rt,rtX+40,rtY+3);
+    d.clearClipRect();
+  }
+  (void)ready;
+}
+
 } // namespace SWLayouts
