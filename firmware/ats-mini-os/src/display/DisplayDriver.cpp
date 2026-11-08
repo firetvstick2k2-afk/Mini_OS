@@ -1,6 +1,6 @@
 #include "DisplayDriver.h"
 #include "ThemeManager.h"
-#include "DisplayLayoutAM.h"
+// #include "DisplayLayoutAM.h"  // Legacy LW/MW/KW layout disabled; retained as source only.
 #include "DisplayLayoutHJB.h"
 #include "DisplayLayoutSW.h"
 #include "../radio/BandManager.h"
@@ -224,7 +224,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   };
   static const char* const layoutGroupItems[] = { "Zurück", "UKW / FM", "LW / MW / KW" };
   static const char* const fmLayoutItems[] = { "Zurück", "DAB Style", "TEF6686 -FM Version" };
-  static const char* const amLayoutItems[] = { "Zurück", "Standard", "HJB", "Default", "Clean", "Decoder / Wasserfall", "New UI", "S-Meter", "TinyRadio" };
+  static const char* const amLayoutItems[] = { "Zurück", "HJB", "Decoder / Wasserfall", "TinyRadio" };
   static const char* const bfoItems[] = { "Zurück", "BFO einstellen" };
   static const char* const radioItems[] = {
     "Zurück", "Modulation", "Band wählen", "Bandbreite", "Schrittweite",
@@ -320,7 +320,8 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   if ((page == 14 || page == 15) && selection > 0) {
     // Keep the currently selected layout marked, as in the Dev menu.
     const bool active = page == 14 ? (selection-1 == layoutMode) :
-      (selection-1 == layoutMode);
+      ((selection == 1 && layoutMode == 1) || (selection == 2 && layoutMode == 4) ||
+       (selection == 3 && layoutMode == 7));
     if (active) {
       char marked[72];
       snprintf(marked, sizeof(marked), "* %s", displayLabel);
@@ -410,7 +411,7 @@ bool DisplayDriver::begin(uint8_t initialBrightness) {
     static_cast<long>(device_.width()),static_cast<long>(device_.height()));
   fmLayout_ = 0;
   amLayout_ = 0;
-  Serial.println("[DISPLAY] active layout groups: FM/UKW and LW/MW/KW (AM/USB/LSB)");
+  Serial.println("[DISPLAY] active layouts: FM DAB/TEF; LW/MW/KW HJB/Waterfall/TinyRadio");
   return true;
 }
 
@@ -437,7 +438,7 @@ void DisplayDriver::setFmLayout(uint8_t mode) {
 }
 
 void DisplayDriver::setAmLayout(uint8_t mode) {
-  amLayout_ = mode <= 7 ? mode : 0;
+  amLayout_ = (mode == 1 || mode == 4 || mode == 7) ? mode : 1;
   lastGeneration_ = UINT32_MAX;
   Serial.printf("[DISPLAY] LW/MW/KW layout index: %u\\n", static_cast<unsigned>(amLayout_));
 }
@@ -797,15 +798,10 @@ void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnect
   } else {
     auto renderSw = [&](auto& canvas) {
       switch (amLayout_) {
-        case 0: drawAmBandLayout(canvas, s, radioReady, wifiConnected); break;
         case 1: drawHJBLayout(canvas, s, radioReady, wifiConnected); break;
-        case 2: SWLayouts::drawDefault(canvas, s, radioReady, wifiConnected); break;
-        case 3: SWLayouts::drawClean(canvas, s, radioReady, wifiConnected); break;
         case 4: SWLayouts::drawDecoder(canvas, s, radioReady, wifiConnected); break;
-        case 5: SWLayouts::drawNewUI(canvas, s, radioReady, wifiConnected); break;
-        case 6: SWLayouts::drawSMeter(canvas, s, radioReady, wifiConnected); break;
         case 7: SWLayouts::drawTiny(canvas, s, radioReady, wifiConnected); break;
-        default: drawAmBandLayout(canvas, s, radioReady, wifiConnected); break;
+        default: drawHJBLayout(canvas, s, radioReady, wifiConnected); break;
       }
     };
     if (useSprite_) {
