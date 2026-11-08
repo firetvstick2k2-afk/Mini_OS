@@ -88,8 +88,9 @@ void EiBiService::update(bool wifiConnected, bool clockSynchronized, const struc
       }
 
       if (contentLength_ > 0) {
-        const uint8_t percent = static_cast<uint8_t>(
-          min<uint32_t>(99, (bytesRead_ * 100UL) / static_cast<uint32_t>(contentLength_)));
+        uint32_t calculatedPercent = (bytesRead_ * 100UL) / static_cast<uint32_t>(contentLength_);
+        if (calculatedPercent > 99) calculatedPercent = 99;
+        const uint8_t percent = static_cast<uint8_t>(calculatedPercent);
         if (percent != progressPercent_) {
           progressPercent_ = percent;
           snprintf(statusText_, sizeof(statusText_), "Downloading EiBi Schedules %u%%",
