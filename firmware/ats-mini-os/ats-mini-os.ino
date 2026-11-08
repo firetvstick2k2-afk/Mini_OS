@@ -188,17 +188,21 @@ void loop() {
       case EncoderEventType::RotateClockwise:
       case EncoderEventType::RotateCounterClockwise:
         lastEncoderEvent = inputEvent.type == EncoderEventType::RotateClockwise ? "CW" : "CCW";
+        // Acceleration is reserved for live frequency tuning. Menus and BFO
+        // adjustment always move one logical step per encoder detent.
+        const int16_t rotationDelta = (menuOpen || bfoAdjustmentActive)
+          ? (inputEvent.delta > 0 ? 1 : -1) : inputEvent.delta;
         if (menuOpen) {
-          if(menuPage==6){ if(fmMode==1){int v=(int)fmActionSelection+inputEvent.delta;v%=6;if(v<0)v+=6;fmActionSelection=(uint8_t)v;} else if(fmMode==2)fmActionSelection=fmActionSelection?0:1; else if(fmMode==4){const char* chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-.";size_t n=strlen(chars);char ch=fmEditName[fmEditCursor];const char* q=strchr(chars,ch?ch:65);int pos=q?(int)(q-chars):0;pos=(pos+inputEvent.delta)%(int)n;if(pos<0)pos+=(int)n;fmEditName[fmEditCursor]=chars[pos];fmEditName[fmEditCursor+1]=0;} else {uint8_t n=fmCount+(fmMode==3?1:3);int v=(int)fmSelection+inputEvent.delta;v%=n;if(v<0)v+=n;fmSelection=(uint8_t)v;} }
+          if(menuPage==6){ if(fmMode==1){int v=(int)fmActionSelection+rotationDelta;v%=6;if(v<0)v+=6;fmActionSelection=(uint8_t)v;} else if(fmMode==2)fmActionSelection=fmActionSelection?0:1; else if(fmMode==4){const char* chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-.";size_t n=strlen(chars);char ch=fmEditName[fmEditCursor];const char* q=strchr(chars,ch?ch:65);int pos=q?(int)(q-chars):0;pos=(pos+rotationDelta)%(int)n;if(pos<0)pos+=(int)n;fmEditName[fmEditCursor]=chars[pos];fmEditName[fmEditCursor+1]=0;} else {uint8_t n=fmCount+(fmMode==3?1:3);int v=(int)fmSelection+rotationDelta;v%=n;if(v<0)v+=n;fmSelection=(uint8_t)v;} }
           else if (sliderAdjustmentActive && ((menuPage == 2 && menuSelection == 1))) {
-            const int16_t requested = static_cast<int16_t>(display.brightness()) + inputEvent.delta * 5;
+            const int16_t requested = static_cast<int16_t>(display.brightness()) + rotationDelta * 5;
             const uint8_t nextBrightness = static_cast<uint8_t>(constrain(requested, 10, 255));
             display.setBrightness(nextBrightness);
             brightnessSavePending = true;
             Serial.printf("[MENU] display brightness=%u/255 (pending save)\n",
               static_cast<unsigned>(display.brightness()));
           } else if (sliderAdjustmentActive && menuPage == 1 && menuSelection == 1) {
-            const int16_t requested = static_cast<int16_t>(radio.volume()) + inputEvent.delta;
+            const int16_t requested = static_cast<int16_t>(radio.volume()) + rotationDelta;
             const uint8_t nextVolume = static_cast<uint8_t>(constrain(requested, 0, 63));
             if (radio.setVolume(nextVolume))
               Serial.printf("[MENU] volume=%u/63\n", static_cast<unsigned>(radio.volume()));
@@ -214,21 +218,21 @@ void loop() {
               menuPage == 7 ? radio.bandwidthChoiceCount()+1 :
               menuPage == 8 ? radio.bandCount()+1 :
               menuPage == 9 ? radio.stepChoiceCount()+1 : 3);
-            int16_t next = (static_cast<int16_t>(menuSelection) + inputEvent.delta) % itemCount;
+            int16_t next = (static_cast<int16_t>(menuSelection) + rotationDelta) % itemCount;
             if (next < 0) next += itemCount;
             menuSelection = static_cast<uint8_t>(next);
           }
         } else if (bfoAdjustmentActive) {
-          const int32_t requested = static_cast<int32_t>(radio.bfoOffsetHz()) + inputEvent.delta * 10;
+          const int32_t requested = static_cast<int32_t>(radio.bfoOffsetHz()) + rotationDelta * 10;
           const int16_t nextBfo = static_cast<int16_t>(constrain(requested, -16000, 16000));
           if (radio.setBfoOffsetHz(nextBfo)) {
             bfoSavePending = true;
             Serial.printf("[BFO] offset=%d Hz\\n", static_cast<int>(radio.bfoOffsetHz()));
           }
-        } else if (radio.nextChannel(inputEvent.delta)) {
+        } else if (radio.nextChannel(rotationDelta)) {
           display.notifyTuning();
           Serial.printf("[INPUT] tune step %s -> %.1f MHz\n",
-            inputEvent.delta > 0 ? "CW" : "CCW",
+            rotationDelta > 0 ? "CW" : "CCW",
             radio.snapshot().frequencyKHz / 1000.0f);
         }
         break;
