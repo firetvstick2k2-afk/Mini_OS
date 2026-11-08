@@ -1711,3 +1711,22 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - Commit: `54df3f6d2015329b0f213552d7e332cde8234169`.
 - **Status:** Änderung committed und auf GitHub erneut abgerufen; grundlegende Struktur-/Inhaltsmarker geprüft. Noch nicht kompiliert und nicht auf dem ATS Mini V4 getestet. Kein Build/Workflow gestartet, nichts geflasht.
 - Nächster Schritt: Nutzer prüft den TinyRadio-Bildschirm auf dem Gerät. Danach ggf. Feinabstimmung von Schriftgröße, Abständen und verfügbaren Statusfeldern anhand eines Fotos.
+
+## CW-Referenz: RESONIK ATS Mini v2.45-r1 – 2026-11-08
+
+- Vom Nutzer bereitgestellte Referenz: https://github.com/ep3mhb/resonik-ats-mini/releases/tag/v2.45-r1
+- Öffentlicher Quellcode-Tag: `ep3mhb/resonik-ats-mini`, Tag `v2.45-r1` (Release vom 2026-11-06).
+- Die Release-README beschreibt einen bereits implementierten **CW-Betriebsmodus**, aber ausdrücklich noch keinen fertigen CW-Textdecoder. Ein On-Screen-CW-Decoder für V4-Boards wird dort als zukünftige Funktion („Later“) angekündigt.
+- Bereits vorhandene CW-Funktionen im Quellcode:
+  - eigener Modus `CW = 4` in `ats-mini/Common.h`
+  - CW-Empfang über USB mit BFO-/Tonhöhenkorrektur; Anzeige der eigentlichen Signal-/Sendefrequenz
+  - CW-Tonhöhe passend zur Filterbandbreite: 500 Hz bei 0,5 kHz, 1000 Hz bei 1,0 kHz, sonst 700 Hz
+  - schmaler 0,5-kHz-Filter als Standard und 10-Hz-Abstimmschritte
+  - IARU-Region-1-Bandplan mit farblich markierten CW-Abschnitten auf der Skala
+- Relevante Quellcode-Referenzen:
+  - `ats-mini/Common.h`: https://github.com/ep3mhb/resonik-ats-mini/blob/v2.45-r1/ats-mini/Common.h
+  - `ats-mini/Menu.cpp`: https://github.com/ep3mhb/resonik-ats-mini/blob/v2.45-r1/ats-mini/Menu.cpp
+  - `ats-mini/Draw.cpp`: https://github.com/ep3mhb/resonik-ats-mini/blob/v2.45-r1/ats-mini/Draw.cpp
+  - `README.md`: https://github.com/ep3mhb/resonik-ats-mini/blob/v2.45-r1/README.md
+- **Verwendung für ATS Mini OS:** Als Referenz für CW-Modus, USB-/BFO-Abstimmung, Filterbandbreite, Tonhöhenwahl und IARU-Bandplan heranziehen. Nicht als bereits vorhandenen Morse-Textdecoder behandeln. Für den eigentlichen CW-Decoder weiterhin separat den Ansatz von HJ Berndt / PocketSI4735DualCoreDecoder untersuchen.
+- Referenz wurde nur gelesen; keine Dateien aus diesem Repository kopiert oder verändert. Kein Build oder Hardwaretest im Zusammenhang mit dieser Referenz.
