@@ -13,6 +13,7 @@ enum class PerformanceReason : uint8_t {
   ImageDecode,
   SpectrumScan,
   UiAnimation,
+  Waterfall,
   Count
 };
 
@@ -31,6 +32,8 @@ public:
   // be released; update() also expires leases to prevent a stuck boost.
   bool request(PerformanceReason reason, uint32_t timeoutMs);
   void release(PerformanceReason reason);
+  void setWaterfallActive(bool active);
+  bool waterfallActive() const { return waterfallActive_; }
 
 private:
   struct Lease {
@@ -39,6 +42,8 @@ private:
   };
 
   CpuProfile selectedProfile_ = CpuProfile::Auto;
+  bool waterfallActive_ = false;
+  uint32_t autoClockMHz_ = 0;
   Lease leases_[static_cast<uint8_t>(PerformanceReason::Count)]{};
 
   void applyPolicy();
