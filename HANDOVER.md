@@ -1689,3 +1689,13 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - Vorhandene `PerformanceManager`-Logik geprüft: Waterfall erzwingt 240 MHz auch bei fest eingestelltem niedrigerem CPU-Profil; beim Verlassen wird das ausgewählte feste Profil wiederhergestellt. Die Waterfall-Aktivierung erfolgt nur bei sichtbarem ALL-BAND Decoder-Layout.
 - Commit: `012e1b5350a7883bf8cc766e4df386bf646ca8ac`.
 - **Status:** Code übertragen, aber noch nicht kompiliert und nicht am Gerät geprüft. Kein GitHub-Workflow gestartet, kein Flashvorgang durchgeführt. Nächster Schritt: Nutzer startet den Compile-Workflow selbst; anschließend Wasserfall-Scrolltempo, Jitter, Farbverlauf und CPU-Rückstellung am ATS Mini V4 prüfen.
+
+## Waterfall-CPU-Takt reduziert – 2026-11-08
+
+- Auf ausdrücklichen Wunsch des Nutzers wurde der automatische CPU-Takt-Override für das Waterfall-Layout von **240 MHz auf 160 MHz** reduziert, um den Stromverbrauch und damit den Akkuverbrauch zu senken.
+- Geändert: `firmware/ats-mini-os/src/system/PerformanceManager.cpp`.
+- Die übrige CPU-Profil-Logik bleibt unverändert: Im normalen Betrieb gilt weiterhin das ausgewählte Profil (80/160/240 MHz); beim Verlassen des Waterfalls wird das zuvor ausgewählte feste Profil bzw. im Auto-Modus der normale Auto-Basistakt wiederhergestellt.
+- Der Waterfall-Override gilt weiterhin auch dann, wenn im CPU-Profil 80 MHz ausgewählt ist; während des Waterfalls werden dann 160 MHz verwendet.
+- Commit: `28ca57ffa9e36c68c9b8d11215d49a06771ebda0`.
+- **Status:** Änderung auf GitHub committed; noch nicht kompiliert und nicht auf dem ATS Mini V4 getestet. Kein Build/Workflow durch den Assistenten gestartet, nichts geflasht.
+- Nächster Schritt: Nutzer testet den Waterfall bei 160 MHz. Dabei auf flüssiges Scrollen, Aussetzer/Artefakte und subjektiven Akkuverbrauch achten. Falls 160 MHz nicht ausreichen, kann die Einstellung nach dem Test angepasst werden.
