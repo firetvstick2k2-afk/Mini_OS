@@ -1817,3 +1817,7 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
   - `2c04bbb620b069ac16639fed58a7f5eb93a67f8b` – SI4735-Tuner-Grenze in LittleFS protokollieren
 - **Status:** Quelltextänderungen auf GitHub geschrieben und anschließend erneut abgerufen/geprüft. Noch nicht kompiliert, kein GitHub-Actions-Build gestartet und nicht auf Hardware getestet. Dies ist Diagnoseinstrumentierung, keine Fehlerbehebung.
 - **Nächster Schritt:** Nutzer startet einen neuen OSPI-/QSPI-Build und testet anschließend das Herunterdrehen durch 20–16 MHz. Danach die komplette Datei `/ats-mini-os.log` (und falls vorhanden `.log.1`) auslesen; besonders auf den letzten Eintrag vor dem nächsten BOOT achten.
+
+- Ergänzende Korrekturen zur Diagnoseinstrumentierung:
+  - `301265342446ddb0c46b829b9485b262515fefbf` – echte Zeilenumbrüche in der LittleFS-Logdatei und Boot-Zählerdatei sichergestellt.
+  - `9e94953d1de318c3a622f20a34d36a4c76e004eb` – explizites `stdio.h` für die neuen `snprintf`-Aufrufe im Tuner-Treiber ergänzt.
