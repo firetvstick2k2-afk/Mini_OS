@@ -1770,3 +1770,13 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - **Status:** Änderung committed. Noch nicht kompiliert und nicht auf dem ATS Mini V4 getestet. Kein GitHub-Workflow gestartet, nichts geflasht.
 - Hinweis: Diese Änderung verändert nur die Encoder-Schrittweite außerhalb der Frequenzabstimmung. Sie ist noch kein nachgewiesener Fix für den zuvor gemeldeten Radio-Reset.
 - Nächster Schritt: Nutzer startet den manuellen QSPI-/OSPI-Compile-only-Build und prüft, dass Menüs unabhängig von der Drehgeschwindigkeit pro Rastung weiterschalten und die Frequenzabstimmung im Radiolayout weiterhin beschleunigt ist.
+
+## Compile-Fix: Encoder-Rotation-Switch – 2026-11-08
+
+- GitHub Actions Run #7 (42498809753) auf dev/first-build-preparation schlug beim Kompilieren fehl.
+- Ursache laut Compiler: Die lokale Variable rotationDelta wurde in einem Switch-Zweig initialisiert, dessen Gültigkeitsbereich über die folgenden case-Marken lief (jump to case label, crosses initialization).
+- Korrektur: Die beiden Encoder-Rotations-case-Labels und deren Inhalt wurden in einen eigenen Block eingeschlossen. Die Logik der Schrittweitenbegrenzung wurde dabei nicht verändert.
+- Geändert: firmware/ats-mini-os/ats-mini-os.ino.
+- Fix-Commit: a39ddb21bbf6ccea33bff9fec148d41b110594b8.
+- Status: Scope-Korrektur committed. Ein erneuter Compile-Build steht noch aus; kein Hardwaretest und kein Flash erfolgt.
+- Nächster Schritt: Compile-only-Workflow erneut ausführen. Erst nach erfolgreichem Build den Encoder-Test am ATS Mini V4 durchführen.
