@@ -224,7 +224,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   };
   static const char* const layoutGroupItems[] = { "Zurück", "UKW / FM", "LW / MW / KW" };
   static const char* const fmLayoutItems[] = { "Zurück", "DAB Style", "TEF6686 -FM Version" };
-  static const char* const amLayoutItems[] = { "Zurück", "HJB", "Decoder / Wasserfall", "TinyRadio" };
+  static const char* const amLayoutItems[] = { "Zurück", "HJB", "Decoder / Wasserfall", "TinyRadio", "TEF6686 - KW/MW/LW" };
   static const char* const bfoItems[] = { "Zurück", "BFO einstellen" };
   static const char* const radioItems[] = {
     "Zurück", "Modulation", "Band wählen", "Bandbreite", "Schrittweite",
@@ -321,7 +321,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     // Keep the currently selected layout marked, as in the Dev menu.
     const bool active = page == 14 ? (selection-1 == layoutMode) :
       ((selection == 1 && layoutMode == 1) || (selection == 2 && layoutMode == 4) ||
-       (selection == 3 && layoutMode == 7));
+       (selection == 3 && layoutMode == 7) || (selection == 4 && layoutMode == 8));
     if (active) {
       char marked[72];
       snprintf(marked, sizeof(marked), "* %s", displayLabel);
@@ -438,7 +438,7 @@ void DisplayDriver::setFmLayout(uint8_t mode) {
 }
 
 void DisplayDriver::setAmLayout(uint8_t mode) {
-  amLayout_ = (mode == 1 || mode == 4 || mode == 7) ? mode : 1;
+  amLayout_ = (mode == 1 || mode == 4 || mode == 7 || mode == 8) ? mode : 1;
   lastGeneration_ = UINT32_MAX;
   Serial.printf("[DISPLAY] LW/MW/KW layout index: %u\\n", static_cast<unsigned>(amLayout_));
 }
@@ -801,6 +801,7 @@ void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnect
         case 1: drawHJBLayout(canvas, s, radioReady, wifiConnected); break;
         case 4: SWLayouts::drawDecoder(canvas, s, radioReady, wifiConnected); break;
         case 7: SWLayouts::drawTiny(canvas, s, radioReady, wifiConnected); break;
+        case 8: SWLayouts::drawTef6686SW(canvas, s, radioReady, wifiConnected); break;
         default: drawHJBLayout(canvas, s, radioReady, wifiConnected); break;
       }
     };
