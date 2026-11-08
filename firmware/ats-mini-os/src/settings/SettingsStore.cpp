@@ -129,3 +129,13 @@ int16_t SettingsStore::bfoOffsetHz(int16_t fallback) {
 bool SettingsStore::saveBfoOffsetHz(int16_t offsetHz) {
   return ready_ && offsetHz >= -16000 && offsetHz <= 16000 && preferences_.putShort(kBfoOffsetKey, offsetHz) == sizeof(int16_t);
 }
+
+uint8_t SettingsStore::cpuProfile(uint8_t fallback) {
+  if (!ready_) return fallback;
+  const uint8_t saved = preferences_.getUChar(kCpuProfileKey, fallback);
+  return saved <= 3 ? saved : fallback;
+}
+bool SettingsStore::saveCpuProfile(uint8_t profile) {
+  return ready_ && profile <= 3 &&
+         preferences_.putUChar(kCpuProfileKey, profile) == sizeof(uint8_t);
+}
