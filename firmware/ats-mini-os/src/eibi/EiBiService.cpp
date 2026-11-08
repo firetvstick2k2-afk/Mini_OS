@@ -5,25 +5,22 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../storage/StorageDiscovery.h"
 
 namespace {
 constexpr uint16_t kMinimumScheduleFrequency = 100;
 constexpr uint16_t kMaximumScheduleFrequency = 60000;
 }
 
-bool EiBiService::beginDownload(bool wifiConnected) {
+void EiBiService::begin() {\n  available_ = StorageDiscovery::ready() && LittleFS.exists(kSchedulePath);\n  if (available_) strncpy(statusText_, "EiBi schedule ready", sizeof(statusText_) - 1);\n}\n\nbool EiBiService::beginDownload(bool wifiConnected) {
   if (downloading_) return false;
   if (!wifiConnected || WiFi.status() != WL_CONNECTED) {
     strncpy(statusText_, "EiBi: WLAN unavailable", sizeof(statusText_) - 1);
     return false;
   }
-  if (!LittleFS.begin(false, "/littlefs", 10, "littlefs")) {
-    // StorageDiscovery owns the normal mount. This call is only a fallback
-    // for an already initialized filesystem and never formats it.
-    if (!LittleFS.begin(false, "/littlefs", 10, "littlefs")) {
-      strncpy(statusText_, "EiBi: storage unavailable", sizeof(statusText_) - 1);
-      return false;
-    }
+  if (!StorageDiscovery::ready()) {
+    strncpy(statusText_, "EiBi: storage unavailable", sizeof(statusText_) - 1);
+    return false;
   }
 
   http_.setTimeout(12000);
@@ -59,7 +56,7 @@ bool EiBiService::beginDownload(bool wifiConnected) {
   return true;
 }
 
-void EiBiService::update(bool wifiConnected, bool clockSynchronized, const struct tm& utc) {
+void EiBiService::update(bool wifiConnected, bool clockSynchronized, const struct tm& utc, uint32_t frequencyKHz) {
   if (downloading_) {
     if (!wifiConnected) {
       finishDownload(false, "EiBi: WLAN lost");
@@ -108,9 +105,17 @@ void EiBiService::update(bool wifiConnected, bool clockSynchronized, const struc
     }
   }
 
-  if (!downloading_ && available_ && clockSynchronized) {
-    const uint32_t frequency = 0; // Updated by the overload caller below.
-    (void)frequency;
+  if (!downloading_ && available_ && clockSynchronized && frequencyKHz > 0 &&
+      frequencyKHz <= UINT16_MAX) {
+    const uint32_t minuteKey = static_cast<uint32_t>(utc.tm_yday) * 1440UL +
+                               static_cast<uint32_t>(utc.tm_hour) * 60UL +
+                               static_cast<uint32_t>(utc.tm_min);
+    if (minuteKey != lastLookupMinute_ || frequencyKHz != lastLookupFrequency_) {
+      lastLookupMinute_ = minuteKey;
+      lastLookupFrequency_ = frequencyKHz;
+      lookup(frequencyKHz, static_cast<uint8_t>(utc.tm_hour),
+             static_cast<uint8_t>(utc.tm_min));
+    }
   }
 }
 
