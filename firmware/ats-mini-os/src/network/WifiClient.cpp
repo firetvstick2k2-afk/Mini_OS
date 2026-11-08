@@ -3,9 +3,9 @@
 namespace {
 constexpr char SETTINGS_NAMESPACE[] = "network";
 constexpr char SETUP_AP_SSID[] = "ATS-Mini-OS-Setup";
-constexpr IPAddress SETUP_IP(10, 1, 1, 1);
-constexpr IPAddress SETUP_GATEWAY(10, 1, 1, 1);
-constexpr IPAddress SETUP_SUBNET(255, 255, 255, 0);
+const IPAddress SETUP_IP(10, 1, 1, 1);
+const IPAddress SETUP_GATEWAY(10, 1, 1, 1);
+const IPAddress SETUP_SUBNET(255, 255, 255, 0);
 }
 
 void WifiClient::begin() {
