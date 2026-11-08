@@ -6,8 +6,9 @@
 
 class EiBiService {
 public:
+  void begin();
   bool beginDownload(bool wifiConnected);
-  void update(bool wifiConnected, bool clockSynchronized, const struct tm& utc);
+  void update(bool wifiConnected, bool clockSynchronized, const struct tm& utc, uint32_t frequencyKHz);
   bool downloading() const { return downloading_; }
   bool available() const { return available_; }
   const char* statusText() const { return statusText_; }
