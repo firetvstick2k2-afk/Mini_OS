@@ -1,4 +1,5 @@
 #include "WifiClient.h"
+#include "../news/NewsService.h"
 
 namespace {
 constexpr char SETTINGS_NAMESPACE[] = "network";
@@ -14,7 +15,7 @@ void WifiClient::begin() {
   WiFi.setAutoReconnect(true);
 
   preferencesReady_ = preferences_.begin(SETTINGS_NAMESPACE, false, "settings");
-  if (preferencesReady_) loadNetworks();
+  if (preferencesReady_) { loadNetworks(); loadNewsConfig(); }
 
   // The local setup page remains reachable even when the router is unavailable.
   WiFi.softAPConfig(SETUP_IP, SETUP_GATEWAY, SETUP_SUBNET);
@@ -60,10 +61,28 @@ bool WifiClient::saveNetworks() {
   return ok;
 }
 
+
+void WifiClient::loadNewsConfig() {
+  if (!preferencesReady_) return;
+  newsConfig_.enabled = preferences_.getBool("newson", false);
+  newsConfig_.refreshMinutes = preferences_.getUShort("nmin", 1);
+  if (newsConfig_.refreshMinutes < 1 || newsConfig_.refreshMinutes > 1440)
+    newsConfig_.refreshMinutes = 1;
+  for (uint8_t i = 0; i < NewsService::MAX_FEEDS; ++i) {
+    char key[8];
+    snprintf(key, sizeof(key), "nurl%u", static_cast<unsigned>(i + 1));
+    String url = preferences_.getString(key, "");
+    url.toCharArray(newsConfig_.urls[i], sizeof(newsConfig_.urls[i]));
+    if (!NewsService::validFeedUrl(newsConfig_.urls[i]))
+      newsConfig_.urls[i][0] = '\0';
+  }
+}
+
 void WifiClient::startWebServer() {
   server_.on("/", HTTP_GET, [this]() { handleRoot(); });
   server_.on("/wifi/save", HTTP_POST, [this]() { handleSave(); });
   server_.on("/wifi/status", HTTP_GET, [this]() { handleStatus(); });
+  server_.on("/news/save", HTTP_POST, [this]() { handleNewsSave(); });
   server_.onNotFound([this]() { server_.send(404, "text/plain", "Not found"); });
   server_.begin();
   serverStarted_ = true;
@@ -86,7 +105,7 @@ String WifiClient::htmlEscape(const String& value) {
 
 void WifiClient::handleRoot() {
   String page;
-  page.reserve(4300);
+  page.reserve(6500);
   page += F("<!doctype html><html lang='de'><head><meta name='viewport' content='width=device-width,initial-scale=1'>"
             "<meta charset='utf-8'><title>ATS Mini OS - WLAN</title><style>"
             "body{font:16px Arial,sans-serif;background:#080d18;color:#eef4ff;margin:0;padding:18px}"
@@ -109,6 +128,23 @@ void WifiClient::handleRoot() {
     page += F("' form='wifi' maxlength='63' placeholder='Leer lassen, um das gespeicherte Passwort zu behalten'>");
     page += F("</section>");
   }
+  page += F("<section><h2>News-Ticker</h2><p>Eigene RSS- oder Atom-Feeds eintragen. Aktualisierung nur bei aktiver WLAN-Internetverbindung.</p>");
+  page += F("<form id='news' method='post' action='/news/save'><label><input style='width:auto' type='checkbox' name='newson' value='1'");
+  if (newsConfig_.enabled) page += F(" checked");
+  page += F("> News-Ticker aktivieren</label>");
+  page += F("<label>Aktualisierungsintervall (1–1440 Minuten)</label><input type='number' name='nmin' min='1' max='1440' step='1' required value='");
+  page += String(newsConfig_.refreshMinutes);
+  page += F("'>");
+  for (uint8_t i = 0; i < NewsService::MAX_FEEDS; ++i) {
+    page += F("<label>RSS-/Atom-Feed ");
+    page += String(i + 1);
+    page += F("</label><input type='url' name='nurl");
+    page += String(i + 1);
+    page += F("' maxlength='191' placeholder='https://example.org/feed.xml' value='");
+    page += htmlEscape(String(newsConfig_.urls[i]));
+    page += F("'>");
+  }
+  page += F("<button type='submit'>News-Einstellungen speichern</button></form></section>");
   page += F("<form id='wifi' method='post' action='/wifi/save'><button type='submit'>Speichern und verbinden</button></form>"
             "<section><h3>Verbindungsstatus</h3><p id='status'>Wird geladen ...</p>"
             "<small>Einrichtungs-WLAN: ATS-Mini-OS-Setup · Adresse: 10.1.1.1</small></section>"
@@ -141,6 +177,56 @@ void WifiClient::handleSave() {
     "Verbindungsaufbau läuft. Diese Seite lädt in fünf Sekunden neu.</p>");
   WiFi.disconnect(false, false);
   if (any) connectNextNetwork();
+}
+
+
+void WifiClient::handleNewsSave() {
+  if (!preferencesReady_) {
+    server_.send(500, "text/plain; charset=utf-8", "Speichern fehlgeschlagen: NVS nicht verfügbar");
+    return;
+  }
+  const String intervalArg = server_.arg("nmin");
+  if (!intervalArg.length()) {
+    server_.send(400, "text/plain; charset=utf-8", "Bitte ein Aktualisierungsintervall von 1 bis 1440 Minuten eingeben.");
+    return;
+  }
+  char* end = nullptr;
+  const long interval = strtol(intervalArg.c_str(), &end, 10);
+  if (!end || *end != '\0' || interval < 1 || interval > 1440) {
+    server_.send(400, "text/plain; charset=utf-8", "Ungültiges Intervall. Erlaubt sind 1 bis 1440 Minuten.");
+    return;
+  }
+  NewsService::Configuration next;
+  next.enabled = server_.hasArg("newson");
+  next.refreshMinutes = static_cast<uint16_t>(interval);
+  for (uint8_t i = 0; i < NewsService::MAX_FEEDS; ++i) {
+    const String argName = String("nurl") + String(i + 1);
+    String value = server_.arg(argName);
+    value.trim();
+    if (value.length() >= NewsService::MAX_URL_BYTES) {
+      server_.send(400, "text/plain; charset=utf-8", "Eine Feed-Adresse ist zu lang (maximal 191 Zeichen).");
+      return;
+    }
+    value.toCharArray(next.urls[i], sizeof(next.urls[i]));
+    if (value.length() && !NewsService::validFeedUrl(next.urls[i])) {
+      server_.send(400, "text/plain; charset=utf-8", "Feed-Adressen müssen mit https:// beginnen und dürfen keine Leerzeichen enthalten.");
+      return;
+    }
+  }
+  bool ok = preferences_.putBool("newson", next.enabled) == sizeof(bool);
+  ok &= preferences_.putUShort("nmin", next.refreshMinutes) == sizeof(uint16_t);
+  for (uint8_t i = 0; i < NewsService::MAX_FEEDS; ++i) {
+    char key[8];
+    snprintf(key, sizeof(key), "nurl%u", static_cast<unsigned>(i + 1));
+    ok &= preferences_.putString(key, next.urls[i]) > 0 || next.urls[i][0] == '\0';
+  }
+  if (!ok) {
+    server_.send(500, "text/plain; charset=utf-8", "News-Einstellungen konnten nicht vollständig gespeichert werden.");
+    return;
+  }
+  newsConfig_ = next;
+  server_.send(200, "text/html; charset=utf-8",
+    "<meta charset='utf-8'><meta http-equiv='refresh' content='2;url=/'><p>News-Einstellungen gespeichert.</p>");
 }
 
 void WifiClient::handleStatus() {
