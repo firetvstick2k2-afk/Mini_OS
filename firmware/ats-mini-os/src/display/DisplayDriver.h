@@ -7,6 +7,7 @@
 #include "../radio/RadioSnapshot.h"
 #include "ThemeManager.h"
 #include "../logo/StationLogoClient.h"
+#include "../news/NewsService.h"
 #include "../storage/FileManager.h"
 
 #if !defined(LILYGO_SI473X)
@@ -237,7 +238,7 @@ public:
 class DisplayDriver {
 public:
   bool begin(uint8_t initialBrightness = 180);
-  void render(const RadioSnapshot& state, bool radioReady, bool wifiConnected, const char* lastInputEvent, uint32_t inputEventCount, StationLogoClient* logoClient = nullptr, bool menuOpen = false, uint8_t menuPage = 0, uint8_t menuSelection = 0, uint8_t volume = 25, const char* filePath = "/", FileManager::Entry* fileEntries = nullptr, uint8_t fileCount = 0, uint8_t fileSelection = 0, uint8_t fileMode = 0, uint8_t fileActionSelection = 0, const char* fileSelectedName = "", const char* fileMessage = "", bool sliderAdjustmentActive = false, const char* eibiStation = "", const char* eibiStatus = "", bool eibiAvailable = false, bool eibiDownloading = false);
+  void render(const RadioSnapshot& state, bool radioReady, bool wifiConnected, const char* lastInputEvent, uint32_t inputEventCount, StationLogoClient* logoClient = nullptr, bool menuOpen = false, uint8_t menuPage = 0, uint8_t menuSelection = 0, uint8_t volume = 25, const char* filePath = "/", FileManager::Entry* fileEntries = nullptr, uint8_t fileCount = 0, uint8_t fileSelection = 0, uint8_t fileMode = 0, uint8_t fileActionSelection = 0, const char* fileSelectedName = "", const char* fileMessage = "", bool sliderAdjustmentActive = false, const char* eibiStation = "", const char* eibiStatus = "", bool eibiAvailable = false, bool eibiDownloading = false, const NewsService::Snapshot* newsSnapshot = nullptr);
   bool isReady() const { return ready_; }
   uint8_t fmLayout() const { return fmLayout_; }
   void setFmLayout(uint8_t mode);
@@ -276,7 +277,7 @@ private:
   uint32_t radioTextLastStepMs_ = 0;
   bool haveStationRow_ = false;
   bool haveRadioTextRow_ = false;
-  void draw(const RadioSnapshot& state, bool radioReady, bool wifiConnected, const char* lastInputEvent, uint32_t inputEventCount, const uint8_t* logoData, size_t logoLength, bool logoIsJpg, bool logoSearching, int16_t radioTextOffset, bool scrollRadioText, bool frequencyBlue, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading);
+  void draw(const RadioSnapshot& state, bool radioReady, bool wifiConnected, const char* lastInputEvent, uint32_t inputEventCount, const uint8_t* logoData, size_t logoLength, bool logoIsJpg, bool logoSearching, int16_t radioTextOffset, bool scrollRadioText, bool frequencyBlue, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading, const NewsService::Snapshot* newsSnapshot);
 };
 
 #endif // ATS_MINI_OS_DISPLAY_DRIVER_H
