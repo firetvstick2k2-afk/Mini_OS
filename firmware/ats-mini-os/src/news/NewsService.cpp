@@ -33,7 +33,8 @@ String xmlDecode(String value) {
     if(end<0) break;
     String token=value.substring(p+2,end);
     char* tail=nullptr;
-    long code=strtol(token.c_str(),&tail,0);
+    const bool hexadecimal=token.length()>1 && (token[0]=='x' || token[0]=='X');
+    long code=strtol(hexadecimal?token.c_str()+1:token.c_str(),&tail,hexadecimal?16:10);
     if(tail && *tail=='\0' && code>=32 && code<=0x10FFFF &&
        !(code>=0xD800 && code<=0xDFFF)) {
       String replacement;
