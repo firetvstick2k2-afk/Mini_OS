@@ -2350,3 +2350,18 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 
 - Zusätzliche Parser-Härtung: CDATA-Markierungen werden vor der Titelbereinigung entfernt; benannte und numerische XML-Entities (dezimal/hexadezimal) werden in UTF-8 dekodiert. Damit bleiben Umlaute und Sonderzeichen in Feed-Titeln erhalten.
 - Parser-Fix-Commits: `4868f81b4a5c3944ca97595da6deb4485e550990`, `8f0413c95155eb7e9f98a404d6bf221a835ac098`.
+
+## WLAN operating modes (2026-11-09)
+
+Implemented an ATS Mini DEV-style WLAN mode selector under **Einstellungen → WLAN**. The existing setup AP + router-client behavior remains the default for existing installations. The selected mode is stored in the existing `network` NVS namespace using key `wmode`; saved SSIDs/passwords are not erased when changing modes.
+
+Modes:
+- `OFF`: Wi-Fi radio, station connection and setup AP disabled.
+- `AP ONLY`: setup AP `ATS-Mini-OS-Setup` enabled; router station disabled.
+- `AP + CONNECT`: setup AP and saved router station enabled (legacy/default behavior).
+- `CONNECT`: saved router station only; setup AP disabled.
+- `SYNC ONLY`: saved router station only, but only time synchronization is allowed to use the connection; Newsfeed and EiBi downloads are gated off.
+
+The WLAN settings screen marks the active mode and displays actual connection status, network name and active IP address. Selecting a mode applies it immediately and keeps the screen open. The menu is reachable again after selecting OFF, so Wi-Fi can be re-enabled from the device without a web connection. The local web server remains started but is only reachable through an active AP or router interface.
+
+No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager/recovery, Waterfall rendering, scan logic, CPU profile or flash behavior was changed. No build or device flash was run; user performs compile-only verification.
