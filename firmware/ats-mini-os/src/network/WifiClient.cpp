@@ -39,12 +39,14 @@ void WifiClient::begin() {
   }
   if (newsService_) newsService_->setConfiguration(newsConfig_);
   BootDiagnostics::printf("[WIFI] config loaded mode=%u news_enabled=%s interval=%u feed1_configured=%s", static_cast<unsigned>(mode_), newsConfig_.enabled ? "yes" : "no", static_cast<unsigned>(newsConfig_.refreshMinutes), newsConfig_.urls[0][0] ? "yes" : "no");
-  BootDiagnostics::write("[WIFI] before startWebServer");
-  startWebServer();
-  BootDiagnostics::write("[WIFI] startWebServer returned");
+  // Bring up the selected WiFi interface before opening the HTTP listener.
+  // WebServer::begin() must run after the network interface is configured.
   BootDiagnostics::write("[WIFI] before applyMode");
   applyMode();
   BootDiagnostics::write("[WIFI] applyMode returned");
+  BootDiagnostics::write("[WIFI] before startWebServer");
+  startWebServer();
+  BootDiagnostics::write("[WIFI] startWebServer returned");
 }
 
 void WifiClient::applyMode() {
