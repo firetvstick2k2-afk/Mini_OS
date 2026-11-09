@@ -150,7 +150,8 @@ void setup() {
   PartitionDiagnostics::printToSerial();
   Serial.println("[BOOT] partition inventory complete");
   const bool storageReady = StorageDiscovery::begin();
-  BootDiagnostics::begin();
+  const bool settingsReady = settingsStore.begin();
+  BootDiagnostics::begin(settingsStore.bootLogEnabled(true));
   BootDiagnostics::printf("BOOT START reset_reason=%d free_heap=%u max_block=%u storage=%s partition=%s anchor=%s",
     static_cast<int>(esp_reset_reason()),
     static_cast<unsigned>(ESP.getFreeHeap()),
@@ -168,7 +169,6 @@ void setup() {
 
   encoder.begin();
   BootDiagnostics::write("[BOOT] encoder initialized");
-  const bool settingsReady = settingsStore.begin();
   BootDiagnostics::printf("[BOOT] settings store ready=%s", settingsReady ? "yes" : "no");
   Serial.printf("[SETTINGS] dedicated NVS %s\n", settingsReady ? "ready" : "unavailable; using defaults");
   const uint8_t savedBrightness = settingsStore.displayBrightness(180);
