@@ -2357,8 +2357,8 @@ Implemented an ATS Mini DEV-style WLAN mode selector under **Einstellungen → W
 
 Modes:
 - `OFF`: Wi-Fi radio, station connection and setup AP disabled.
-- `AP ONLY`: setup AP `ATS-Mini-OS-Setup` enabled; router station disabled.
-- `AP + CONNECT`: setup AP and saved router station enabled (legacy/default behavior).
+- `WEB ONLY`: setup access point `ATS-Mini-OS-Setup` enabled; router station disabled.
+- `WEB + CONNECT`: setup access point and saved router station enabled (legacy/default behavior).
 - `CONNECT`: saved router station only; setup AP disabled.
 - `SYNC ONLY`: saved router station only, but only time synchronization is allowed to use the connection; Newsfeed and EiBi downloads are gated off.
 
