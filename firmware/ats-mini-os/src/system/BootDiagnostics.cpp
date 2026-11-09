@@ -1,5 +1,6 @@
 #include "BootDiagnostics.h"
 #include <LittleFS.h>
+#include "../storage/StorageDiscovery.h"
 #include <FS.h>
 #include <stdarg.h>
 #include <freertos/FreeRTOS.h>
@@ -16,8 +17,8 @@ constexpr size_t MAX_LOG_BYTES = 131072;
 
 void begin() {
   if (!logMutex) logMutex = xSemaphoreCreateMutex();
-  if (!logMutex || !LittleFS.begin(false, "/littlefs", 10, "littlefs")) {
-    Serial.println("[BOOTLOG] LittleFS append mount unavailable; no format attempted");
+  if (!logMutex || !StorageDiscovery::ready()) {
+    Serial.println("[BOOTLOG] existing LittleFS mount unavailable; no mount/format attempted");
     return;
   }
   if (xSemaphoreTake(logMutex, pdMS_TO_TICKS(500)) != pdTRUE) return;
@@ -29,7 +30,7 @@ void begin() {
     Serial.println("[BOOTLOG] log reached 128 KiB limit; preserving existing file");
     return;
   }
-  logFile = LittleFS.open(LOG_PATH, FILE_APPEND);
+  logFile = LittleFS.open(LOG_PATH, "a");
   ready = static_cast<bool>(logFile);
   if (ready) {
     logFile.printf("\n=== BOOT SESSION %lu ms ===\n", static_cast<unsigned long>(millis()));
