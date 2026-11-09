@@ -2315,3 +2315,16 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Commits: `79c9e6a2616a7ab1d72a71851addcb7ea5e90421` (Header), `33086e4eb14f33fe8b49eb1b8e80b1c5ead3d614` (Weboberfläche).
 - **Noch offen:** News-Konfiguration an die zentrale `NewsService`-Instanz weiterreichen; HTTPS-Feed-Abruf, RSS/Atom-Parsing, Cache und Layout-Renderer. Die Web-Konfiguration allein lädt noch keine Nachrichten.
 - Noch kein Build/Hardwaretest; Nutzer startet Builds selbst. Waterfall und CPU-Profile nicht verändert.
+
+
+## Neues FM-Layout: TEF6686 - Newsfeed (2026-11-09)
+
+- Auf ausdrücklichen Nutzerwunsch wurde das vorhandene TEF6686-FM-Layout als eigenständige Variante geklont.
+- Neuer Menüeintrag: **TEF6686 - Newsfeed** unter Einstellungen → UKW / FM Layouts.
+- Neues Layout ist eigener FM-Layout-Modus `3`; bisherige Modi (DAB Style 0, HJB 1, TEF6686 FM 2) bleiben erhalten.
+- Das normale TEF6686-FM-Layout bleibt unverändert. Die neue Variante zeichnet dieselbe TEF6686-Oberfläche und ersetzt ausschließlich das bisherige RT-Feld durch **NT:**.
+- NT-Feld hat bereits eine eigenständige, geclipte Laufschrift-Animation. Derzeit zeigt sie einen Platzhalter (WLAN online: „NEWSFEED - WARTE AUF MELDUNGEN“, offline: „NEWSFEED - WLAN OFFLINE“).
+- **Noch nicht an echte NewsService-Headlines angebunden:** Dafür muss der NewsService-Abruf/Cache implementiert und der Snapshot in den Display-Aufruf eingespeist werden. Derzeit ist die Layout-/Tickerdarstellung vorbereitet, aber es erscheinen noch keine echten Feed-Meldungen.
+- FM-Layout-Persistenzbereich wurde auf Modus 3 erweitert; Auswahl bleibt nach Neustart speicherbar.
+- Relevante Commits: `b09f9bb`, `2edd971`, `5c5dab0`, `c327edb`, plus Driver-/Settings-Änderungen aus derselben Arbeitsfolge.
+- Noch kein Build/Hardwaretest. Nutzer startet Compile-only-Builds selbst. Waterfall-Rendering und CPU-Profil-/Taktlogik wurden nicht bearbeitet.
