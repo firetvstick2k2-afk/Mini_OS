@@ -13,6 +13,8 @@ public:
 
   uint32_t lastFmFrequencyKHz(uint32_t fallbackKHz);
   bool saveLastFmFrequencyKHz(uint32_t frequencyKHz);
+  uint8_t volume(uint8_t fallback = 32);
+  bool saveVolume(uint8_t volume);
 
   uint8_t displayBrightness(uint8_t fallback = 180);
   bool saveDisplayBrightness(uint8_t brightness);
@@ -41,6 +43,7 @@ public:
 private:
   static constexpr char kNamespace[] = "atsmini_os";
   static constexpr char kFrequencyKey[] = "fm_freq";
+  static constexpr char kVolumeKey[] = "rx_volume";
   static constexpr char kDisplayBrightnessKey[] = "disp_bri";
   static constexpr char kDisplayThemeKey[] = "disp_theme";
   static constexpr char kDisplayFmLayoutKey[] = "disp_fm";
