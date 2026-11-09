@@ -2274,3 +2274,12 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Provider-Vorschlag: Open-Meteo; Koordinaten werden anhand des über die Weboberfläche eingegebenen Orts/PLZ ermittelt. API-Nutzung und Attribution/Lizenzhinweise sind bei Umsetzung zu berücksichtigen.
 - Offline-Verhalten: letzten gültigen Cache behalten und Datenalter/Status kenntlich machen; keine blockierenden Netzwerkaufrufe im Renderpfad.
 - **Noch nicht implementiert.** Vor der Implementierung zuerst vorhandene Weboberfläche, Menü-Navigation, Settings/NVS-Muster und Task-/Update-Architektur prüfen. Waterfall-Rendering und CPU-Profil/Taktung nicht verändern.
+
+
+## Waterfall-Kopfzeile – gezielte Layoutkorrektur
+
+- **2026-11-09:** In `firmware/ats-mini-os/src/display/DisplayLayoutSW.h` wurde die linke Kopfzeile des Waterfall-Layouts auf drei vertikal angeordnete Kästen umgestellt: Band (`ALL` bzw. Bandname), Modulation (`AM/USB/LSB`) und Einheit (`kHz`).
+- Die Frequenz wird jetzt als vollständiger Text mit zentriertem Textdatum auf der Displaymitte ausgegeben. Bei USB/LSB bleibt der BFO-korrigierte Wert mit drei Nachkommastellen erhalten.
+- Die Änderung betrifft ausschließlich die Kopfzeile/Frequenzdarstellung. Waterfall-Sprite, Scroll-Verhalten, RSSI-Mapping, Farben, Jitter und CPU-/Performance-Steuerung wurden nicht verändert.
+- **Commit:** `0188fe065c46374bc9e2f22e42bed8a1daa8f52e`
+- **Status:** Quellcodeänderung committed; noch kein Build und kein Gerätetest. Der Nutzer startet den nächsten OSPI-Compile-only-Build selbst.
