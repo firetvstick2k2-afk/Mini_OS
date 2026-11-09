@@ -21,6 +21,7 @@ void WifiClient::begin() {
 
   preferencesReady_ = preferences_.begin(SETTINGS_NAMESPACE, false, "settings");
   if (preferencesReady_) { loadNetworks(); loadNewsConfig(); }
+  if (newsService_) newsService_->setConfiguration(newsConfig_);
 
   // The local setup page remains reachable even when the router is unavailable.
   WiFi.softAPConfig(SETUP_IP, SETUP_GATEWAY, SETUP_SUBNET);
