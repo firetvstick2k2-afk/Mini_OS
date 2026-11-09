@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Preferences.h>
+#include "../news/NewsService.h"
 
 class WifiClient {
 public:
@@ -19,6 +20,7 @@ private:
   Preferences preferences_;
   char ssid_[NETWORK_COUNT][33] = {};
   char password_[NETWORK_COUNT][65] = {};
+  NewsService::Configuration newsConfig_;
   uint8_t activeNetwork_ = 0;
   wl_status_t lastStatus_ = WL_IDLE_STATUS;
   uint32_t lastLogMs_ = 0;
@@ -34,5 +36,7 @@ private:
   void handleRoot();
   void handleSave();
   void handleStatus();
+  void handleNewsSave();
+  void loadNewsConfig();
   static String htmlEscape(const String& value);
 };
