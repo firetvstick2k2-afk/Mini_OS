@@ -124,28 +124,48 @@ template<class C> void drawSMeter(C& d,const RadioSnapshot& s,bool ready,bool wi
 #endif
 template<class C> void drawDecoder(C& d,const RadioSnapshot& s,bool ready,bool wifi) {
   d.fillScreen(BG);
-  d.setTextDatum(TC_DATUM); d.setTextColor(WHITE,BG);
-  d.setFont(&lgfx::fonts::Orbitron_Light_24);
-  const char* mode=s.modulation==RadioModulation::FM?"FM":(s.modulation==RadioModulation::AM?"AM":(s.modulation==RadioModulation::USB?"USB":"LSB"));
-  char bandMode[24]; snprintf(bandMode,sizeof(bandMode),"%s %s",s.bandName,mode);
   drawNetworkBatteryStatus(d, wifi, 8);
-  d.drawString(bandMode,160,22);
-  d.setTextDatum(TL_DATUM); d.setFont(&lgfx::fonts::Font7); d.setTextColor(WHITE,BG);
-  char freq[24];
-  if(s.modulation==RadioModulation::FM) snprintf(freq,sizeof(freq),"%lu.%02lu",(unsigned long)(s.frequencyKHz/1000UL),(unsigned long)((s.frequencyKHz%1000UL)/10UL));
-  else if(s.modulation==RadioModulation::USB || s.modulation==RadioModulation::LSB) snprintf(freq,sizeof(freq),"%lu.000",(unsigned long)s.frequencyKHz);
-  else snprintf(freq,sizeof(freq),"%lu",(unsigned long)s.frequencyKHz);
-  d.setTextSize(s.modulation==RadioModulation::FM?0.78f:((s.modulation==RadioModulation::USB || s.modulation==RadioModulation::LSB)?0.56f:0.68f));
-  d.setTextDatum(MC_DATUM); d.drawString(freq,160,51); d.setTextSize(1.0f);
-  d.setFont(&lgfx::fonts::FreeSansBold9pt7b); d.setTextColor(WHITE,BG);
-  d.drawString(s.modulation==RadioModulation::FM?"MHz":"kHz",270,73);
-  if(s.modulation==RadioModulation::FM) {
-    d.setTextDatum(TL_DATUM); d.setTextColor(s.stereo?GREEN:RED,BG);
-    d.setFont(&lgfx::fonts::FreeSans9pt7b); d.drawString(s.stereo?"STEREO":"MONO",240,62);
+
+  // Compact band and modulation tiles directly below WLAN+, aligned left.
+  const char* mode=s.modulation==RadioModulation::AM?"AM":
+                   s.modulation==RadioModulation::USB?"USB":"LSB";
+  d.setFont(&lgfx::fonts::Font0);
+  d.setTextDatum(MC_DATUM);
+  d.setTextColor(CYAN,BG);
+  d.drawRect(8,24,42,18,CYAN);
+  d.drawString(s.bandName[0]?s.bandName:"ALL",29,33);
+  d.drawRect(54,24,42,18,CYAN);
+  d.drawString(mode,75,33);
+
+  // ATS Mini DEV drawFrequency style: Font7 right-aligned main digits,
+  // Font4 fractional BFO digits for SSB, and a separate bold unit label.
+  d.setTextColor(WHITE,BG);
+  d.setTextDatum(MR_DATUM);
+  d.setFont(&lgfx::fonts::Font7);
+  if(s.modulation==RadioModulation::USB || s.modulation==RadioModulation::LSB) {
+    const int64_t tunedHz=static_cast<int64_t>(s.frequencyKHz)*1000LL+
+                          static_cast<int64_t>(s.bfoOffsetHz);
+    const uint32_t safeHz=static_cast<uint32_t>(tunedHz<0?0:tunedHz);
+    char whole[16], fraction[16];
+    snprintf(whole,sizeof(whole),"%lu",static_cast<unsigned long>(safeHz/1000UL));
+    snprintf(fraction,sizeof(fraction),".%03lu",static_cast<unsigned long>(safeHz%1000UL));
+    d.drawString(whole,270,43);
+    d.setTextDatum(ML_DATUM);
+    d.setFont(&lgfx::fonts::Font4);
+    d.drawString(fraction,274,60);
+  } else {
+    d.drawNumber(s.frequencyKHz,270,43);
   }
-  d.setTextDatum(TC_DATUM); d.setFont(&lgfx::fonts::FreeSansBold9pt7b); d.setTextColor(GREEN,BG);
+  d.setTextDatum(ML_DATUM);
+  d.setTextColor(WHITE,BG);
+  d.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  d.drawString("kHz",274,67);
+
+  d.setTextDatum(TC_DATUM);
+  d.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  d.setTextColor(GREEN,BG);
   const char* station=s.stationName[0]?s.stationName:(ready?"":"RADIO OFFLINE");
-  if(station && *station) d.drawString(station,145,90);
+  if(station && *station) d.drawString(station,160,91);
   // Original ATS Mini DEV waterfall: 280 x 26 px frame, 278 x 23 px sprite.
   // The scrolling, RSSI mapping, three-color bands and +/-2 px artificial
   // jitter intentionally follow Layout-Decoder.cpp without visual redesign.
