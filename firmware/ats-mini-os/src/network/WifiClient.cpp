@@ -39,7 +39,7 @@ void WifiClient::begin() {
 }
 
 void WifiClient::applyMode() {
-  WiFi.softAPdisconnect(true);
+  WiFi.softAPdisconnect(false);
   WiFi.disconnect(false, false);
   apActive_ = false;
   if (mode_ == Mode::OFF) {
