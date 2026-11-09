@@ -2051,3 +2051,13 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Neu: GitHub-Actions-Cache für `~/.arduino15/staging/packages`. Ein fehlgeschlagener Lauf speichert bereits vollständig heruntergeladene Paketarchive mit einem eindeutigen Schlüssel; der nächste manuell gestartete Lauf kann sie wiederverwenden. Das ist der sichere alternative Transferpfad, ohne ESP32-Core-Version oder Paketquellen zu verändern.
 - Die offizielle Espressif-Paketquelle und Version `esp32:esp32@3.3.12` bleiben unverändert. Ein zusätzlicher Drittanbieter-Mirror wurde bewusst nicht als Paketquelle eingetragen: die geprüften SourceForge-Spiegelangaben belegen Release-Archive, aber nicht die Verfügbarkeit aller einzelnen Arduino-Board-Manager-Toolpakete (insbesondere `esp-x32`).
 - Nach Änderung verifiziert: Workflow-Datei erneut aus dem Branch abrufen und Cache-/Retry-Schritte prüfen. Kein Workflow gestartet; Build muss vom Nutzer manuell ausgelöst werden.
+
+## HJB-Frequenzrenderer originalgetreu aus ATS Mini DEV übernommen – 2026-11-09
+
+- Die optionale Näherungsimplementierung in `LegacyFrequencyRenderer.h` wurde durch eine quellnahe Mini-OS-Portierung von `ats-mini-dev/ats-mini/Draw.cpp::drawFrequency()` ersetzt.
+- Übernommen wurden die originalen FM- und AM/SSB-Highlight-Koordinaten, die 7-Segment-Font7-Ziffern, die Font4-SSB-Nachkommastellen, die MHz/kHz-Einheitenpositionen und die gelbe 800-ms-Abstimmungsanzeige.
+- HJB verwendet den Renderer jetzt direkt; die bisherige manuelle Frequenzdarstellung und das separat platzierte feste `.000` entfallen. Die RDS-Uhr bleibt als alternative FM-Anzeige erhalten.
+- `RadioSnapshot` führt nun zusätzlich `bfoOffsetHz`. `RadioCore` veröffentlicht den aktuellen Tuner-BFO beim Start und nach erfolgreicher BFO-Änderung. Der Renderer berechnet damit die echte SSB-Frequenzpräzision statt eines fest codierten Null-Offsets.
+- Änderungen beschränken sich auf `LegacyFrequencyRenderer.h`, `DisplayLayoutHJB.h`, `RadioSnapshot.h` und `RadioCore.cpp`. TEF6686-, Decoder/Wasserfall- und Tiny-Renderer wurden nicht verändert.
+- DEV-Referenz: `ats-mini/Draw.cpp::drawFrequency()`, Aufrufkontext aus `Layout-Clean.cpp`; der Mini-OS-Renderer bleibt als eigenständige HJB-Komponente modular.
+- **Status:** GitHub-Änderungen gespeichert; noch nicht kompiliert und nicht auf Hardware geprüft. Kein Workflow gestartet und nichts geflasht. Nutzer startet den nächsten Build manuell. HJB-Frequenzposition und Highlight-Digit-Auswahl bitte nach dem Build am Gerät kontrollieren.
