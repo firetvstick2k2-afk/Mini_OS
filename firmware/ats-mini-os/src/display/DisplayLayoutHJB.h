@@ -53,7 +53,7 @@ void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifi
     // The HJB layout uses the right-aligned frequency anchor at x=260.
     LegacyFrequencyRenderer::draw(
       d, s, 235, 92, 240, 92, 100,
-      YELLOW, GREEN, YELLOW, GREEN, 0x07E0, false
+      YELLOW, GREEN, YELLOW, 0x07E0, false
     );
   }
 
