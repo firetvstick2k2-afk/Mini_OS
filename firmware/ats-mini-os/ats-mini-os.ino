@@ -247,7 +247,7 @@ void loop() {
           } else {
             const int16_t itemCount = menuPage == 0 ? 21 :
               menuPage == 2 ? 4 : menuPage == 5 ? 9 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
-              ((menuPage == 14) ? 3 : (menuPage == 15) ? 5 :
+              ((menuPage == 14) ? 4 : (menuPage == 15) ? 5 :
               menuPage == 10 ? 4 : menuPage == 11 ?
               (radio.snapshot().modulation == RadioModulation::FM ? 10 : 14) :
               menuPage == 3 ? 7 :
