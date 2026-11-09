@@ -2072,3 +2072,13 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Geändert: `firmware/ats-mini-os/ats-mini-os.ino`.
 - Code-Commit: `4af3cf50a1881778c6e282b941232474c2d0c30b`.
 - **Status:** GitHub-Änderung gespeichert. Noch nicht kompiliert oder auf Hardware geprüft. Kein Workflow gestartet und nichts geflasht; der nächste Build wird vom Nutzer manuell gestartet.
+
+
+## HJB-Frequenz und Modulationsanzeige zentriert – 2026-11-09
+
+- Aufgrund der Hardwarefotos (AM und USB) wurde ausschließlich `DisplayLayoutHJB.h` angepasst.
+- Frequenzanker des Legacy-Renderers von X=260 auf X=235 verschoben und Y von 74 auf 84 gesetzt. Die Einheit wurde passend auf X=240/Y=84 nachgeführt. Dadurch rückt die Zifferngruppe nach links und unten.
+- Modulationsanzeige von Y=5 auf Y=14 verschoben, damit die Schrift oben nicht mehr abgeschnitten wird.
+- RSSI-/SNR-Anzeige, Station/RDS-Zeilen, Frequenzskala und andere Layouts unverändert.
+- Commit: `e6231f3f9d8b0db059ed4061d62f130a5bf94e76`.
+- **Status:** gespeichert; noch nicht kompiliert oder auf Hardware geprüft. Kein Workflow gestartet; Nutzer startet den Build manuell.
