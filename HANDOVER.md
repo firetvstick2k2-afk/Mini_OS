@@ -2173,15 +2173,14 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - **Status:** Korrektur gespeichert. Noch nicht kompiliert oder auf Hardware geprüft. Kein weiterer Workflow gestartet; Nutzer startet den nächsten Compile-only-Build manuell.
 
 
-## Verbindliche Layout-Regel: ATS Mini DEV-Frequenzdarstellung – 2026-11-09
+## Layout-Entscheidung: ATS Mini DEV oder eigener Mini-OS-Aufbau – 2026-11-09
 
-- Für alle weiteren Layouts, die noch angepasst oder neu aufgebaut werden, soll die aus ATS Mini DEV übertragene `LegacyFrequencyRenderer::draw()`-Funktion als gemeinsame Frequenzdarstellung verwendet werden, sofern das Layout fachlich dazu passt.
-- Die Layouts sollen sich im Aufbau und in der Darstellung eng am jeweiligen ATS-Mini-DEV-Vorbild orientieren: gleiche Schriftart/-größe und Frequenzdarstellung, sauber ausgerichtet; Position und Ausrichtung (z. B. höher und linksbündig) werden je Layout passend festgelegt.
-- Nicht pauschal alle Layouts identisch machen: layouttypische Elemente, Modulationen, Skalen und Statusanzeigen bleiben erhalten. Nur die Frequenzdarstellung und deren saubere Integration folgen dem DEV-Prinzip.
-- Das vom Nutzer gezeigte Foto wurde ausdrücklich als **TinyRadio-Layout** identifiziert, nicht als HJB.
-- Die zuletzt bestätigte UKW-Frequenz-Persistenz soll um Speicherung und Wiederherstellung der Lautstärke beim Neustart ergänzt werden.
-- Änderungen weiterhin gezielt und layoutweise umsetzen; funktionierende Layouts nicht unnötig verändern. Vor Umsetzung aktuelle Dateien und gegebenenfalls die ATS Mini DEV-Referenz prüfen.
-
+- Bei neuen Layouts und bei Layout-Überarbeitungen besteht ausdrücklich Gestaltungsfreiheit: Je nach Eignung verwenden wir entweder eine im ATS Mini DEV bewährte Draw-Funktion bzw. deren Darstellungsprinzip **oder** die bereits vorhandene eigene Draw-Funktion von ATS Mini OS.
+- Es gibt keine Pflicht, jedes Layout auf `LegacyFrequencyRenderer::draw()` umzustellen und auch keine Pflicht, jedes Layout 1:1 aus ATS Mini DEV zu kopieren.
+- Die Entscheidung wird pro Layout getroffen: Was optisch und technisch besser passt und sich bewährt, wird verwendet. DEV dient als wertvolle Referenz, Mini OS darf seine eigenen Lösungen behalten und weiterentwickeln.
+- Koordinaten, Schriftarten, Größen und Abstände werden passend zum jeweiligen Layout gewählt; die individuellen Elemente und der Charakter jedes Layouts bleiben erhalten.
+- TinyRadio ist ein konkreter Fall, bei dem die originale ATS-Mini-DEV-Zeichenroutine für die Frequenzdarstellung übernommen wurde (siehe Abschnitt zur TinyRadio-Ausrichtung weiter unten).
+- Funktionierende Layouts nicht unnötig verändern. Vor jeder Anpassung aktuelle Mini-OS-Dateien und bei Bedarf das passende ATS-Mini-DEV-Original vergleichen.
 
 ## TinyRadio-Layout und Lautstärke-Persistenz – 2026-11-09
 
