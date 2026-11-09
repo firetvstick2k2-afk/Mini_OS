@@ -454,9 +454,9 @@ void DisplayDriver::setTheme(uint8_t index) {
 }
 
 void DisplayDriver::setFmLayout(uint8_t mode) {
-  fmLayout_ = mode <= 2 ? mode : 0;
+  fmLayout_ = mode <= 3 ? mode : 0;
   lastGeneration_ = UINT32_MAX;
-  Serial.printf("[DISPLAY] FM layout: %s\\n", fmLayout_ == 1 ? "HJB" : (fmLayout_ == 2 ? "TEF6686 -FM Version" : "DAB Style"));
+  Serial.printf("[DISPLAY] FM layout: %s\\n", fmLayout_ == 1 ? "HJB" : (fmLayout_ == 3 ? "TEF6686 - Newsfeed" : (fmLayout_ == 2 ? "TEF6686 -FM Version" : "DAB Style")));
 }
 
 void DisplayDriver::setAmLayout(uint8_t mode) {
@@ -696,6 +696,34 @@ void drawLayout(Canvas& canvas,const RadioSnapshot& s,bool radioReady,bool wifiC
   canvas.clearClipRect();
 }
 template <typename Canvas>
+void drawTef6686FmNewsfeed(Canvas& c, const RadioSnapshot& s, bool wifiConnected) {
+  // Independent TEF6686 FM clone: only RT is replaced by the NT news ticker.
+  drawTef6686FmVersion(c, s, wifiConnected);
+  constexpr uint16_t BG=0x0000, BLUE=0x001F, GREEN_TEF=0xBFE0, CYAN=0x07FF;
+  constexpr int ntX=10, ntY=141, ntW=300, ntH=22;
+  c.fillRect(ntX+1,ntY+1,ntW-2,ntH-2,BG);
+  c.drawRect(ntX,ntY,ntW,ntH,BLUE);
+  c.setFont(&lgfx::fonts::FreeSans9pt7b);
+  c.setTextDatum(TL_DATUM);
+  c.setTextColor(CYAN,BG);
+  c.drawString("NT:",ntX+5,ntY+2);
+  // NewsService snapshot is connected in the next data-pipeline step.
+  // Until the first feed is available, show a clear non-RDS placeholder.
+  static uint32_t tickerStartMs=0;
+  if(!tickerStartMs) tickerStartMs=millis();
+  const char* message=wifiConnected?"NEWSFEED - WARTE AUF MELDUNGEN":"NEWSFEED - WLAN OFFLINE";
+  const int textX=ntX+40;
+  const int clipX=textX, clipY=ntY+1, clipW=ntW-45, clipH=ntH-2;
+  c.setTextColor(GREEN_TEF,BG);
+  c.setClipRect(clipX,clipY,clipW,clipH);
+  const int width=c.textWidth(message);
+  const int travel=width+clipW+24;
+  const int offset=static_cast<int>(((millis()-tickerStartMs)/35UL)%static_cast<uint32_t>(travel));
+  c.drawString(message,textX+clipW-offset,ntY+2);
+  c.clearClipRect();
+}
+
+template <typename Canvas>
 void drawTef6686FmVersion(Canvas& c, const RadioSnapshot& s, bool wifiConnected) {
   constexpr uint16_t BG=0x0000, BLUE=0x001F, CYAN=0x07FF;
   constexpr uint16_t GREEN_TEF=0xBFE0, GREY=0x4208, YELLOW_TEF=0xFFE0, RED_TEF=0xF800;
@@ -799,7 +827,7 @@ void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnect
   // FM and AM/SSB keep independent layout selections. The established
   // FM logo/RDS screen remains untouched as the DAB Style option.
   if (s.modulation == RadioModulation::FM) {
-    if (fmLayout_ == 2) {
+    if (fmLayout_ == 3) {\n      if (useSprite_) { sprite_.fillSprite(BLACK); drawTef6686FmNewsfeed(sprite_, s, wifiConnected); sprite_.pushSprite(0, 0); }\n      else { device_.fillScreen(BLACK); drawTef6686FmNewsfeed(device_, s, wifiConnected); }\n      return;\n    }\n    if (fmLayout_ == 2) {
       if (useSprite_) { sprite_.fillSprite(BLACK); drawTef6686FmVersion(sprite_, s, wifiConnected); sprite_.pushSprite(0, 0); }
       else { device_.fillScreen(BLACK); drawTef6686FmVersion(device_, s, wifiConnected); }
       return;
