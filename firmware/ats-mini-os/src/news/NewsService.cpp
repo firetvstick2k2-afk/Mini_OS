@@ -2,10 +2,19 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
-#include <esp_crt_bundle.h>
 #include <string.h>
 
 namespace {
+// Arduino-ESP32 3.3.x exposes the built-in ESP-IDF certificate bundle through
+// esp_crt_bundle_attach(). Keep this tiny adapter local to the NewsService;
+// it uses the same protected SSL context/helper as NetworkClientSecure itself.
+class NewsFeedTlsClient : public WiFiClientSecure {
+public:
+  void useDefaultCertificateBundle() {
+    attach_ssl_certificate_bundle(sslclient.get(), true);
+  }
+};
+
 constexpr size_t MAX_RESPONSE_BYTES = 24576;
 constexpr uint32_t CONNECT_TIMEOUT_MS = 5000;
 constexpr uint32_t READ_TIMEOUT_MS = 5000;
@@ -107,8 +116,8 @@ void parseFeed(const String& xml,uint8_t source,NewsService::Snapshot& snap) {
   }
 }
 bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
-  WiFiClientSecure tls;
-  tls.setCACertBundle(x509_crt_bundle_start);
+  NewsFeedTlsClient tls;
+  tls.useDefaultCertificateBundle();
   HTTPClient http;
   http.setConnectTimeout(CONNECT_TIMEOUT_MS);
   http.setTimeout(READ_TIMEOUT_MS);
