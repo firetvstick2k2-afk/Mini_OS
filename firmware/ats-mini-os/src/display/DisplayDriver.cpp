@@ -317,7 +317,8 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   }
   if (page == 5 && selection == 10) {
     snprintf(displayLabel, sizeof(displayLabel), "BOOT-LOG: %s", bootLogEnabled ? "EIN" : "AUS");
-  }\n  if (page == 8 && selection > 0) {
+  }
+  if (page == 8 && selection > 0) {
     const RadioBandDefinition& band = BandManager::at(static_cast<uint8_t>(selection-1));
     snprintf(displayLabel, sizeof(displayLabel), "%s", band.name);
   }
