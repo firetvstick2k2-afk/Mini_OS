@@ -2217,3 +2217,14 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Beim nächsten Start mit dieser Firmware werden vorhandene Altdateien `/ats-mini-os.log` und `/ats-mini-os.log.1` gezielt gelöscht, sofern StorageDiscovery LittleFS erfolgreich und sicher bereitgestellt hat. Es wird kein Formatieren ausgelöst. Das bestehende LittleFS-/Anchor-Schutzverhalten bleibt unverändert.
 - Code-Commit: `26ab169f84a196b93c6d1c6832485c1ce5117976`.
 - **Status:** Gespeichert. Noch nicht neu kompiliert oder auf dem Gerät gestartet. Die bereits auf dem Gerät liegende Firmware kann die Datei bis zum Flashen/Start der korrigierten Firmware weiterhin führen.
+
+
+### TinyRadio-Ausrichtung nach echtem ATS-Mini-DEV-Original korrigiert – 2026-11-09
+
+- Referenzdateien aus `13HN2709/ats-mini-dev` geprüft: `ats-mini/Layout-TinyRadio.cpp` und `ats-mini/Draw.cpp`.
+- Wichtige Feststellung: Das DEV-TinyRadio zeichnet die Frequenz **nicht** über `drawFrequency()`/den rechtsbündigen Legacy-Renderer. Es formatiert die komplette Frequenz samt Einheit und zeichnet sie linksbündig bei `TL_DATUM`, X=8, Y=36 mit `FONT_LARGE` (Font4). Mini OS übernimmt dieses Verhalten nun mit RadioSnapshot-/BFO-Daten.
+- Der vorherige Renderer-Anker X=310 war falsch: Der Renderer verwendet `MR_DATUM`, also ist X die rechte Kante und die Frequenz lief in die Kopfzeile bzw. aus dem Layout.
+- Nach Entfernung des FM-Modulationsfelds werden AM/LSB/USB nun wie im DEV-Original links bei X=3, 43 und 83 gezeichnet (36 px Kästchen, 40 px Abstand). Keine Lücke mehr links.
+- VHF bleibt aus der oberen Bandreihe entfernt; LW/MW/SW/BT/WEB bleiben links bei X=2, 37, 72, 107, 142.
+- Code-Commit: `5f45aa3c17c3451aa9e46bd2aada26f6b87c39f2`.
+- **Status:** Korrektur gespeichert. Noch nicht kompiliert oder auf Hardware geprüft.
