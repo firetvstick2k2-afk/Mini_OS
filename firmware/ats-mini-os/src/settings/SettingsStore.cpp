@@ -150,3 +150,11 @@ bool SettingsStore::saveCpuProfile(uint8_t profile) {
   return ready_ && profile <= 3 &&
          preferences_.putUChar(kCpuProfileKey, profile) == sizeof(uint8_t);
 }
+
+bool SettingsStore::bootLogEnabled(bool fallback) {
+  return ready_ ? preferences_.getBool(kBootLogEnabledKey, fallback) : fallback;
+}
+
+bool SettingsStore::saveBootLogEnabled(bool enabled) {
+  return ready_ && preferences_.putBool(kBootLogEnabledKey, enabled) == sizeof(bool);
+}
