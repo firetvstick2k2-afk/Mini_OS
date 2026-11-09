@@ -206,7 +206,7 @@ void drawFileMenu(Canvas& c,const char* path,FileManager::Entry* entries,uint8_t
 }
 
 template <typename Canvas>
-void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive) {
+void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp) {
   const int w = canvas.width();
   const int h = canvas.height();
   // Main-menu labels intentionally match ATS Mini Dev verbatim.
@@ -241,13 +241,13 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   static const char* const fmStepItems[] = { "Zurück", "10 kHz (DX)", "50 kHz", "100 kHz", "200 kHz", "1 MHz" };
   static const char* const amStepItems[] = { "Zurück", "1 kHz", "5 kHz", "9 kHz", "10 kHz" };
   static const char* const wifiItems[] = {
-    "Zurück", "WLAN-Modus (später)", "Web Control (später)"
+    "Zurück", "OFF", "AP ONLY", "AP + CONNECT", "CONNECT", "SYNC ONLY"
   };
   static const char* const cpuProfileItems[] = { "Zurück", "Auto", "80 MHz", "160 MHz", "240 MHz" };
   static const char* const systemItems[] = {
     "Zurück", "Anzeige", "CPU-Profil", "Systeminfo (später)", "Dateimanager",
     "UTC+01:00 * (Sommer +02:00)", "UKW / FM Layouts", "KW / MW / LW Layouts",
-    "EiBi Fahrplan laden"
+    "EiBi Fahrplan laden", "WLAN"
   };
   const char* const* items = mainItems;
   uint8_t count = sizeof(mainItems) / sizeof(mainItems[0]);
@@ -319,6 +319,11 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     const RadioBandDefinition& band = BandManager::at(static_cast<uint8_t>(selection-1));
     snprintf(displayLabel, sizeof(displayLabel), "%s", band.name);
   }
+  if (page == 4 && selection > 0 && selection - 1 == wifiMode) {
+    char marked[72];
+    snprintf(marked, sizeof(marked), "* %s", displayLabel);
+    snprintf(displayLabel, sizeof(displayLabel), "%s", marked);
+  }
   if ((page == 14 || page == 15) && selection > 0) {
     // Keep the currently selected layout marked, as in the Dev menu.
     const bool active = page == 14 ? (selection-1 == layoutMode) :
@@ -341,7 +346,8 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   }
   const bool showLevel = (page == 1 && selection == 1) || (page == 2 && selection == 1);
   const bool showBandRange = page == 8 && selection > 0;
-  const int labelY = showLevel ? 101 : (showBandRange ? 53 : (h/2)-12);
+  const bool showWifiInfo = page == 4;
+  const int labelY = showWifiInfo ? 58 : (showLevel ? 101 : (showBandRange ? 53 : (h/2)-12));
   const int labelX=(w-labelWidth)/2;
   drawMenuDigitalText(canvas,displayLabel,labelX,labelY,menuCyan,menuFont);
 
@@ -362,6 +368,24 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     canvas.setTextDatum(MC_DATUM);
     canvas.setTextColor(menuCyan, BLACK);
     canvas.drawCenterString(rangeText, w/2, 101);
+  }
+
+  if (showWifiInfo) {
+    char statusText[48];
+    const bool wifiOn = wifiMode != 0;
+    snprintf(statusText, sizeof(statusText), "WLAN STATUS: %s",
+      !wifiOn ? "AUS" : (wifiConnected ? "VERBUNDEN" : "AN"));
+    canvas.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+    canvas.setTextDatum(MC_DATUM);
+    canvas.setTextColor(wifiOn ? menuCyan : MUTED, BLACK);
+    canvas.drawCenterString(statusText, w/2, 91);
+    canvas.setFont(&lgfx::fonts::Font0);
+    canvas.setTextColor(WHITE, BLACK);
+    char detail[64];
+    snprintf(detail, sizeof(detail), "NETZ: %.28s", (wifiSsid && wifiSsid[0]) ? wifiSsid : "--");
+    canvas.drawCenterString(detail, w/2, 113);
+    snprintf(detail, sizeof(detail), "IP: %.36s", (wifiIp && wifiIp[0]) ? wifiIp : "--");
+    canvas.drawCenterString(detail, w/2, 131);
   }
 
   // Show the numeric level above the selected menu label.
@@ -468,7 +492,7 @@ void DisplayDriver::setAmLayout(uint8_t mode) {
 void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConnected,
                            const char* lastInputEvent,uint32_t inputEventCount,
                            StationLogoClient* logoClient, bool menuOpen,
-                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading, const NewsService::Snapshot* newsSnapshot) {
+                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading, const NewsService::Snapshot* newsSnapshot, uint8_t wifiMode, const char* wifiSsid, const char* wifiIp) {
   if(!ready_)return;
   const uint32_t now=millis();
   const bool returningToRadio = !menuOpen && lastMenuOpen_;
@@ -495,7 +519,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
     if(menuPage==6){if(useSprite_){sprite_.fillSprite(BLACK);drawFileMenu(sprite_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFileMenu(device_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);}return;}
     if (useSprite_) {
       sprite_.fillSprite(BLACK);
-      drawMenu(sprite_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive);
+      drawMenu(sprite_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp);
       sprite_.pushSprite(0,0);
     } else {
       device_.fillScreen(BLACK);
