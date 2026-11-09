@@ -2396,3 +2396,10 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Commit: `0109de25594a64d6c4b4b3b62e92be9f26bb8859`.
 - Scope limited to diagnostics; no functional behavior, settings, radio, display, or NewsService behavior changed.
 - No build/workflow started and no device flashed. Await user-run build/APP1 test and next boot log.
+
+### WiFi startup ordering adjustment — 2026-11-09
+- Two new boot logs show every HTTP route registration and `onNotFound` succeeds; both sessions stop immediately before `server_.begin()`.
+- Changed `WifiClient::begin()` order: run `applyMode()` first (configure/start the selected WiFi interface and AP/STA), then call `startWebServer()` / `server_.begin()`.
+- Existing granular diagnostics remain in place. No other files or subsystems changed.
+- Commit: `c25939d0b52981f7552ed94c899fa58f2b6bc48d`.
+- No build/workflow started and no device flashed. Await user-run build and boot log.
