@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include "../radio/RadioSnapshot.h"
 #include "DisplayStatusBar.h"
+#include "LegacyFrequencyRenderer.h"
 
 // HJB layout ported from ats-mini-dev/Layout-HJB.cpp.
 // It is deliberately logo-free and consumes only the published radio snapshot.
@@ -39,24 +40,21 @@ void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifi
     snprintf(clockText,sizeof(clockText),"%02u:%02u",
       static_cast<unsigned>(s.rdsClockHour),static_cast<unsigned>(s.rdsClockMinute));
   }
-  d.setTextDatum(MC_DATUM);
-  d.setTextColor(YELLOW,BG);
-  d.setFont(&lgfx::fonts::Font7);
-  d.setTextSize(1.12f);
-  if(clockText[0]) d.drawString(clockText,160,104);
-  else if(s.modulation==RadioModulation::FM) d.drawFloat(s.frequencyKHz/1000.0f,2,160,104);
-  else d.drawNumber(s.frequencyKHz,160,104);
-  d.setTextSize(1.0f);
-
-  // SSB carrier precision is intentionally kept small below the RSSI/SNR area
-  // so it does not shrink or compete with the main frequency digits.
-  if(s.modulation==RadioModulation::USB || s.modulation==RadioModulation::LSB) {
-    char precision[16];
-    snprintf(precision,sizeof(precision),".000");
+  if(clockText[0]) {
     d.setTextDatum(MC_DATUM);
     d.setTextColor(YELLOW,BG);
-    d.setFont(&lgfx::fonts::Font0);
-    d.drawString(precision,289,103);
+    d.setFont(&lgfx::fonts::Font7);
+    d.setTextSize(1.12f);
+    d.drawString(clockText,160,104);
+    d.setTextSize(1.0f);
+  } else {
+    // Original DEV renderer: seven-segment digits, exact digit underline
+    // geometry, MHz/kHz placement, SSB BFO precision and 800 ms tune cue.
+    // The HJB layout uses the right-aligned frequency anchor at x=260.
+    LegacyFrequencyRenderer::draw(
+      d, s, 260, 74, 266, 74, 100,
+      YELLOW, GREEN, YELLOW, GREEN
+    );
   }
 
   // Left signal history: RSSI trace with SNR reference line.
