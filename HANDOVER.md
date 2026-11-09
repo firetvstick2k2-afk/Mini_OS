@@ -2151,3 +2151,13 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Kleine, gezielte Änderungen; keine unnötigen Umbauten.
 - Nach jedem Code-Commit Handover ergänzen und geänderte Datei erneut abrufen.
 - Keine Änderungen an Main, keine Build-Auslösung ohne ausdrücklichen Auftrag.
+
+
+## HJB-Einheitenkasten unter RSSI/SNR – 2026-11-09
+
+- Aktives Zielrepository: `firetvstick2k2-afk/Mini_OS`; Arbeitsbranch ausschließlich `dev/first-build-preparation`. Historische Repository-Angaben in älteren Abschnitten sind nicht das aktive Ziel.
+- Im HJB-Layout wurde die Einheit aus der Frequenzzeile entfernt. Frequenzziffern, Position (Anker X=235/Y=92), BFO-Nachkommastellen, Highlight-Geometrie und Modulationsanzeige (Y=14) bleiben unverändert.
+- Neuer separater Einheitenkasten links unter dem RSSI/SNR-Verlauf: X=7, Y=102, Größe 62×16 px; Inhalt fest `kHz`. HJB bleibt ein AM-/USB-/LSB-Layout; keine FM-/MHz-Umschaltung.
+- `LegacyFrequencyRenderer.h` erhielt einen optionalen Parameter `showUnit` (Standard `true`). Damit kann HJB die Inline-Einheit unterdrücken, ohne das Standardverhalten anderer Aufrufer zu ändern.
+- Nur `DisplayLayoutHJB.h`, `LegacyFrequencyRenderer.h` und dieses HANDOVER wurden geändert. Keine anderen Layouts, Radio-Core-Funktionen, Speicher-/Bootpfade oder Workflows wurden verändert.
+- **Status:** Änderungen auf `dev/first-build-preparation` gespeichert. Noch nicht kompiliert und nicht auf Hardware geprüft. Kein GitHub-Actions-Workflow gestartet und nichts geflasht. Nutzer startet den nächsten Compile-only-Build manuell.
