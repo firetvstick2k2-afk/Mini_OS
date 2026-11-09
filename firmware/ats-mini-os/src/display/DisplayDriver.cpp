@@ -241,7 +241,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   static const char* const fmStepItems[] = { "Zurück", "10 kHz (DX)", "50 kHz", "100 kHz", "200 kHz", "1 MHz" };
   static const char* const amStepItems[] = { "Zurück", "1 kHz", "5 kHz", "9 kHz", "10 kHz" };
   static const char* const wifiItems[] = {
-    "Zurück", "OFF", "AP ONLY", "AP + CONNECT", "CONNECT", "SYNC ONLY"
+    "Zurück", "OFF", "WEB ONLY", "WEB + CONNECT", "CONNECT", "SYNC ONLY"
   };
   static const char* const cpuProfileItems[] = { "Zurück", "Auto", "80 MHz", "160 MHz", "240 MHz" };
   static const char* const systemItems[] = {
