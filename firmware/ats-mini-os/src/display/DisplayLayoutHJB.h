@@ -52,7 +52,7 @@ void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifi
     // geometry, MHz/kHz placement, SSB BFO precision and 800 ms tune cue.
     // The HJB layout uses the right-aligned frequency anchor at x=260.
     LegacyFrequencyRenderer::draw(
-      d, s, 235, 84, 240, 84, 100,
+      d, s, 235, 92, 240, 92, 100,
       YELLOW, GREEN, YELLOW, GREEN
     );
   }
@@ -147,7 +147,7 @@ void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifi
     }
     const float pos=constrain((static_cast<float>(s.frequencyKHz)-lo)/static_cast<float>(span),0.0f,1.0f);
     const int mx=left+static_cast<int>(pos*(right-left));
-    d.fillTriangle(mx-4,y-1,mx+4,y-1,mx,y+5,RED);
-    d.drawFastVLine(mx,y+5,17,RED);
+    d.fillTriangle(mx-4,y-18,mx+4,y-18,mx,y-10,RED);
+    d.drawFastVLine(mx,y-10,10,RED);
   }
 }
