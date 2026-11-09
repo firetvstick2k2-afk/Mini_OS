@@ -2375,3 +2375,17 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - **Kein `setInsecure()`** und keine Abschaltung der TLS-Zertifikatsprüfung.
 - Geänderter Commit: `292329813b251b2d2c48eb0af3b7ec56838a28b2`.
 - Build nicht gestartet; Korrektur ist noch nicht kompiliert und nicht auf Hardware getestet. Nutzer startet den nächsten Compile-only-Run selbst.
+
+
+## Persistentes Boot-Diagnoselog für WLAN-/Newsfeed-Startfehler (2026-11-09)
+
+- Nutzer meldet Bootschleife: Bootloader/Recovery bleiben stabil; beim Start des OS ist kurz Radioton hörbar, danach schwarzer Bildschirm und Reset. Ursache noch nicht bestätigt.
+- Beim Prüfen von `ats-mini-os.ino` wurde festgestellt, dass ein alter Diagnoseblock bei jedem Start `/ats-mini-os.log`, `/ats-mini-os.log.1` und `/ats-mini-os.boot` löschte. Dieser Löschblock wurde entfernt.
+- Neues Modul `src/system/BootDiagnostics.h/.cpp`: schreibt Diagnoseeinträge nach dem bereits erfolgreich erkannten LittleFS-Mount in `/ats-mini-os-boot.log`; öffnet ausschließlich im Append-Modus, formatiert/mountet keine Partition selbst, löscht keine Dateien und begrenzt die Logdatei auf 128 KiB. Bei Erreichen des Limits bleibt die vorhandene Datei erhalten und es werden keine weiteren Einträge angehängt.
+- Bootablauf protokolliert Reset-Grund, Heap, Partition-/Storage-Erkennung, EiBi, FileManager, Logo-Client, Encoder, NVS-Einstellungen, Display, Radio, WLAN und NewsService. Zusätzlich Heartbeat aus der Hauptschleife.
+- `WifiClient.cpp` protokolliert Preferences, Webserverstart, WLAN-Modus, AP-/STA-Aktivierung und Rückkehr von `WiFi.begin()`; keine SSIDs oder Passwörter werden geloggt.
+- `NewsService.cpp` protokolliert Workerstart, Refresh-Auslösung, CA-Bundle-Aktivierung, HTTP-Begin und GET-Ergebnis. Keine Feed-URLs oder Inhalte werden geloggt.
+- Schreibzugriffe auf die Logdatei werden über einen FreeRTOS-Mutex serialisiert, damit Haupttask und News-Worker nicht gleichzeitig in dieselbe Datei schreiben.
+- Logdatei ist nach erfolgreichem Start über den Dateimanager als `/ats-mini-os-boot.log` erreichbar.
+- Geänderte Commits: BootDiagnostics Header `04e04684a1460bb70d813309f1172975a18238af`, Implementierung `42aace455760560176901480502c22061de992cd`, Main-Setup `6d5e5075768efa7936ded0d3c7f8b6107f395d77`, WLAN-Diagnose `477e87f73ee820be456219cc058210c84fac76d6`, News-Diagnose `844e6b3db3dab6e1035fd57a33c14e4e07268332`.
+- **Noch nicht kompiliert oder getestet.** Kein GitHub-Actions-Workflow gestartet, kein Flash ausgeführt. Diagnose wird erst in einem Build verfügbar sein, der diese Commits enthält.
