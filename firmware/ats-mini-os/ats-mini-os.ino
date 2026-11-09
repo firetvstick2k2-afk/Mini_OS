@@ -9,6 +9,7 @@
 #include "src/display/DisplayDriver.h"
 #include "src/input/EncoderInput.h"
 #include "src/network/WifiClient.h"
+#include "src/news/NewsService.h"
 #include "src/logo/StationLogoClient.h"
 #include "src/system/PartitionDiagnostics.h"
 #include "src/storage/StorageDiscovery.h"
@@ -31,6 +32,7 @@ bool brightnessSavePending = false;
 bool themeSavePending = false;
 EncoderInput encoder;
 WifiClient wifi;
+NewsService newsService;
 StationLogoClient stationLogoClient;
 uint32_t lastStatusMs = 0;
 uint32_t lastObservedFmFrequencyKHz = DEFAULT_FM_FREQUENCY_KHZ;
@@ -202,12 +204,15 @@ void setup() {
       static_cast<unsigned>(softMuteDb), static_cast<unsigned>(avcGain));
     Serial.printf("Radio ready: %.1f MHz\n",radio.snapshot().frequencyKHz/1000.0f);
   } else Serial.println("[TUNER] init failed; check I2C, radio power and GPIO configuration.");
+  wifi.setNewsService(&newsService);
   wifi.begin();
+  newsService.begin();
   Serial.printf("CPU profile: %s\n",performance.profileName());
 }
 void loop() {
   performance.update();
   wifi.update();
+  newsService.update(wifi.connected());
   systemClock.update(wifi.connected());
   struct tm utcNow{};
   const bool utcValid = systemClock.getUtc(utcNow);
