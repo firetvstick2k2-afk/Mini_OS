@@ -2171,3 +2171,13 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Korrektur: Aufrufparameter auf `YELLOW, GREEN, YELLOW, 0x07E0, false` reduziert. Keine Koordinaten, Frequenzdarstellung, Highlight-Geometrie oder andere Layouts geändert.
 - Code-Commit: `3c43bbcf245268a32e19cd94c5d398c4ec7cfad5`.
 - **Status:** Korrektur gespeichert. Noch nicht kompiliert oder auf Hardware geprüft. Kein weiterer Workflow gestartet; Nutzer startet den nächsten Compile-only-Build manuell.
+
+
+## Verbindliche Layout-Regel: ATS Mini DEV-Frequenzdarstellung – 2026-11-09
+
+- Für alle weiteren Layouts, die noch angepasst oder neu aufgebaut werden, soll die aus ATS Mini DEV übertragene `LegacyFrequencyRenderer::draw()`-Funktion als gemeinsame Frequenzdarstellung verwendet werden, sofern das Layout fachlich dazu passt.
+- Die Layouts sollen sich im Aufbau und in der Darstellung eng am jeweiligen ATS-Mini-DEV-Vorbild orientieren: gleiche Schriftart/-größe und Frequenzdarstellung, sauber ausgerichtet; Position und Ausrichtung (z. B. höher und linksbündig) werden je Layout passend festgelegt.
+- Nicht pauschal alle Layouts identisch machen: layouttypische Elemente, Modulationen, Skalen und Statusanzeigen bleiben erhalten. Nur die Frequenzdarstellung und deren saubere Integration folgen dem DEV-Prinzip.
+- Das vom Nutzer gezeigte Foto wurde ausdrücklich als **TinyRadio-Layout** identifiziert, nicht als HJB.
+- Die zuletzt bestätigte UKW-Frequenz-Persistenz soll um Speicherung und Wiederherstellung der Lautstärke beim Neustart ergänzt werden.
+- Änderungen weiterhin gezielt und layoutweise umsetzen; funktionierende Layouts nicht unnötig verändern. Vor Umsetzung aktuelle Dateien und gegebenenfalls die ATS Mini DEV-Referenz prüfen.
