@@ -1,5 +1,4 @@
 #include "RadioCore.h"
-#include "../system/DiagnosticLog.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -178,32 +177,7 @@ bool RadioCore::nextChannel(int16_t acceleratedDelta) {
   if (offset < 0) offset += span;
   const uint32_t targetKHz = minimum + static_cast<uint32_t>(offset);
 
-  // Focused diagnostics for the reported reset region (14–22 MHz).
-  if ((snapshot_.frequencyKHz >= 14000 && snapshot_.frequencyKHz <= 22000) ||
-      (targetKHz >= 14000 && targetKHz <= 22000)) {
-    char details[224];
-    snprintf(details, sizeof(details),
-      "current=%lu delta=%d step=%lu min=%lu max=%lu span=%lld offset=%lld target=%lu mode=%u band=%s",
-      static_cast<unsigned long>(snapshot_.frequencyKHz),
-      static_cast<int>(acceleratedDelta),
-      static_cast<unsigned long>(step),
-      static_cast<unsigned long>(minimum),
-      static_cast<unsigned long>(maximum),
-      static_cast<long long>(span),
-      static_cast<long long>(offset),
-      static_cast<unsigned long>(targetKHz),
-      static_cast<unsigned>(snapshot_.modulation), band.name);
-    writeDiagnosticLog("TUNE_NEXT", details);
-  }
   const bool tuned = tune(targetKHz);
-  if ((targetKHz >= 14000 && targetKHz <= 22000) ||
-      (snapshot_.frequencyKHz >= 14000 && snapshot_.frequencyKHz <= 22000)) {
-    char details[112];
-    snprintf(details, sizeof(details), "ok=%u requested=%lu snapshot=%lu",
-      tuned ? 1U : 0U, static_cast<unsigned long>(targetKHz),
-      static_cast<unsigned long>(snapshot_.frequencyKHz));
-    writeDiagnosticLog("TUNE_RESULT", details);
-  }
   return tuned;
 }
 
