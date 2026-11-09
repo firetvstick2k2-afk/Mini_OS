@@ -2249,3 +2249,14 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Layout-Commit: `df85568959b57fe502c4191f750c0b69fd5a2470`.
 - Menü-Commit: `4f89a3e6649f745f642db6cc285dc2f02e62e26d`.
 - **Status:** Gespeichert und erneut aus dem Branch abgerufen; noch nicht kompiliert oder am Gerät geprüft.
+
+
+## Wetterbericht: verbindliche UI- und Konfigurationsvorgaben – 2026-11-09
+
+- Nutzer hat ausdrücklich **Weboberfläche** statt Eingabe am ATS Mini gewählt. Standort (Postleitzahl/Ort) wird über die bestehende WLAN-Konfigurationsseite am Handy eingegeben und in der eigenen Mini-OS-NVS-Konfiguration gespeichert; keine Ortsannahme oder GPS-Abfrage.
+- Im ATS-Mini-Menü soll ein eigenständiger Eintrag **`Wetterbericht`** erscheinen.
+- Beim Öffnen hat die Wetteransicht **genau zwei Seiten**: **Seite 1 „Heute“** mit aktuellen Bedingungen und heutiger Wetterlage; **Seite 2 „Nächste Tage“** mit einer mehrtägigen Vorhersage. Bedienung per Encoder, zurück ins Menü; genaue Eingabe-/Navigationslogik vor Implementierung mit bestehendem Menü abgleichen.
+- Als Quelle ist Open-Meteo vorgesehen (Geocoding für Postleitzahl/Ort, aktuelle und tägliche Vorhersage, timezone=auto). Anzeige mit lokalen ressourcenschonenden Wetter-Icons; Quellenangabe.
+- Netzwerkabfragen zeitlich begrenzen, nicht im Waterfall-Rendering oder zeitkritischen Radio-/Displaypfad ausführen. Letzte erfolgreiche Wetterdaten möglichst zwischenspeichern; bei fehlendem Internet verständlichen Offline-/Fehlerstatus anzeigen.
+- Keine Änderungen an Waterfall, CPU-Taktung, Boot-/Partition-/LittleFS-Mount- oder Flash-Verhalten. Kein automatischer GitHub-Actions-Build/Flash.
+- **Status:** Anforderungen konkretisiert; noch keine Wetterdienst-Firmware implementiert oder kompiliert.
