@@ -2041,3 +2041,13 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Die vorhandenen Layout-Renderer und Frequenzlogik wurden nicht verändert. Die neue Funktion ist nur ein zusätzlicher Baustein und wird noch nicht automatisch angezeigt.
 - Code-Commit: `b2b430eb0096ed08f7332c52490976f929f837fd`.
 - **Status:** Datei erstellt; noch nicht kompiliert und nicht auf Hardware geprüft. Kein Workflow gestartet.
+
+
+## 24. GitHub Actions – robuster ESP32-Core-Download
+
+- Workflow: `.github/workflows/ats-mini-os-first-compile.yml` auf `dev/first-build-preparation`.
+- Ursache der letzten fehlgeschlagenen Läufe 42578449409 und 42580642855: wiederholte HTTP-504-Fehler beim Herunterladen großer ESP32-Core-Toolpakete; der eigentliche Sketch-Compile wurde nicht erreicht.
+- Downloadschritt wurde angepasst: sechs Versuche mit wachsendem Backoff; Wiederholung auch bei HTTP 408/429/5xx, Timeout, Connection Reset und Unexpected EOF. Nicht-temporäre Fehler brechen weiterhin sofort ab.
+- Neu: GitHub-Actions-Cache für `~/.arduino15/staging/packages`. Ein fehlgeschlagener Lauf speichert bereits vollständig heruntergeladene Paketarchive mit einem eindeutigen Schlüssel; der nächste manuell gestartete Lauf kann sie wiederverwenden. Das ist der sichere alternative Transferpfad, ohne ESP32-Core-Version oder Paketquellen zu verändern.
+- Die offizielle Espressif-Paketquelle und Version `esp32:esp32@3.3.12` bleiben unverändert. Ein zusätzlicher Drittanbieter-Mirror wurde bewusst nicht als Paketquelle eingetragen: die geprüften SourceForge-Spiegelangaben belegen Release-Archive, aber nicht die Verfügbarkeit aller einzelnen Arduino-Board-Manager-Toolpakete (insbesondere `esp-x32`).
+- Nach Änderung verifiziert: Workflow-Datei erneut aus dem Branch abrufen und Cache-/Retry-Schritte prüfen. Kein Workflow gestartet; Build muss vom Nutzer manuell ausgelöst werden.
