@@ -20,7 +20,7 @@ void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifi
   const char* mode=s.modulation==RadioModulation::FM?"FM":
     (s.modulation==RadioModulation::AM?"AM":
     (s.modulation==RadioModulation::USB?"USB":"LSB"));
-  d.drawString(mode, w/2, 5);
+  d.drawString(mode, w/2, 14);
 
   static const char* const ptyNames[32]={
     "NONE","NEWS","CURRENT AFFAIRS","INFO","SPORT","EDUCATION","DRAMA","CULTURE",
@@ -52,7 +52,7 @@ void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifi
     // geometry, MHz/kHz placement, SSB BFO precision and 800 ms tune cue.
     // The HJB layout uses the right-aligned frequency anchor at x=260.
     LegacyFrequencyRenderer::draw(
-      d, s, 260, 74, 266, 74, 100,
+      d, s, 235, 84, 240, 84, 100,
       YELLOW, GREEN, YELLOW, GREEN
     );
   }
