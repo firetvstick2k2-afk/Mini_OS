@@ -11,6 +11,7 @@ struct RadioSnapshot {
   uint32_t bandMinimumKHz = 87500;
   uint32_t bandMaximumKHz = 108000;
   uint16_t tuningStepKHz = 100;
+  int16_t bfoOffsetHz = 0;
   int16_t rssi = -1;
   int16_t snr = -1;
   uint16_t piCode = 0;
