@@ -2347,3 +2347,6 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
   - `2cdce18918a956aca6f69b34389df9bac7abc968` – News-Snapshot aus dem Hauptprogramm übergeben.
   - `a414bf45bd5075f05a6a18e9727585f70fac0a87` – Scroll-/Wechselzeit pro Schlagzeile angepasst.
 - **Status:** Quellcode auf `dev/first-build-preparation` gespeichert. Noch kein Build, keine GitHub Action und kein Gerätetest durch den Assistenten. Nutzer startet den nächsten OSPI-Compile-only-Build selbst. Wenn der Build einen Fehler meldet, zuerst den konkreten Compiler-Log prüfen.
+
+- Zusätzliche Parser-Härtung: CDATA-Markierungen werden vor der Titelbereinigung entfernt; benannte und numerische XML-Entities (dezimal/hexadezimal) werden in UTF-8 dekodiert. Damit bleiben Umlaute und Sonderzeichen in Feed-Titeln erhalten.
+- Parser-Fix-Commits: `4868f81b4a5c3944ca97595da6deb4485e550990`, `8f0413c95155eb7e9f98a404d6bf221a835ac098`.
