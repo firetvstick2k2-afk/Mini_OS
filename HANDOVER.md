@@ -2227,3 +2227,14 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - VHF bleibt aus der oberen Bandreihe entfernt; LW/MW/SW/BT/WEB bleiben links bei X=2, 37, 72, 107, 142.
 - Code-Commit: `5f45aa3c17c3451aa9e46bd2aada26f6b87c39f2`.
 - **Status:** Korrektur gespeichert. Noch nicht kompiliert oder auf Hardware geprüft.
+
+
+## Build-Fix: letzte DiagnosticLog-Referenzen entfernt – 2026-11-09
+
+- GitHub Actions Run `42649203368` (Compile-only / esp32s3-ospi) erreichte den Linker, scheiterte dort jedoch mit `undefined reference to writeDiagnosticLog(char const*, char const*)`.
+- Ursache: Nach Entfernung der zentralen Logger-Implementierung in `ats-mini-os.ino` bestanden noch alte Diagnoseaufrufe in `RadioCore.cpp` (TUNE_NEXT/TUNE_RESULT) und `TunerDriver.cpp` (TUNE_DRIVER_BEGIN/TUNE_DRIVER_RETURN), jeweils nur für 14–22 MHz.
+- Alle verbliebenen Aufrufe und die jeweiligen `DiagnosticLog.h`-Includes wurden aus beiden Quelldateien entfernt. Keine Logger-Funktion wiederhergestellt.
+- RadioCore-Commit: `6ad4f7f45204f509d4ddabdcdbfcc4219f9c9ed0`.
+- TunerDriver-Commit: `62a9162406d49b7a6d3a4f49e798fa13f4490479`.
+- Anschließende Repository-Prüfung aller aktiven C++-/Header-Dateien: keine verbleibenden `writeDiagnosticLog`-Aufrufe oder `DiagnosticLog.h`-Includes; nur die unbenutzte Header-Deklaration selbst ist noch vorhanden.
+- **Status:** Quellcodekorrektur gespeichert und geprüft. Noch nicht neu kompiliert. Nutzer startet den nächsten Compile-only-Build selbst; kein Workflow durch den Assistenten gestartet.
