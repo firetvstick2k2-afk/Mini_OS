@@ -2283,3 +2283,24 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Die Änderung betrifft ausschließlich die Kopfzeile/Frequenzdarstellung. Waterfall-Sprite, Scroll-Verhalten, RSSI-Mapping, Farben, Jitter und CPU-/Performance-Steuerung wurden nicht verändert.
 - **Commit:** `0188fe065c46374bc9e2f22e42bed8a1daa8f52e`
 - **Status:** Quellcodeänderung committed; noch kein Build und kein Gerätetest. Der Nutzer startet den nächsten OSPI-Compile-only-Build selbst.
+
+
+## News-Ticker – Implementierungsbeginn (2026-11-09)
+
+**Verbindliche Nutzerentscheidung:**
+- News-Ticker ist **layoutunabhängig**. Kein fester Bildschirmrand und kein verpflichtender eigener Menüpunkt.
+- Layouts dürfen Schlagzeilen oben, unten, mittig, mit/ohne Kasten oder gar nicht anzeigen. Laufgeschwindigkeit, Schrift, Farben und Position gehören ausschließlich in das jeweilige Layout.
+- Nachrichtenquellen werden vom Nutzer als eigene RSS-/Atom-Feed-URLs über die WLAN-Weboberfläche eingetragen; keine fest eingebauten Nachrichtenanbieter.
+- Aktualisierungsintervall ist als Zahlen-Eingabefeld in Minuten frei konfigurierbar, mit sicherem zulässigem Bereich.
+- Nur bei funktionierender Internetverbindung aktualisieren; bei Offline-Status letzte Meldungen möglichst weiter anzeigen, Datenalter/Status kenntlich machen.
+- HTTP(S)-Abruf/Parsing niemals im Renderpfad; keine Eingriffe in Waterfall, CPU-Takt, Radio oder Slot-/Partitionssystem.
+- Sicherheits-/Ressourcengrenzen für fremde Feeds: HTTPS mit Zertifikatsprüfung, Größen-/Zeitlimits, begrenzte Anzahl Quellen/Headlines, XML-Entity-/Redirect-Schutz, UTF-8, NVS nur für Konfiguration und begrenzter Cache separat.
+
+**Tatsächlicher Implementierungsstand:**
+- Repository/Branch: `firetvstick2k2-afk/Mini_OS`, `dev/first-build-preparation`.
+- Vorhandene Infrastruktur geprüft: `src/network/WifiClient.{h,cpp}` verwendet `WebServer` und `Preferences` mit eigener `settings`-Partition; `src/settings/SettingsStore.{h,cpp}` hat ebenfalls dedizierte NVS; `ats-mini-os.ino` betreibt die Hauptschleife und `wifi.update()`.
+- Neu angelegt: `firmware/ats-mini-os/src/news/NewsService.h` und `NewsService.cpp`, Commits `37ec6572fbbd339df994741789a223ac93e544a5`, `582683539c77051d0681970bdace00883a01d6e5`.
+- Erste modulare Datenschnittstelle: `NewsService::Configuration` (bis zu vier HTTPS-Feeds, Intervall 5–1440 Minuten, Aktivierung), `NewsService::Snapshot` (bis zu zwölf Headlines mit Quellindex, Abrufzeit und Stale-Status), `configuration()`, `snapshot()`, `setConfiguration()`, `publish()`.
+- **Noch nicht implementiert:** Webformular, NVS-Laden/Speichern der Feed-Konfiguration, sicherer Hintergrund-HTTPS-Abruf, RSS-/Atom-Parser, Offline-Persistenz, Scroll-Renderer und Verbindung zum Hauptprogramm. Aktuell werden noch keine News geladen oder angezeigt.
+- **Nächster Schritt:** Vorhandenes `WifiClient` um Feed-Formular/POST-Validierung/NVS ergänzen; anschließend dedizierten Netzwerk-Worker mit begrenzten Abrufen und robustem Parsing implementieren. Danach einen optionalen Layout-Renderer hinzufügen, ohne Waterfall-Rendering oder CPU-Profile zu ändern.
+- Kein Build, keine Actions und kein Flashvorgang durch den Assistenten ausgelöst; Änderungen noch nicht kompiliert oder auf Hardware getestet.
