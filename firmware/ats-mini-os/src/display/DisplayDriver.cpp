@@ -224,7 +224,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     "Zurück", "Display-Helligkeit", "Layout", "Farbschema"
   };
   static const char* const layoutGroupItems[] = { "Zurück", "UKW / FM", "LW / MW / KW" };
-  static const char* const fmLayoutItems[] = { "Zurück", "DAB Style", "TEF6686 -FM Version" };
+  static const char* const fmLayoutItems[] = { "Zurück", "DAB Style", "TEF6686 -FM Version", "TEF6686 - Newsfeed" };
   static const char* const amLayoutItems[] = { "Zurück", "HJB", "Waterfall", "TinyRadio", "TEF6686 - KW/MW/LW" };
   static const char* const bfoItems[] = { "Zurück", "BFO einstellen" };
   static const char* const radioItems[] = {
