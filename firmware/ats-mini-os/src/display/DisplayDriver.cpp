@@ -315,7 +315,9 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     if (displayLabel[i] >= 'a' && displayLabel[i] <= 'z')
       displayLabel[i] = static_cast<char>(displayLabel[i] - ('a' - 'A'));
   }
-  if (page == 5 && selection == 10) {\n    snprintf(displayLabel, sizeof(displayLabel), "BOOT-LOG: %s", bootLogEnabled ? "EIN" : "AUS");\n  }\n  if (page == 8 && selection > 0) {
+  if (page == 5 && selection == 10) {
+    snprintf(displayLabel, sizeof(displayLabel), "BOOT-LOG: %s", bootLogEnabled ? "EIN" : "AUS");
+  }\n  if (page == 8 && selection > 0) {
     const RadioBandDefinition& band = BandManager::at(static_cast<uint8_t>(selection-1));
     snprintf(displayLabel, sizeof(displayLabel), "%s", band.name);
   }
@@ -514,7 +516,8 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   lastMenuVolume_=volume;
   lastMenuLayout_=static_cast<uint8_t>(fmLayout_ + (amLayout_ << 1));
   lastMenuBrightness_=brightness_;
-  lastMenuTheme_=themeIndex_;\n  lastMenuBootLogEnabled_=bootLogEnabled;
+  lastMenuTheme_=themeIndex_;
+  lastMenuBootLogEnabled_=bootLogEnabled;
   if (menuOpen) {
     if(menuPage==6){if(useSprite_){sprite_.fillSprite(BLACK);drawFileMenu(sprite_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFileMenu(device_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);}return;}
     if (useSprite_) {
