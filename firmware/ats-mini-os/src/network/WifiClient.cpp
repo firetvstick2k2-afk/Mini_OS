@@ -9,6 +9,11 @@ const IPAddress SETUP_GATEWAY(10, 1, 1, 1);
 const IPAddress SETUP_SUBNET(255, 255, 255, 0);
 }
 
+void WifiClient::setNewsService(NewsService* service) {
+  newsService_ = service;
+  if (newsService_) newsService_->setConfiguration(newsConfig_);
+}
+
 void WifiClient::begin() {
   WiFi.persistent(false);
   WiFi.mode(WIFI_AP_STA);
@@ -64,7 +69,7 @@ bool WifiClient::saveNetworks() {
 
 void WifiClient::loadNewsConfig() {
   if (!preferencesReady_) return;
-  newsConfig_.enabled = preferences_.getBool("newson", false);
+  newsConfig_.enabled = preferences_.getBool("newson", true);
   newsConfig_.refreshMinutes = preferences_.getUShort("nmin", 1);
   if (newsConfig_.refreshMinutes < 1 || newsConfig_.refreshMinutes > 1440)
     newsConfig_.refreshMinutes = 1;
@@ -76,6 +81,7 @@ void WifiClient::loadNewsConfig() {
     if (!NewsService::validFeedUrl(newsConfig_.urls[i]))
       newsConfig_.urls[i][0] = '\0';
   }
+  if (!newsConfig_.urls[0][0]) strlcpy(newsConfig_.urls[0], "https://www.n-tv.de/rss", sizeof(newsConfig_.urls[0]));
 }
 
 void WifiClient::startWebServer() {
@@ -225,6 +231,7 @@ void WifiClient::handleNewsSave() {
     return;
   }
   newsConfig_ = next;
+  if (newsService_) newsService_->setConfiguration(newsConfig_);
   server_.send(200, "text/html; charset=utf-8",
     "<meta charset='utf-8'><meta http-equiv='refresh' content='2;url=/'><p>News-Einstellungen gespeichert.</p>");
 }
