@@ -206,7 +206,7 @@ void drawFileMenu(Canvas& c,const char* path,FileManager::Entry* entries,uint8_t
 }
 
 template <typename Canvas>
-void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp) {
+void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled) {
   const int w = canvas.width();
   const int h = canvas.height();
   // Main-menu labels intentionally match ATS Mini Dev verbatim.
@@ -247,7 +247,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   static const char* const systemItems[] = {
     "Zurück", "Anzeige", "CPU-Profil", "Systeminfo (später)", "Dateimanager",
     "UTC+01:00 * (Sommer +02:00)", "UKW / FM Layouts", "KW / MW / LW Layouts",
-    "EiBi Fahrplan laden", "WLAN"
+    "EiBi Fahrplan laden", "WLAN", "Boot-Log: EIN"
   };
   const char* const* items = mainItems;
   uint8_t count = sizeof(mainItems) / sizeof(mainItems[0]);
@@ -315,7 +315,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     if (displayLabel[i] >= 'a' && displayLabel[i] <= 'z')
       displayLabel[i] = static_cast<char>(displayLabel[i] - ('a' - 'A'));
   }
-  if (page == 8 && selection > 0) {
+  if (page == 5 && selection == 10) {\n    snprintf(displayLabel, sizeof(displayLabel), "BOOT-LOG: %s", bootLogEnabled ? "EIN" : "AUS");\n  }\n  if (page == 8 && selection > 0) {
     const RadioBandDefinition& band = BandManager::at(static_cast<uint8_t>(selection-1));
     snprintf(displayLabel, sizeof(displayLabel), "%s", band.name);
   }
@@ -497,7 +497,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   const uint32_t now=millis();
   const bool returningToRadio = !menuOpen && lastMenuOpen_;
   const bool menuStateChanged = menuOpen != lastMenuOpen_ || menuPage != lastMenuPage_ ||
-      menuSelection != lastMenuSelection_ || volume != lastMenuVolume_ || sliderAdjustmentActive != lastMenuSliderAdjustmentActive_ || (fmLayout_ + (amLayout_ << 1)) != lastMenuLayout_ || brightness_ != lastMenuBrightness_ || themeIndex_ != lastMenuTheme_;
+      menuSelection != lastMenuSelection_ || volume != lastMenuVolume_ || sliderAdjustmentActive != lastMenuSliderAdjustmentActive_ || bootLogEnabled != lastMenuBootLogEnabled_ || (fmLayout_ + (amLayout_ << 1)) != lastMenuLayout_ || brightness_ != lastMenuBrightness_ || themeIndex_ != lastMenuTheme_;
   // Always force a complete redraw when leaving any menu. This is important
   // for the TEF and HJB renderers too, which use separate drawing paths.
   if (returningToRadio) lastGeneration_ = UINT32_MAX;
@@ -514,12 +514,12 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   lastMenuVolume_=volume;
   lastMenuLayout_=static_cast<uint8_t>(fmLayout_ + (amLayout_ << 1));
   lastMenuBrightness_=brightness_;
-  lastMenuTheme_=themeIndex_;
+  lastMenuTheme_=themeIndex_;\n  lastMenuBootLogEnabled_=bootLogEnabled;
   if (menuOpen) {
     if(menuPage==6){if(useSprite_){sprite_.fillSprite(BLACK);drawFileMenu(sprite_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFileMenu(device_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);}return;}
     if (useSprite_) {
       sprite_.fillSprite(BLACK);
-      drawMenu(sprite_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp);
+      drawMenu(sprite_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled);
       sprite_.pushSprite(0,0);
     } else {
       device_.fillScreen(BLACK);
