@@ -2362,6 +2362,6 @@ Modes:
 - `CONNECT`: saved router station only; setup AP disabled.
 - `SYNC ONLY`: saved router station only, but only time synchronization is allowed to use the connection; Newsfeed and EiBi downloads are gated off.
 
-The WLAN settings screen marks the active mode and displays actual connection status, network name and active IP address. Selecting a mode applies it immediately and keeps the screen open. The menu is reachable again after selecting OFF, so Wi-Fi can be re-enabled from the device without a web connection. The local web server remains started but is only reachable through an active AP or router interface.
+The WLAN settings screen marks the active mode and displays actual connection status, network name and active IP address. Selecting a mode applies it immediately and keeps the screen open. The menu is reachable again after selecting OFF, so Wi-Fi can be re-enabled from the device without a web connection. The local web server remains started for AP/connected modes; request handling is paused in SYNC ONLY, and no interface is available in OFF.
 
 No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager/recovery, Waterfall rendering, scan logic, CPU profile or flash behavior was changed. No build or device flash was run; user performs compile-only verification.
