@@ -2365,3 +2365,13 @@ Modes:
 The WLAN settings screen marks the active mode and displays actual connection status, network name and active IP address. Selecting a mode applies it immediately and keeps the screen open. The menu is reachable again after selecting OFF, so Wi-Fi can be re-enabled from the device without a web connection. The local web server remains started for AP/connected modes; request handling is paused in SYNC ONLY, and no interface is available in OFF.
 
 No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager/recovery, Waterfall rendering, scan logic, CPU profile or flash behavior was changed. No build or device flash was run; user performs compile-only verification.
+
+
+## Newsfeed HTTPS-Zertifikatsbundle – Compile-Korrektur (2026-11-09)
+
+- GitHub Actions Run #33 (OSPI, Commit `c3f58630e1a8fb780b71e342f451bb7da2e7bc87`) erreichte den Compile-Schritt; der Compilerabbruch lag in `NewsService.cpp:111`: `x509_crt_bundle_start` war im Arduino-ESP32-Core 3.3.12 nicht deklariert.
+- Ursache: Der Code verwendete ein nicht verfügbares Linker-Symbol und außerdem die ältere Ein-Argument-Form von `setCACertBundle`; Arduino-ESP32 3.3.12 deklariert die Methode mit zwei Parametern.
+- Korrektur in `NewsService.cpp`: Ein lokaler `NewsFeedTlsClient`-Adapter aktiviert für den HTTPS-Client den eingebauten ESP-IDF-CA-Bundle-Callback über `attach_ssl_certificate_bundle(..., true)`. Dieser Callback verwendet das in der Firmware eingebettete Standard-Zertifikatsbundle.
+- **Kein `setInsecure()`** und keine Abschaltung der TLS-Zertifikatsprüfung.
+- Geänderter Commit: `292329813b251b2d2c48eb0af3b7ec56838a28b2`.
+- Build nicht gestartet; Korrektur ist noch nicht kompiliert und nicht auf Hardware getestet. Nutzer startet den nächsten Compile-only-Run selbst.
