@@ -468,7 +468,7 @@ void DisplayDriver::setAmLayout(uint8_t mode) {
 void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConnected,
                            const char* lastInputEvent,uint32_t inputEventCount,
                            StationLogoClient* logoClient, bool menuOpen,
-                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading) {
+                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading, const NewsService::Snapshot* newsSnapshot) {
   if(!ready_)return;
   const uint32_t now=millis();
   const bool returningToRadio = !menuOpen && lastMenuOpen_;
@@ -549,7 +549,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   const bool logoSearching = useFmStandard && !logoLocked && logoClient && logoClient->isLookupPending(logoKey);
   draw(s,radioReady,wifiConnected,lastInputEvent,inputEventCount,
        logoLocked ? logoData : nullptr,logoLocked ? logoLength : 0,logoIsJpg,logoSearching,
-       radioTextOffset_, scrollRadioText, millis() < tuningUntilMs_, eibiStation, eibiStatus, eibiAvailable, eibiDownloading);
+       radioTextOffset_, scrollRadioText, millis() < tuningUntilMs_, eibiStation, eibiStatus, eibiAvailable, eibiDownloading, newsSnapshot);
   if (logoLocked) logoClient->unlockLogo();
 }
 
@@ -796,7 +796,7 @@ void drawTef6686FmVersion(Canvas& c, const RadioSnapshot& s, bool wifiConnected)
 }
 
 template <typename Canvas>
-void drawTef6686FmNewsfeed(Canvas& c, const RadioSnapshot& s, bool wifiConnected) {
+void drawTef6686FmNewsfeed(Canvas& c, const RadioSnapshot& s, bool wifiConnected, const NewsService::Snapshot* newsSnapshot) {
   // Independent TEF6686 FM clone: only RT is replaced by the NT news ticker.
   drawTef6686FmVersion(c, s, wifiConnected);
   constexpr uint16_t BG=0x0000, BLUE=0x001F, GREEN_TEF=0xBFE0, CYAN=0x07FF;
@@ -807,11 +807,18 @@ void drawTef6686FmNewsfeed(Canvas& c, const RadioSnapshot& s, bool wifiConnected
   c.setTextDatum(TL_DATUM);
   c.setTextColor(CYAN,BG);
   c.drawString("NT:",ntX+5,ntY+2);
-  // NewsService snapshot is connected in the next data-pipeline step.
-  // Until the first feed is available, show a clear non-RDS placeholder.
+  // Rotate real headlines every eight seconds; scroll only inside the NT field.
   static uint32_t tickerStartMs=0;
   if(!tickerStartMs) tickerStartMs=millis();
-  const char* message=wifiConnected?"NEWSFEED - WARTE AUF MELDUNGEN":"NEWSFEED - WLAN OFFLINE";
+  char fallback[64];
+  const char* message=nullptr;
+  if(newsSnapshot && newsSnapshot->hasData && newsSnapshot->count) {
+    const uint8_t index=static_cast<uint8_t>((millis()/8000UL)%newsSnapshot->count);
+    message=newsSnapshot->items[index].title;
+  } else {
+    snprintf(fallback,sizeof(fallback),"%s",wifiConnected?"NEWSFEED - WARTE AUF MELDUNGEN":"NEWSFEED - WLAN OFFLINE");
+    message=fallback;
+  }
   const int textX=ntX+40;
   const int clipX=textX, clipY=ntY+1, clipW=ntW-45, clipH=ntH-2;
   c.setTextColor(GREEN_TEF,BG);
@@ -824,11 +831,16 @@ void drawTef6686FmNewsfeed(Canvas& c, const RadioSnapshot& s, bool wifiConnected
 }
 
 
-void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnected,const char* lastInputEvent,uint32_t inputEventCount,const uint8_t* logoData,size_t logoLength,bool logoIsJpg,bool logoSearching,int16_t radioTextOffset,bool scrollRadioText,bool frequencyBlue,const char* eibiStation,const char* eibiStatus,bool eibiAvailable,bool eibiDownloading) {
+void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnected,const char* lastInputEvent,uint32_t inputEventCount,const uint8_t* logoData,size_t logoLength,bool logoIsJpg,bool logoSearching,int16_t radioTextOffset,bool scrollRadioText,bool frequencyBlue,const char* eibiStation,const char* eibiStatus,bool eibiAvailable,bool eibiDownloading,const NewsService::Snapshot* newsSnapshot) {
   // FM and AM/SSB keep independent layout selections. The established
   // FM logo/RDS screen remains untouched as the DAB Style option.
   if (s.modulation == RadioModulation::FM) {
-    if (fmLayout_ == 3) {\n      if (useSprite_) { sprite_.fillSprite(BLACK); drawTef6686FmNewsfeed(sprite_, s, wifiConnected); sprite_.pushSprite(0, 0); }\n      else { device_.fillScreen(BLACK); drawTef6686FmNewsfeed(device_, s, wifiConnected); }\n      return;\n    }\n    if (fmLayout_ == 2) {
+    if (fmLayout_ == 3) {
+      if (useSprite_) { sprite_.fillSprite(BLACK); drawTef6686FmNewsfeed(sprite_, s, wifiConnected, newsSnapshot); sprite_.pushSprite(0, 0); }
+      else { device_.fillScreen(BLACK); drawTef6686FmNewsfeed(device_, s, wifiConnected, newsSnapshot); }
+      return;
+    }
+    if (fmLayout_ == 2) {
       if (useSprite_) { sprite_.fillSprite(BLACK); drawTef6686FmVersion(sprite_, s, wifiConnected); sprite_.pushSprite(0, 0); }
       else { device_.fillScreen(BLACK); drawTef6686FmVersion(device_, s, wifiConnected); }
       return;
