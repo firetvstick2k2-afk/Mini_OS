@@ -129,14 +129,20 @@ void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifi
     const uint32_t span=hi-lo;
     for(int i=0;i<=40;++i) {
       const int x=left+(i*(right-left))/40;
-      const bool major=(i%4)==0;
-      d.drawFastVLine(x,major?y:y+12,major?22:10,MUTED);
+      const bool major=(i%10)==0;
+      const bool medium=(i%5)==0;
+      d.drawFastVLine(x,major?y:y+(medium?8:12),
+                      major?22:(medium?14:10),MUTED);
+      // Five labels only: endpoints plus three evenly spaced reference values.
       if(major) {
         const uint32_t f=lo+(span*static_cast<uint32_t>(i))/40;
+        const int labelX = (i==0) ? left+15 : ((i==40) ? right-15 : x);
         d.setTextDatum(MC_DATUM);
         d.setTextColor(MUTED,BG);
-        if(s.modulation==RadioModulation::FM) d.drawFloat(f/1000.0f,1,x,139,&lgfx::fonts::Font0);
-        else d.drawNumber(f,x,139,&lgfx::fonts::Font0);
+        if(s.modulation==RadioModulation::FM)
+          d.drawFloat(f/1000.0f,1,labelX,139,&lgfx::fonts::Font0);
+        else
+          d.drawNumber(f,labelX,139,&lgfx::fonts::Font0);
       }
     }
     const float pos=constrain((static_cast<float>(s.frequencyKHz)-lo)/static_cast<float>(span),0.0f,1.0f);
