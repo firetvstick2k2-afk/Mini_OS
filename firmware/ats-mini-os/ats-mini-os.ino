@@ -280,7 +280,7 @@ void loop() {
             }
           } else {
             const int16_t itemCount = menuPage == 0 ? 21 :
-              menuPage == 2 ? 4 : menuPage == 4 ? 6 : menuPage == 5 ? 10 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
+              menuPage == 2 ? 4 : menuPage == 4 ? 6 : menuPage == 5 ? 11 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
               ((menuPage == 14) ? 4 : (menuPage == 15) ? 5 :
               menuPage == 10 ? 4 : menuPage == 11 ?
               (radio.snapshot().modulation == RadioModulation::FM ? 10 : 14) :
@@ -393,6 +393,14 @@ void loop() {
             Serial.printf("[SETTINGS] LW/MW/KW layout=%s %s\\n",
               layoutNames[index], saved ? "saved" : "save failed");
             closeMenuToRadio("LW/MW/KW layout selected");
+          }
+        } else if (menuPage == 5 && menuSelection == 10) {
+          const bool nextEnabled = !BootDiagnostics::enabled();
+          if (settingsStore.saveBootLogEnabled(nextEnabled)) {
+            BootDiagnostics::setEnabled(nextEnabled);
+            Serial.printf("[SETTINGS] Boot-Log %s\\n", nextEnabled ? "EIN" : "AUS");
+          } else {
+            Serial.println("[SETTINGS] Boot-Log konnte nicht gespeichert werden");
           }
         } else if (menuPage == 5 && menuSelection == 9) {
           menuPage = 4;
@@ -624,7 +632,7 @@ void loop() {
     currentWifiIp = wifi.ipAddress();
     lastWifiDisplayRefreshMs = millis();
   }
-  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str());
+  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled());
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
     lastStatusMs=now; const RadioSnapshot& s=radio.snapshot();
