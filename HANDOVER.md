@@ -6,7 +6,7 @@
 > **Aktives Repository:** https://github.com/firetvstick2k2-afk/Mini_OS  
 > **Aktiver Branch:** `dev/first-build-preparation`  
 > **GitHub-Konto:** `firetvstick2k2-afk`  
-> **Status:** Aktives ATS Mini OS. Die frühere Projekt-/Repository-Zuordnung zu 13HN2709 / ATS_Mini_-OS ist nicht mehr maßgeblich. Ältere Einträge weiter unten sind historische Notizen und werden nicht als aktueller Repository- oder Branch-Stand verstanden.
+> **Status:** Aktives ATS Mini OS. Frühere Projektzuordnungen sind nicht mehr maßgeblich. Ältere Einträge weiter unten sind historische Notizen und werden nicht als aktueller Repository- oder Branch-Stand verstanden.
 
 ## 1. Aktueller Arbeitsstand und Regeln
 
@@ -31,7 +31,7 @@
 ## 3. Projekt- und Referenzabgrenzung
 
 - Das aktive Projekt ist ausschließlich `firetvstick2k2-afk/Mini_OS`.
-- Das frühere Repository `früheres, nicht mehr aktives Repository` ist kein aktives Ziel und darf nicht mehr als aktuelles Projekt bezeichnet werden.
+- Frühere Repository-Zuordnungen sind kein aktives Ziel und dürfen nicht mehr als aktuelles Projekt bezeichnet werden.
 - `13HN2709/ats-mini-dev` kann weiterhin als historische Quellcode-Referenz genannt werden, wenn eine konkrete Portierung oder Herkunft von Code erläutert werden muss. Es ist kein Zielrepository und darf nur lesend verwendet werden, sofern der Nutzer nichts anderes freigibt.
 
 ## 4. Bestätigte Anforderungen und Grenzen
