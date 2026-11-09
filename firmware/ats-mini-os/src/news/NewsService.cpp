@@ -9,7 +9,6 @@ namespace {
 constexpr size_t MAX_RESPONSE_BYTES = 24576;
 constexpr uint32_t CONNECT_TIMEOUT_MS = 5000;
 constexpr uint32_t READ_TIMEOUT_MS = 5000;
-constexpr uint32_t RETRY_MIN_MS = 60000;
 constexpr uint32_t TASK_STACK_WORDS = 8192;
 constexpr UBaseType_t TASK_PRIORITY = 1;
 constexpr BaseType_t TASK_CORE = 0;
@@ -24,22 +23,42 @@ uint32_t lastAttemptMs = 0;
 String xmlDecode(String value) {
   value.replace("&amp;", "&"); value.replace("&lt;", "<");
   value.replace("&gt;", ">"); value.replace("&quot;", "\""); value.replace("&apos;", "'");
-  value.replace("&#39;", "'");
-  for (uint8_t i=0;i<4;i++) {
+  value.replace("&#39;", "'"); value.replace("&nbsp;", " ");
+  value.replace("&ndash;", "-"); value.replace("&mdash;", "-");
+  value.replace("&euro;", "EUR");
+  for (uint8_t i=0;i<8;i++) {
     int p=value.indexOf("&#");
     if(p<0) break;
     int end=value.indexOf(';',p);
     if(end<0) break;
     String token=value.substring(p+2,end);
-    char* tail=nullptr; long code=strtol(token.c_str(),&tail,10);
-    if(tail && *tail=='\0' && code>=32 && code<127) {
-      String replacement; replacement+=(char)code;
+    char* tail=nullptr;
+    long code=strtol(token.c_str(),&tail,0);
+    if(tail && *tail=='\0' && code>=32 && code<=0x10FFFF &&
+       !(code>=0xD800 && code<=0xDFFF)) {
+      String replacement;
+      if(code<=0x7F) replacement+=(char)code;
+      else if(code<=0x7FF) {
+        replacement+=(char)(0xC0|(code>>6));
+        replacement+=(char)(0x80|(code&0x3F));
+      } else if(code<=0xFFFF) {
+        replacement+=(char)(0xE0|(code>>12));
+        replacement+=(char)(0x80|((code>>6)&0x3F));
+        replacement+=(char)(0x80|(code&0x3F));
+      } else {
+        replacement+=(char)(0xF0|(code>>18));
+        replacement+=(char)(0x80|((code>>12)&0x3F));
+        replacement+=(char)(0x80|((code>>6)&0x3F));
+        replacement+=(char)(0x80|(code&0x3F));
+      }
       value.replace(value.substring(p,end+1),replacement);
     } else value.remove(p,end-p+1);
   }
   return value;
 }
 String cleanTitle(String value) {
+  value.replace("<![CDATA[", "");
+  value.replace("]]>", "");
   bool inTag=false; String out; out.reserve(value.length());
   for(size_t i=0;i<value.length();++i) {
     char c=value[i];
