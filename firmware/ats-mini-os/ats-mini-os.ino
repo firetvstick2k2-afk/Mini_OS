@@ -15,12 +15,9 @@
 #include "src/storage/FileManager.h"
 #include "src/settings/SettingsStore.h"
 #include "src/menus/MenuSSB.h"
-#include "src/system/DiagnosticLog.h"
 
 namespace {
 constexpr uint32_t SERIAL_BAUD = 115200;
-constexpr const char* DIAGNOSTIC_LOG_PATH = "/ats-mini-os.log";
-constexpr const char* DIAGNOSTIC_LOG_OLD_PATH = "/ats-mini-os.log.1";
 
 
 constexpr uint32_t DEFAULT_FM_FREQUENCY_KHZ = 95400;
@@ -132,29 +129,6 @@ void fmOpen(){ fmMode=0; fmSelection=0; fmActionSelection=0; fmMessageSet(""); f
 void fmChoose(uint8_t visual){ if(visual==0){ if(fmMode==3)return; fmParent(); return; } if(fmMode==0 && visual==fmCount+1){fmPendingAction=5;fmEditName[0]=0;fmEditCursor=0;fmMode=4;return;} if(fmMode==0 && visual==fmCount+2){menuOpen=false;menuPage=0;menuSelection=0;fmMessageSet("Dateimanager beendet");return;} uint8_t i=visual-1; if(i>=fmCount)return; if(fmEntries[i].directory){strncpy(fmPath,fmEntries[i].path,sizeof(fmPath)-1);fmPath[sizeof(fmPath)-1]=0;fmSelection=0;fmRefresh();} else {strncpy(fmSelectedPath,fmEntries[i].path,sizeof(fmSelectedPath)-1);fmSelectedPath[sizeof(fmSelectedPath)-1]=0;strncpy(fmSelectedName,fmEntries[i].name,sizeof(fmSelectedName)-1);fmSelectedName[sizeof(fmSelectedName)-1]=0;fmMode=1;fmActionSelection=0;} }
 }
 
-void writeDiagnosticLog(const char* event, const char* details) {
-  if (!StorageDiscovery::ready()) return;
-  // Keep the diagnostic log bounded; retain one previous segment for recovery.
-  if (LittleFS.exists(DIAGNOSTIC_LOG_PATH)) {
-    File current = LittleFS.open(DIAGNOSTIC_LOG_PATH, "r");
-    const size_t size = current ? current.size() : 0;
-    if (current) current.close();
-    if (size > 48U * 1024U) {
-      LittleFS.remove(DIAGNOSTIC_LOG_OLD_PATH);
-      LittleFS.rename(DIAGNOSTIC_LOG_PATH, DIAGNOSTIC_LOG_OLD_PATH);
-    }
-  }
-  File logFile = LittleFS.open(DIAGNOSTIC_LOG_PATH, "a");
-  if (!logFile) {
-    Serial.println("[LOG] LittleFS diagnostic log could not be opened");
-    return;
-  }
-  logFile.printf("%lu ms | %s | %s\n",
-    static_cast<unsigned long>(millis()), event ? event : "event",
-    details ? details : "");
-  logFile.flush();
-  logFile.close();
-}
 
 void setup() {
   Serial.begin(SERIAL_BAUD); delay(250); performance.begin();
@@ -172,9 +146,12 @@ void setup() {
   StorageDiscovery::begin();
   eibi.begin();
   FileManager::begin();
-  // Remove the legacy boot counter file if it exists; no boot counter or BOOT log is maintained.
-  if (StorageDiscovery::ready() && LittleFS.exists("/ats-mini-os.boot")) {
-    LittleFS.remove("/ats-mini-os.boot");
+  // Remove obsolete diagnostic log files left by earlier firmware versions.
+  // No diagnostic log is created or appended by this firmware.
+  if (StorageDiscovery::ready()) {
+    if (LittleFS.exists("/ats-mini-os.log")) LittleFS.remove("/ats-mini-os.log");
+    if (LittleFS.exists("/ats-mini-os.log.1")) LittleFS.remove("/ats-mini-os.log.1");
+    if (LittleFS.exists("/ats-mini-os.boot")) LittleFS.remove("/ats-mini-os.boot");
   }
   stationLogoClient.begin();
 
@@ -498,15 +475,6 @@ void loop() {
         } else if (menuPage == 8 && menuSelection > 0) {
           if (radio.selectBand(static_cast<uint8_t>(menuSelection - 1))) {
             display.notifyTuning();
-            char bandDetails[128];
-            snprintf(bandDetails, sizeof(bandDetails),
-              "band=%s freq=%lu kHz min=%lu max=%lu modulation=%u",
-              radio.snapshot().bandName,
-              static_cast<unsigned long>(radio.snapshot().frequencyKHz),
-              static_cast<unsigned long>(radio.snapshot().bandMinimumKHz),
-              static_cast<unsigned long>(radio.snapshot().bandMaximumKHz),
-              static_cast<unsigned>(radio.snapshot().modulation));
-            writeDiagnosticLog("BAND_SELECT", bandDetails);
             Serial.printf("[MENU] band=%s freq=%lu kHz\n", radio.snapshot().bandName,
               static_cast<unsigned long>(radio.snapshot().frequencyKHz));
             closeMenuToRadio("band selected");
