@@ -39,6 +39,9 @@ uint32_t lastStatusMs = 0;
 uint32_t lastObservedFmFrequencyKHz = DEFAULT_FM_FREQUENCY_KHZ;
 uint32_t fmFrequencyChangedAtMs = 0;
 bool fmFrequencySavePending = false;
+uint8_t lastObservedVolume = 32;
+uint32_t volumeChangedAtMs = 0;
+bool volumeSavePending = false;
 uint32_t encoderEventCount = 0;
 const char* lastEncoderEvent = "WAIT";
 bool menuOpen = false;
@@ -75,6 +78,22 @@ void updateLastFmFrequencyPersistence() {
     Serial.printf("[SETTINGS] last FM frequency %.2f MHz %s\\n",
       lastObservedFmFrequencyKHz / 1000.0f, saved ? "saved" : "save failed");
     fmFrequencySavePending = false;
+  }
+}
+
+void updateVolumePersistence() {
+  if (!radio.isReady()) return;
+  const uint8_t currentVolume = radio.volume();
+  if (currentVolume != lastObservedVolume) {
+    lastObservedVolume = currentVolume;
+    volumeChangedAtMs = millis();
+    volumeSavePending = true;
+  }
+  if (volumeSavePending && millis() - volumeChangedAtMs >= 1000) {
+    const bool saved = settingsStore.saveVolume(lastObservedVolume);
+    Serial.printf("[SETTINGS] radio volume=%u/63 %s\n",
+      static_cast<unsigned>(lastObservedVolume), saved ? "saved" : "save failed");
+    volumeSavePending = false;
   }
 }
 
@@ -182,6 +201,13 @@ void setup() {
     settingsStore.isReady() ? "restored/default" : "NVS unavailable; default");
   if (radio.begin(startupFmFrequencyKHz)) {
     lastObservedFmFrequencyKHz = radio.snapshot().frequencyKHz;
+    const uint8_t startupVolume = settingsStore.volume(32);
+    if (radio.setVolume(startupVolume)) {
+      lastObservedVolume = radio.volume();
+      Serial.printf("[SETTINGS] startup volume=%u/63 (%s)\n",
+        static_cast<unsigned>(lastObservedVolume),
+        settingsStore.isReady() ? "restored/default" : "NVS unavailable; default");
+    }
     const bool agcAuto = settingsStore.agcAutomatic(true);
     const uint8_t agcIndex = settingsStore.agcGainIndex(20);
     const uint8_t softMuteDb = settingsStore.softMuteAttenuationDb(8);
@@ -235,8 +261,12 @@ void loop() {
           } else if (sliderAdjustmentActive && menuPage == 1 && menuSelection == 1) {
             const int16_t requested = static_cast<int16_t>(radio.volume()) + rotationDelta;
             const uint8_t nextVolume = static_cast<uint8_t>(constrain(requested, 0, 63));
-            if (radio.setVolume(nextVolume))
-              Serial.printf("[MENU] volume=%u/63\n", static_cast<unsigned>(radio.volume()));
+            if (radio.setVolume(nextVolume)) {
+              volumeSavePending = true;
+              lastObservedVolume = radio.volume();
+              volumeChangedAtMs = millis();
+              Serial.printf("[MENU] volume=%u/63\\n", static_cast<unsigned>(radio.volume()));
+            }
           } else {
             const int16_t itemCount = menuPage == 0 ? 21 :
               menuPage == 2 ? 4 : menuPage == 5 ? 9 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
@@ -564,6 +594,7 @@ void loop() {
   }
   radio.update();
   updateLastFmFrequencyPersistence();
+  updateVolumePersistence();
   const RadioSnapshot& currentSnapshot = radio.snapshot();
   const bool waterfallVisible = !menuOpen && currentSnapshot.modulation != RadioModulation::FM && display.amLayout() == 4;
   performance.setWaterfallActive(waterfallVisible);
