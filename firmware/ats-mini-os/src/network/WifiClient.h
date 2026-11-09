@@ -8,7 +8,14 @@
 
 class WifiClient {
 public:
+  enum class Mode : uint8_t { OFF = 0, AP_ONLY = 1, AP_CONNECT = 2, CONNECT = 3, SYNC_ONLY = 4 };
+
   void begin();
+  bool setMode(Mode mode);
+  Mode mode() const { return mode_; }
+  bool dataServicesAllowed() const { return mode_ == Mode::AP_CONNECT || mode_ == Mode::CONNECT; }
+  String networkName() const;
+  String ipAddress() const;
   void setNewsService(NewsService* service);
   void update();
   bool connected() const;
@@ -30,6 +37,11 @@ private:
   bool preferencesReady_ = false;
   bool serverStarted_ = false;
   bool apActive_ = false;
+  Mode mode_ = Mode::AP_CONNECT;
+
+  bool stationEnabled() const;
+  bool accessPointEnabled() const;
+  void applyMode();
 
   void loadNetworks();
   bool saveNetworks();
