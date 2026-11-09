@@ -586,8 +586,15 @@ void loop() {
   performance.setWaterfallActive(waterfallVisible);
   stationLogoClient.update(currentSnapshot, wifi.connected());
   const NewsService::Snapshot currentNews = newsService.snapshot();
-  const String currentWifiName = wifi.networkName();
-  const String currentWifiIp = wifi.ipAddress();
+  static String currentWifiName;
+  static String currentWifiIp;
+  static uint32_t lastWifiDisplayRefreshMs = 0;
+  if (menuOpen && menuPage == 4 &&
+      (!lastWifiDisplayRefreshMs || millis() - lastWifiDisplayRefreshMs >= 1000)) {
+    currentWifiName = wifi.networkName();
+    currentWifiIp = wifi.ipAddress();
+    lastWifiDisplayRefreshMs = millis();
+  }
   display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str());
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
