@@ -126,7 +126,7 @@ template<class C> void drawDecoder(C& d,const RadioSnapshot& s,bool ready,bool w
   d.fillScreen(BG);
   drawNetworkBatteryStatus(d, wifi, 8);
 
-  // Compact band and modulation tiles directly below WLAN+, aligned left.
+  // Three compact selector/unit tiles stacked below WLAN+.
   const char* mode=s.modulation==RadioModulation::AM?"AM":
                    s.modulation==RadioModulation::USB?"USB":"LSB";
   d.setFont(&lgfx::fonts::Font0);
@@ -134,32 +134,30 @@ template<class C> void drawDecoder(C& d,const RadioSnapshot& s,bool ready,bool w
   d.setTextColor(CYAN,BG);
   d.drawRect(8,24,42,18,CYAN);
   d.drawString(s.bandName[0]?s.bandName:"ALL",29,33);
-  d.drawRect(54,24,42,18,CYAN);
-  d.drawString(mode,75,33);
+  d.drawRect(8,46,42,18,CYAN);
+  d.drawString(mode,29,55);
+  d.drawRect(8,68,42,18,CYAN);
+  d.drawString("kHz",29,77);
 
-  // ATS Mini DEV drawFrequency style: Font7 right-aligned main digits,
-  // Font4 fractional BFO digits for SSB, and a separate bold unit label.
-  d.setTextColor(WHITE,BG);
-  d.setTextDatum(MR_DATUM);
-  d.setFont(&lgfx::fonts::Font7);
+  // Center the complete frequency string on the display, independent of digit count.
+  char freq[24];
   if(s.modulation==RadioModulation::USB || s.modulation==RadioModulation::LSB) {
     const int64_t tunedHz=static_cast<int64_t>(s.frequencyKHz)*1000LL+
                           static_cast<int64_t>(s.bfoOffsetHz);
     const uint32_t safeHz=static_cast<uint32_t>(tunedHz<0?0:tunedHz);
-    char whole[16], fraction[16];
-    snprintf(whole,sizeof(whole),"%lu",static_cast<unsigned long>(safeHz/1000UL));
-    snprintf(fraction,sizeof(fraction),".%03lu",static_cast<unsigned long>(safeHz%1000UL));
-    d.drawString(whole,270,43);
-    d.setTextDatum(ML_DATUM);
-    d.setFont(&lgfx::fonts::Font4);
-    d.drawString(fraction,274,60);
+    snprintf(freq,sizeof(freq),"%lu.%03lu",
+             static_cast<unsigned long>(safeHz/1000UL),
+             static_cast<unsigned long>(safeHz%1000UL));
   } else {
-    d.drawNumber(s.frequencyKHz,270,43);
+    snprintf(freq,sizeof(freq),"%lu",static_cast<unsigned long>(s.frequencyKHz));
   }
-  d.setTextDatum(ML_DATUM);
   d.setTextColor(WHITE,BG);
-  d.setFont(&lgfx::fonts::FreeSansBold9pt7b);
-  d.drawString("kHz",274,67);
+  d.setTextDatum(MC_DATUM);
+  d.setFont(&lgfx::fonts::Font7);
+  d.setTextSize(0.78f);
+  d.drawString(freq,180,55);
+  d.setTextSize(1.0f);
+  d.setTextDatum(TL_DATUM);
 
   d.setTextDatum(TC_DATUM);
   d.setFont(&lgfx::fonts::FreeSansBold9pt7b);
