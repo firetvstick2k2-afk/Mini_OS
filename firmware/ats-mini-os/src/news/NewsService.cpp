@@ -32,7 +32,7 @@ String xmlDecode(String value) {
     if(end<0) break;
     String token=value.substring(p+2,end);
     char* tail=nullptr; long code=strtol(token.c_str(),&tail,10);
-    if(tail && *tail=='\\0' && code>=32 && code<127) {
+    if(tail && *tail=='\0' && code>=32 && code<127) {
       String replacement; replacement+=(char)code;
       value.replace(value.substring(p,end+1),replacement);
     } else value.remove(p,end-p+1);
@@ -68,7 +68,7 @@ void addTitle(NewsService::Snapshot& snap,const String& raw,uint8_t source) {
   size_t n=title.length(); if(n>=NewsService::MAX_HEADLINE_BYTES) n=NewsService::MAX_HEADLINE_BYTES-1;
   while(n && (((uint8_t)title[n]&0xC0)==0x80)) --n;
   memcpy(snap.items[snap.count].title,title.c_str(),n);
-  snap.items[snap.count].title[n]='\\0';
+  snap.items[snap.count].title[n]='\0';
   snap.items[snap.count].sourceIndex=source; ++snap.count;
 }
 void parseFeed(const String& xml,uint8_t source,NewsService::Snapshot& snap) {
@@ -125,8 +125,7 @@ void newsWorker(void*) {
     connected=workerWifiConnected; requested=refreshRequested; refreshRequested=false;
     portEXIT_CRITICAL(&configMux);
     if(connected && service) {
-      NewsService::Configuration cfg;
-      portENTER_CRITICAL(&configMux); cfg=service->configuration(); portEXIT_CRITICAL(&configMux);
+      NewsService::Configuration cfg=service->configuration();
       const uint32_t interval=(uint32_t)cfg.refreshMinutes*60000UL;
       if(cfg.enabled && (requested || !lastAttemptMs || millis()-lastAttemptMs>=interval)) {
         lastAttemptMs=millis();
