@@ -155,15 +155,35 @@ void WifiClient::loadNewsConfig() {
 }
 
 void WifiClient::startWebServer() {
-  server_.on("/", HTTP_GET, [this]() { handleRoot(); });
-  server_.on("/wifi/save", HTTP_POST, [this]() { handleSave(); });
-  server_.on("/wifi/status", HTTP_GET, [this]() { handleStatus(); });
-  server_.on("/news/save", HTTP_POST, [this]() { handleNewsSave(); });
-  server_.onNotFound([this]() { server_.send(404, "text/plain", "Not found"); });
-  server_.begin();
-  serverStarted_ = true;
-}
+  BootDiagnostics::write("[WIFI] startWebServer: entering");
 
+  BootDiagnostics::write("[WIFI] startWebServer: before route GET /");
+  server_.on("/", HTTP_GET, [this]() { handleRoot(); });
+  BootDiagnostics::write("[WIFI] startWebServer: route GET / registered");
+
+  BootDiagnostics::write("[WIFI] startWebServer: before route POST /wifi/save");
+  server_.on("/wifi/save", HTTP_POST, [this]() { handleSave(); });
+  BootDiagnostics::write("[WIFI] startWebServer: route POST /wifi/save registered");
+
+  BootDiagnostics::write("[WIFI] startWebServer: before route GET /wifi/status");
+  server_.on("/wifi/status", HTTP_GET, [this]() { handleStatus(); });
+  BootDiagnostics::write("[WIFI] startWebServer: route GET /wifi/status registered");
+
+  BootDiagnostics::write("[WIFI] startWebServer: before route POST /news/save");
+  server_.on("/news/save", HTTP_POST, [this]() { handleNewsSave(); });
+  BootDiagnostics::write("[WIFI] startWebServer: route POST /news/save registered");
+
+  BootDiagnostics::write("[WIFI] startWebServer: before onNotFound");
+  server_.onNotFound([this]() { server_.send(404, "text/plain", "Not found"); });
+  BootDiagnostics::write("[WIFI] startWebServer: onNotFound registered");
+
+  BootDiagnostics::write("[WIFI] startWebServer: before server.begin port=80");
+  server_.begin();
+  BootDiagnostics::write("[WIFI] startWebServer: server.begin returned");
+
+  serverStarted_ = true;
+  BootDiagnostics::write("[WIFI] startWebServer: serverStarted flag set");
+}
 String WifiClient::htmlEscape(const String& value) {
   String out;
   out.reserve(value.length() + 8);
