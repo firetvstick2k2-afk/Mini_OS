@@ -214,14 +214,33 @@ template<class C> void drawTiny(C& d,const RadioSnapshot& s,bool ready,bool wifi
     d.setTextColor(color,BG); d.setTextDatum(MC_DATUM); d.setFont(&lgfx::fonts::Font0); d.drawString(bands[i],bx[i]+16,11);
   }
   drawNetworkBatteryStatus(d, wifi, 218);
-  // Shared ATS Mini DEV frequency renderer, moved upward and left-aligned.
-  LegacyFrequencyRenderer::draw(
-    d, s, 310, 27, 312, 27, 100,
-    YELLOW, YELLOW, YELLOW, 0x07E0, true
-  );
+  // Match ATS Mini DEV Layout-TinyRadio.cpp exactly:
+  // one complete, left-aligned frequency string at x=8, y=36.
+  char freq[32];
+  if (s.modulation == RadioModulation::FM) {
+    snprintf(freq, sizeof(freq), "%lu.%02lu MHz",
+      static_cast<unsigned long>(s.frequencyKHz / 1000UL),
+      static_cast<unsigned long>((s.frequencyKHz % 1000UL) / 10UL));
+  } else if (s.modulation == RadioModulation::USB ||
+             s.modulation == RadioModulation::LSB) {
+    int64_t tunedHz = static_cast<int64_t>(s.frequencyKHz) * 1000LL +
+                      static_cast<int64_t>(s.bfoOffsetHz);
+    if (tunedHz < 0) tunedHz = 0;
+    snprintf(freq, sizeof(freq), "%lu.%03lu kHz",
+      static_cast<unsigned long>(tunedHz / 1000LL),
+      static_cast<unsigned long>(tunedHz % 1000LL));
+  } else {
+    snprintf(freq, sizeof(freq), "%lu kHz",
+      static_cast<unsigned long>(s.frequencyKHz));
+  }
+  d.setTextColor(YELLOW, BG);
+  d.setTextDatum(TL_DATUM);
+  d.setFont(&lgfx::fonts::Font4);
+  d.drawString(freq, 8, 36);
+  d.setFont(&lgfx::fonts::Font0);
   // TinyRadio is the LW/MW/SW layout: no FM modulation tile.
-  // Keep AM/LSB/USB grouped to the right, leaving the former FM slot clear.
-  const char* modes[]={"AM","LSB","USB"}; const RadioModulation vals[]={RadioModulation::AM,RadioModulation::LSB,RadioModulation::USB}; const int mx[]={43,83,123};
+  // With FM removed, close the gap and align AM/LSB/USB to the left.
+  const char* modes[]={"AM","LSB","USB"}; const RadioModulation vals[]={RadioModulation::AM,RadioModulation::LSB,RadioModulation::USB}; const int mx[]={3,43,83};
   for(int i=0;i<3;i++){bool active=s.modulation==vals[i];uint16_t col=active?CYAN:DIM;d.drawRect(mx[i],66,36,21,col);d.setTextColor(col,BG);d.setTextDatum(MC_DATUM);d.setFont(&lgfx::fonts::Font0);d.drawString(modes[i],mx[i]+18,76);}
   // BW/AGC/SM controls are not displayed because these states are not exposed by RadioSnapshot.
   const int rssi=constrain((int)s.rssi,0,80); for(int i=0;i<8;i++)d.fillRect(5+i*6,93,4,8,i<(rssi/10)?GREEN:DIM);
