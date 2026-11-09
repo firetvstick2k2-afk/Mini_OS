@@ -2181,3 +2181,15 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Das vom Nutzer gezeigte Foto wurde ausdrücklich als **TinyRadio-Layout** identifiziert, nicht als HJB.
 - Die zuletzt bestätigte UKW-Frequenz-Persistenz soll um Speicherung und Wiederherstellung der Lautstärke beim Neustart ergänzt werden.
 - Änderungen weiterhin gezielt und layoutweise umsetzen; funktionierende Layouts nicht unnötig verändern. Vor Umsetzung aktuelle Dateien und gegebenenfalls die ATS Mini DEV-Referenz prüfen.
+
+
+## TinyRadio-Layout und Lautstärke-Persistenz – 2026-11-09
+
+- TinyRadio ist das LW/MW/SW-Layout (AM/USB/LSB), nicht HJB.
+- In der TinyRadio-Kopfzeile wurde das VHF-Feld entfernt. Die fünf verbleibenden Felder LW, MW, SW, BT und WEB stehen nun ohne Lücke linksbündig bei X=2, 37, 72, 107 und 142.
+- Die bisherige TinyRadio-Frequenz-Zeichnung wurde auf den gemeinsamen `LegacyFrequencyRenderer::draw()` umgestellt und höher positioniert (Aufrufanker X=184/Y=27); die Frequenz-Einheit bleibt sichtbar.
+- TinyRadio-Code-Commit: `773836f35e0591bc2af3226dd7ae453dcab4a3e9`.
+- Lautstärke wird nun in der dedizierten NVS-Settings-Namespace `atsmini_os` unter `rx_volume` gespeichert. Gültiger Bereich 0–63, Standardwert 32.
+- Beim Start wird die gespeicherte Lautstärke nach erfolgreichem `radio.begin()` wiederhergestellt. Änderungen über den Lautstärke-Slider werden nach 1 Sekunde Ruhezeit gespeichert (Debounce).
+- Settings-API-Commit: `6dc32e3338a83a0322d6902f1a6f1106e0b02f33`; Settings-Implementierung: `f9c1391396056d5e0a28c229dc370a4e7d83ad1b`; Boot-/Debounce-Integration: `08c100d6ed79386bea4ba020960c64f0d2f729af`.
+- **Status:** Änderungen gespeichert. Noch nicht kompiliert oder auf Hardware geprüft. Nutzer startet den nächsten Compile-only-Build selbst; kein Workflow durch den Assistenten gestartet.
