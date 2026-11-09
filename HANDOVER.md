@@ -2102,3 +2102,52 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Nur `DisplayLayoutHJB.h` geändert; übrige Anzeigen und Layouts unverändert.
 - Commit: `d64c25f174126d1f4037fffdaff7b005f2724c11`.
 - **Status:** gespeichert; noch nicht kompiliert oder auf Hardware geprüft. Kein Workflow gestartet.
+
+
+## Übergabestand für neuen Chat – 2026-11-09, 12:45 CET
+
+### Aktiver Arbeitsstand
+- Repository: `firetvstick2k2-afk/Mini_OS`
+- Arbeitsbranch: `dev/first-build-preparation`
+- Änderungen ausschließlich auf diesem Branch; Main wurde nicht verändert.
+- GitHub-Connector: Primary (`firetvstick2k2-afk`).
+- Nutzer startet GitHub-Actions-Builds selbst. **Keinen Workflow automatisch starten.**
+- Nach Codeänderungen dieses Handover-Dokument weiterführen und geänderte Dateien per GitHub erneut abrufen/verifizieren.
+
+### Zuletzt vom Nutzer bestätigter Hardwarestand
+- Der Build nach Integration des Legacy-Frequenzrenderers war erfolgreich und wurde am ATS Mini getestet.
+- HJB AM/USB-Frequenzdarstellung und Modulationsanzeige wurden anhand der Fotos weiter angepasst.
+- Modulationsanzeige bei Y=14 wurde vom Nutzer ausdrücklich als perfekt bestätigt und darf nicht erneut verschoben werden.
+
+### Aktuell gespeicherte, noch nicht neu gebaute Änderungen
+1. **Letzte UKW-Frequenz speichern/wiederherstellen**
+   - Commit: `4af3cf50a1881778c6e282b941232474c2d0c30b`.
+   - Beim Start wird `settingsStore.lastFmFrequencyKHz(DEFAULT_FM_FREQUENCY_KHZ)` geladen und an `radio.begin()` übergeben.
+   - Neue FM-Abstimmungen werden erkannt und nach 1 Sekunde ohne weitere Abstimmung über `saveLastFmFrequencyKHz()` gespeichert.
+   - Nicht-FM-Bänder überschreiben den letzten UKW-Wert nicht.
+   - Änderung in `firmware/ats-mini-os/ats-mini-os.ino`.
+
+2. **HJB horizontal/vertikal und Skala**
+   - Frequenzanker zuletzt X=235, Y=92; Einheit X=240, Y=92.
+   - Modulationsanzeige unverändert X=Displaymitte, Y=14.
+   - Skala zeigt fünf Hauptbeschriftungen (Anfang, drei Zwischenwerte, Ende); alle 40 Teilstriche bleiben erhalten.
+   - Roter Frequenzmarker sitzt über der Skalenbeschriftung: Dreieck oberhalb der Zahlen, kurzer Zeiger bis zur Skalenlinie.
+   - Letzter Code-Commit: `d64c25f174126d1f4037fffdaff7b005f2724c11` (nur `DisplayLayoutHJB.h`).
+   - Skalenreduzierung Commit: `cdef421cef13ffa07781d8c47485bb7bbafed9f6`.
+   - Zentrierung/Modulationsanzeige Commit: `e6231f3f9d8b0db059ed4061d62f130a5bf94e76`.
+
+### Nächster Schritt im neuen Chat
+- Nutzer startet den nächsten manuellen Build mit dem aktuellen Branch.
+- Nach grünem Build am ATS Mini prüfen:
+  1. HJB AM: Frequenzabstand zur Skala, Zentrierung und roter Marker.
+  2. HJB USB/LSB: Frequenz und Einheit passen, Modulationslabel bleibt unbeschnitten.
+  3. Skala: fünf Zahlen gut lesbar, Marker über der Skalenbeschriftung.
+  4. UKW-Speicher: Sender einstellen, mindestens 1 Sekunde warten, Gerät aus-/einschalten; gespeicherte Frequenz muss wieder erscheinen.
+- Falls die Optik noch nicht passt, ausschließlich `DisplayLayoutHJB.h` feinjustieren. Andere Layouts (insbesondere TEF6686) unangetastet lassen.
+- Aktuelle Änderungen nach diesen Commits sind noch nicht erneut kompiliert oder auf Hardware geprüft. Kein Workflow wurde von uns gestartet und nichts wurde geflasht.
+
+### Arbeitsregeln
+- Vor jeder weiteren Änderung die aktuelle Datei aus dem aktiven Branch abrufen.
+- Kleine, gezielte Änderungen; keine unnötigen Umbauten.
+- Nach jedem Code-Commit Handover ergänzen und geänderte Datei erneut abrufen.
+- Keine Änderungen an Main, keine Build-Auslösung ohne ausdrücklichen Auftrag.
