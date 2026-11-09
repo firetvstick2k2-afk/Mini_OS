@@ -2193,3 +2193,10 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Beim Start wird die gespeicherte Lautstärke nach erfolgreichem `radio.begin()` wiederhergestellt. Änderungen über den Lautstärke-Slider werden nach 1 Sekunde Ruhezeit gespeichert (Debounce).
 - Settings-API-Commit: `6dc32e3338a83a0322d6902f1a6f1106e0b02f33`; Settings-Implementierung: `f9c1391396056d5e0a28c229dc370a4e7d83ad1b`; Boot-/Debounce-Integration: `08c100d6ed79386bea4ba020960c64f0d2f729af`.
 - **Status:** Änderungen gespeichert. Noch nicht kompiliert oder auf Hardware geprüft. Nutzer startet den nächsten Compile-only-Build selbst; kein Workflow durch den Assistenten gestartet.
+
+
+### TinyRadio-Frequenzposition korrigiert – 2026-11-09
+- Nutzerfoto zeigte, dass die Frequenzanzeige mit dem Aufrufanker X=184 in die LW/MW/SW/BT/WEB-Kopfzeile hineinragte.
+- Frequenzrenderer-Anker nach rechts auf X=310 verschoben; kHz-Anker auf X=312. Y bleibt 27. Damit soll die Frequenz rechts neben den fünf Kopfzeilenfeldern liegen statt diese zu überdecken.
+- Korrekturcommit: `4c1413b693a3625ec477ff6e2d893185a5e0f163`.
+- Noch nicht neu gebaut oder am Gerät geprüft.
