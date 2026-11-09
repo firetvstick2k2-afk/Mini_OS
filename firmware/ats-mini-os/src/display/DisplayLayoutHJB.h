@@ -43,9 +43,9 @@ void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifi
   d.setTextColor(YELLOW,BG);
   d.setFont(&lgfx::fonts::Font7);
   d.setTextSize(1.12f);
-  if(clockText[0]) d.drawString(clockText,160,56);
-  else if(s.modulation==RadioModulation::FM) d.drawFloat(s.frequencyKHz/1000.0f,2,160,56);
-  else d.drawNumber(s.frequencyKHz,160,56);
+  if(clockText[0]) d.drawString(clockText,160,104);
+  else if(s.modulation==RadioModulation::FM) d.drawFloat(s.frequencyKHz/1000.0f,2,160,104);
+  else d.drawNumber(s.frequencyKHz,160,104);
   d.setTextSize(1.0f);
 
   // SSB carrier precision is intentionally kept small below the RSSI/SNR area
@@ -56,7 +56,7 @@ void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifi
     d.setTextDatum(MC_DATUM);
     d.setTextColor(YELLOW,BG);
     d.setFont(&lgfx::fonts::Font0);
-    d.drawString(precision,160,91);
+    d.drawString(precision,289,103);
   }
 
   // Left signal history: RSSI trace with SNR reference line.
