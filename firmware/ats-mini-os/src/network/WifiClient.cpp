@@ -316,7 +316,7 @@ void WifiClient::connectNextNetwork() {
 }
 
 void WifiClient::update() {
-  if (serverStarted_) server_.handleClient();
+  if (serverStarted_ && mode_ != Mode::SYNC_ONLY) server_.handleClient();
   const wl_status_t status = WiFi.status();
   const uint32_t now = millis();
   if (status != lastStatus_) {
