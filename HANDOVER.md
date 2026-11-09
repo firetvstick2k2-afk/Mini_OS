@@ -2092,3 +2092,13 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Frequenzbereich und aktuelle Positionsmarkierung bleiben dynamisch und unverändert.
 - Commit: `cdef421cef13ffa07781d8c47485bb7bbafed9f6`.
 - **Status:** gespeichert; noch nicht kompiliert oder auf Hardware geprüft. Kein Workflow gestartet.
+
+
+## HJB-Frequenzabstand und Skalenmarker nach Hardwarefoto – 2026-11-09
+
+- Modulationsanzeige bleibt unverändert bei Y=14 (vom Nutzer als perfekt bestätigt).
+- Frequenzrenderer-Anker und Einheit von Y=84 auf Y=92 verschoben; X=235 bleibt unverändert. Damit rückt die Frequenz näher an die untere Skala.
+- Roter Positionsmarker der Frequenzskala wird jetzt oberhalb der Zahlenbeschriftung gezeichnet (Dreieck bei y-18, kurzer Zeiger bis y-10), damit er die Skalenfrequenz nicht verdeckt.
+- Nur `DisplayLayoutHJB.h` geändert; übrige Anzeigen und Layouts unverändert.
+- Commit: `d64c25f174126d1f4037fffdaff7b005f2724c11`.
+- **Status:** gespeichert; noch nicht kompiliert oder auf Hardware geprüft. Kein Workflow gestartet.
