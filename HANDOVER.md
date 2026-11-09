@@ -2389,3 +2389,10 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Logdatei ist nach erfolgreichem Start über den Dateimanager als `/ats-mini-os-boot.log` erreichbar.
 - Geänderte Commits: BootDiagnostics Header `04e04684a1460bb70d813309f1172975a18238af`, Implementierung `42aace455760560176901480502c22061de992cd`, Main-Setup `6d5e5075768efa7936ded0d3c7f8b6107f395d77`, WLAN-Diagnose `477e87f73ee820be456219cc058210c84fac76d6`, News-Diagnose `844e6b3db3dab6e1035fd57a33c14e4e07268332`.
 - **Noch nicht kompiliert oder getestet.** Kein GitHub-Actions-Workflow gestartet, kein Flash ausgeführt. Diagnose wird erst in einem Build verfügbar sein, der diese Commits enthält.
+
+### Follow-up boot-loop instrumentation — 2026-11-09
+- The user supplied two boot sessions. Both reach `[WIFI] before startWebServer` and reset before `startWebServer()` returns. Radio initialization succeeds; WLAN config is loaded as mode=2 (AP_CONNECT), News enabled, interval=1, feed 1 configured.
+- Updated `firmware/ats-mini-os/src/network/WifiClient.cpp` to log entry/exit around each HTTP route registration, `onNotFound`, `server_.begin()`, and setting `serverStarted_`.
+- Commit: `0109de25594a64d6c4b4b3b62e92be9f26bb8859`.
+- Scope limited to diagnostics; no functional behavior, settings, radio, display, or NewsService behavior changed.
+- No build/workflow started and no device flashed. Await user-run build/APP1 test and next boot log.
