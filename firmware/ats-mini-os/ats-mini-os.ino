@@ -339,11 +339,11 @@ void loop() {
           menuPage = 5;
           menuSelection = returningFromFm ? 5 : 6;
         } else if (menuPage == 14 && menuSelection > 0) {
-          const uint8_t layout = menuSelection == 1 ? 0 : 2;
+          const uint8_t layout = menuSelection == 1 ? 0 : (menuSelection == 2 ? 2 : 3);
           display.setFmLayout(layout);
           const bool saved = settingsStore.saveDisplayFmLayout(layout);
           Serial.printf("[SETTINGS] FM layout=%s %s\\n",
-            layout == 2 ? "TEF6686 -FM Version" : "DAB Style", saved ? "saved" : "save failed");
+            layout == 3 ? "TEF6686 - Newsfeed" : (layout == 2 ? "TEF6686 -FM Version" : "DAB Style"), saved ? "saved" : "save failed");
           closeMenuToRadio("FM layout selected");
         } else if (menuPage == 15 && menuSelection > 0) {
           // Preserve the legacy layout IDs and include the independent TEF6686 SW renderer.
