@@ -28,6 +28,7 @@ bool RadioCore::begin(uint32_t initialFrequencyKHz) {
   publishBand(snapshot_, band);
   tuner_.refreshSignalQuality();
   snapshot_.frequencyKHz = tuner_.frequencyKHz();
+  snapshot_.bfoOffsetHz = tuner_.bfoOffsetHz();
   snapshot_.rssi = tuner_.rssi();
   snapshot_.snr = tuner_.snr();
   snapshot_.stereo = tuner_.stereo();
@@ -211,5 +212,10 @@ bool RadioCore::setAgcManualGain(uint8_t index) { return ready_ && tuner_.setAgc
 bool RadioCore::setSoftMuteEnabled(bool enabled) { return ready_ && tuner_.setSoftMuteEnabled(enabled); }
 bool RadioCore::setSoftMuteAttenuation(uint8_t attenuationDb) { return ready_ && tuner_.setSoftMuteAttenuation(attenuationDb); }
 bool RadioCore::setAvcGain(uint8_t gain) { return ready_ && tuner_.setAvcGain(gain); }
-bool RadioCore::setBfoOffsetHz(int16_t offsetHz) { return ready_ && tuner_.setBfoOffsetHz(offsetHz); }
+bool RadioCore::setBfoOffsetHz(int16_t offsetHz) {
+  if (!ready_ || !tuner_.setBfoOffsetHz(offsetHz)) return false;
+  snapshot_.bfoOffsetHz = tuner_.bfoOffsetHz();
+  snapshot_.generation = ++generation_;
+  return true;
+}
 bool RadioCore::setSsbBandwidthChoice(uint8_t choice) { return tuner_.setSsbBandwidthChoice(choice); }
