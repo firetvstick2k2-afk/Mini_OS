@@ -79,7 +79,7 @@ void draw(Canvas& spr,
   spr.setTextDatum(MR_DATUM);
   spr.setTextColor(frequencyColor);
   if (isFm) {
-    spr.drawFloat(freq / 100.00f, 2, x, y, &lgfx::fonts::Font7);
+    spr.drawFloat(freq / 1000.0f, 2, x, y, &lgfx::fonts::Font7);
     spr.setTextDatum(ML_DATUM);
     spr.setTextColor(unitColor);
     spr.drawString("MHz", ux, uy + 10, &lgfx::fonts::FreeSansBold9pt7b);
