@@ -2055,7 +2055,7 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 ## HJB-Frequenzrenderer originalgetreu aus ATS Mini DEV übernommen – 2026-11-09
 
 - Die optionale Näherungsimplementierung in `LegacyFrequencyRenderer.h` wurde durch eine quellnahe Mini-OS-Portierung von `ats-mini-dev/ats-mini/Draw.cpp::drawFrequency()` ersetzt.
-- Übernommen wurden die originalen FM- und AM/SSB-Highlight-Koordinaten, die 7-Segment-Font7-Ziffern, die Font4-SSB-Nachkommastellen, die MHz/kHz-Einheitenpositionen und die gelbe 800-ms-Abstimmungsanzeige.
+- Übernommen wurden die originalen FM- und AM/SSB-Highlight-Koordinaten, die 7-Segment-Font7-Ziffern, die Font4-SSB-Nachkommastellen, die MHz/kHz-Einheitenpositionen und die gelbe 800-ms-Abstimmungsanzeige. Die FM-Darstellung teilt den Mini-OS-Snapshotwert in kHz korrekt durch 1000 (DEV-intern wurde eine andere Frequenzeinheit verwendet).
 - HJB verwendet den Renderer jetzt direkt; die bisherige manuelle Frequenzdarstellung und das separat platzierte feste `.000` entfallen. Die RDS-Uhr bleibt als alternative FM-Anzeige erhalten.
 - `RadioSnapshot` führt nun zusätzlich `bfoOffsetHz`. `RadioCore` veröffentlicht den aktuellen Tuner-BFO beim Start und nach erfolgreicher BFO-Änderung. Der Renderer berechnet damit die echte SSB-Frequenzpräzision statt eines fest codierten Null-Offsets.
 - Änderungen beschränken sich auf `LegacyFrequencyRenderer.h`, `DisplayLayoutHJB.h`, `RadioSnapshot.h` und `RadioCore.cpp`. TEF6686-, Decoder/Wasserfall- und Tiny-Renderer wurden nicht verändert.
