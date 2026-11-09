@@ -2238,3 +2238,14 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - TunerDriver-Commit: `62a9162406d49b7a6d3a4f49e798fa13f4490479`.
 - Anschließende Repository-Prüfung aller aktiven C++-/Header-Dateien: keine verbleibenden `writeDiagnosticLog`-Aufrufe oder `DiagnosticLog.h`-Includes; nur die unbenutzte Header-Deklaration selbst ist noch vorhanden.
 - **Status:** Quellcodekorrektur gespeichert und geprüft. Noch nicht neu kompiliert. Nutzer startet den nächsten Compile-only-Build selbst; kein Workflow durch den Assistenten gestartet.
+
+
+## Waterfall-Layout: DEV-Frequenzdarstellung und Menüname – 2026-11-09
+
+- Menüeintrag im AM-Layout von `Decoder / Wasserfall` in `Waterfall` umbenannt.
+- Layoutkopf: WLAN+/Batterie bleibt oben; darunter zwei linksbündige Kästchen für Band (`ALL`) und Modulation (`AM`, `USB` oder `LSB`).
+- Frequenzdarstellung an die ATS-Mini-DEV-DrawFrequency-Optik angepasst: Font7 für Hauptziffern, Font4 für die SSB/BFO-Nachkommastellen, separate Einheit in FreeSansBold9pt7b; Hauptfrequenz rechtsbündig und kein Orbitron-/zentrierter Text mehr.
+- Wasserfallbereich und dessen Verhalten wurden nicht bearbeitet: Sprite-Größe/Erzeugung, Scroll, RSSI-Mapping, Jitter, Farbband-Berechnung und PushSprite-Code bleiben unverändert. Keine CPU-Taktung geändert.
+- Layout-Commit: `df85568959b57fe502c4191f750c0b69fd5a2470`.
+- Menü-Commit: `4f89a3e6649f745f642db6cc285dc2f02e62e26d`.
+- **Status:** Gespeichert und erneut aus dem Branch abgerufen; noch nicht kompiliert oder am Gerät geprüft.
