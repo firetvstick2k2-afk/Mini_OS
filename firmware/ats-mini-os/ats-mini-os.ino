@@ -379,7 +379,7 @@ void loop() {
             Serial.println("[WIFI] operating mode could not be saved");
           }
         } else if (menuPage == 5 && menuSelection == 8) {
-          const bool started = eibi.beginDownload(wifi.connected());
+          const bool started = eibi.beginDownload(wifi.connected() && wifi.dataServicesAllowed());
           Serial.printf("[EIBI] download request %s: %s\\n", started ? "accepted" : "rejected", eibi.statusText());
           closeMenuToRadio("EiBi schedule download");
         } else if (menuPage == 5 && menuSelection == 2) {
@@ -584,7 +584,7 @@ void loop() {
   const RadioSnapshot& currentSnapshot = radio.snapshot();
   const bool waterfallVisible = !menuOpen && currentSnapshot.modulation != RadioModulation::FM && display.amLayout() == 4;
   performance.setWaterfallActive(waterfallVisible);
-  stationLogoClient.update(currentSnapshot, wifi.connected());
+  stationLogoClient.update(currentSnapshot, wifi.connected() && wifi.dataServicesAllowed());
   const NewsService::Snapshot currentNews = newsService.snapshot();
   static String currentWifiName;
   static String currentWifiIp;
