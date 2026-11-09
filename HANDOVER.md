@@ -2020,3 +2020,12 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Die allgemeine Diagnose-Logfunktion und andere bestehende Ereignisse (z. B. `BAND_SELECT`) bleiben erhalten.
 - Code-Commit: `5a098f8d8a13c69984f3085004cb06ea69823fd0`.
 - **Status:** Quelltext gespeichert; noch nicht kompiliert oder auf Hardware geprüft. Kein Build gestartet.
+
+
+## HJB Frequenzanzeige nach Sichtprüfung – 2026-11-09
+
+- Nach dem Hardwarefoto wurde die große Frequenzanzeige in `DisplayLayoutHJB.h` weiter nach unten verschoben: Y=104 statt Y=56. Ziel ist ein deutlich kleinerer Abstand zur Frequenzskala am unteren Displayrand.
+- Die kleine SSB-Präzisionsanzeige `.000` wurde aus der Position unter der Hauptfrequenz herausgenommen und unter die rechte RSSI-/SNR-Anzeige gesetzt: Mittelpunkt X=289, Y=103.
+- Keine Änderungen an Encoder, Abstimmungslogik, Frequenzwerten oder Skalenberechnung.
+- Code-Commit: `8d6ea8b3a9a97fcbfceef613fef3d9cdaf406f12`.
+- **Status:** gespeichert; nicht kompiliert und noch nicht erneut auf Hardware geprüft. Nutzer startet Builds manuell.
