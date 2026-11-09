@@ -2403,3 +2403,14 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Existing granular diagnostics remain in place. No other files or subsystems changed.
 - Commit: `c25939d0b52981f7552ed94c899fa58f2b6bc48d`.
 - No build/workflow started and no device flashed. Await user-run build and boot log.
+
+## Boot-Log Ein/Aus im Einstellungsmenü (2026-11-09)
+
+- Nach erfolgreicher Behebung der Bootschleife wurde auf Nutzerwunsch ein persistenter Menüschalter **Einstellungen → Boot-Log: EIN/AUS** ergänzt.
+- Neuer NVS-Key `boot_log` in der bereits verwendeten dedizierten `settings`-Partition / Namespace `atsmini_os`; Standardwert ist **EIN**, damit bestehende Installationen zunächst weiterhin protokollieren.
+- `SettingsStore::begin()` wird jetzt unmittelbar nach `StorageDiscovery::begin()` ausgeführt, damit die gespeicherte Boot-Log-Einstellung vor dem Start der persistenten Diagnose gelesen werden kann.
+- `BootDiagnostics::begin(enabled)` respektiert den gespeicherten Zustand. Bei AUS werden weiterhin Meldungen auf Serial ausgegeben, aber keine dauerhaften LittleFS-Logeinträge geschrieben.
+- `BootDiagnostics::setEnabled()` schließt die Logdatei beim Ausschalten und öffnet sie im Append-Modus beim Einschalten. Keine Formatierung, kein Löschen, kein erneutes Mounten. Die 128-KiB-Grenze bleibt erhalten.
+- Anzeige des ausgewählten Menüeintrags wechselt zwischen `BOOT-LOG: EIN` und `BOOT-LOG: AUS`; Änderung wird sofort in NVS gespeichert und live angewendet.
+- Geänderte Dateien: `BootDiagnostics.h/.cpp`, `SettingsStore.h/.cpp`, `ats-mini-os.ino`, `DisplayDriver.h/.cpp`.
+- **Noch nicht kompiliert oder am Gerät getestet.** Kein Build/Workflow gestartet und kein Flash durchgeführt. Nutzer soll den nächsten Compile-only-Build selbst starten.
