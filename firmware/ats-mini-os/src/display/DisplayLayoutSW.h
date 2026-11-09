@@ -3,6 +3,7 @@
 #include "../radio/RadioSnapshot.h"
 #include <string.h>
 #include "DisplayStatusBar.h"
+#include "LegacyFrequencyRenderer.h"
 
 // ATS Mini DEV LW/MW/KW layouts adapted to the OS RadioSnapshot contract.
 // Each renderer is isolated from the FM/DAB and TEF6686 renderers.
@@ -202,20 +203,22 @@ template<class C> void drawDecoder(C& d,const RadioSnapshot& s,bool ready,bool w
 template<class C> void drawTiny(C& d,const RadioSnapshot& s,bool ready,bool wifi) {
   constexpr uint16_t DIM=0x8410;
   d.fillScreen(BG);
-  const char* bands[]={"LW","MW","SW","VHF","BT","WEB"}; const int bx[]={2,37,72,107,142,177};
-  for(int i=0;i<6;i++) {
-    const bool selected=(i==0 && strncmp(s.bandName,"LW",2)==0)||(i==1 && strncmp(s.bandName,"MW",2)==0)||(i==2 && (strncmp(s.bandName,"SW",2)==0||strncmp(s.bandName,"KW",2)==0))||(i==3 && strncmp(s.bandName,"VHF",3)==0);
+  // TinyRadio is the LW/MW/SW layout: VHF is intentionally omitted.
+  // Reflow all remaining header tiles evenly from the left.
+  const char* bands[]={"LW","MW","SW","BT","WEB"}; const int bx[]={2,37,72,107,142};
+  for(int i=0;i<5;i++) {
+    const bool selected=(i==0 && strncmp(s.bandName,"LW",2)==0)||
+      (i==1 && strncmp(s.bandName,"MW",2)==0)||
+      (i==2 && (strncmp(s.bandName,"SW",2)==0||strncmp(s.bandName,"KW",2)==0));
     const uint16_t color=selected?CYAN:DIM; d.drawRect(bx[i],3,32,17,color);
     d.setTextColor(color,BG); d.setTextDatum(MC_DATUM); d.setFont(&lgfx::fonts::Font0); d.drawString(bands[i],bx[i]+16,11);
   }
   drawNetworkBatteryStatus(d, wifi, 218);
-  char freq[32];
-  if(s.modulation==RadioModulation::FM) snprintf(freq,sizeof(freq),"%lu.%02lu MHz",(unsigned long)(s.frequencyKHz/1000UL),(unsigned long)((s.frequencyKHz%1000UL)/10UL));
-  else if(s.modulation==RadioModulation::USB||s.modulation==RadioModulation::LSB) snprintf(freq,sizeof(freq),"%lu.000 kHz",(unsigned long)s.frequencyKHz);
-  else snprintf(freq,sizeof(freq),"%lu kHz",(unsigned long)s.frequencyKHz);
-  d.setTextColor(YELLOW,BG); d.setTextDatum(TL_DATUM); d.setFont(&lgfx::fonts::Font7);
-  d.setTextSize((s.modulation==RadioModulation::USB||s.modulation==RadioModulation::LSB)?0.58f:0.82f);
-  d.setTextDatum(TL_DATUM); d.drawString(freq,8,41); d.setTextSize(1.0f);
+  // Shared ATS Mini DEV frequency renderer, moved upward and left-aligned.
+  LegacyFrequencyRenderer::draw(
+    d, s, 184, 27, 190, 27, 100,
+    YELLOW, YELLOW, YELLOW, 0x07E0, true
+  );
   const char* modes[]={"FM","AM","LSB","USB"}; const RadioModulation vals[]={RadioModulation::FM,RadioModulation::AM,RadioModulation::LSB,RadioModulation::USB}; const int mx[]={3,43,83,123};
   for(int i=0;i<4;i++){bool active=s.modulation==vals[i];uint16_t col=active?CYAN:DIM;d.drawRect(mx[i],66,36,21,col);d.setTextColor(col,BG);d.setTextDatum(MC_DATUM);d.setFont(&lgfx::fonts::Font0);d.drawString(modes[i],mx[i]+18,76);}
   // BW/AGC/SM controls are not displayed because these states are not exposed by RadioSnapshot.
