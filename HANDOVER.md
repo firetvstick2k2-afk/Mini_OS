@@ -2061,3 +2061,14 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Änderungen beschränken sich auf `LegacyFrequencyRenderer.h`, `DisplayLayoutHJB.h`, `RadioSnapshot.h` und `RadioCore.cpp`. TEF6686-, Decoder/Wasserfall- und Tiny-Renderer wurden nicht verändert.
 - DEV-Referenz: `ats-mini/Draw.cpp::drawFrequency()`, Aufrufkontext aus `Layout-Clean.cpp`; der Mini-OS-Renderer bleibt als eigenständige HJB-Komponente modular.
 - **Status:** GitHub-Änderungen gespeichert; noch nicht kompiliert und nicht auf Hardware geprüft. Kein Workflow gestartet und nichts geflasht. Nutzer startet den nächsten Build manuell. HJB-Frequenzposition und Highlight-Digit-Auswahl bitte nach dem Build am Gerät kontrollieren.
+
+
+## Letzte UKW-Frequenz beim Start wiederherstellen – 2026-11-09
+
+- Ursache: `ats-mini-os.ino` übergab `DEFAULT_FM_FREQUENCY_KHZ` (94.50 MHz) direkt an `radio.begin()`. Die bereits vorhandene `SettingsStore`-Lesefunktion `lastFmFrequencyKHz()` wurde beim Start nicht verwendet; auch erfolgreiche Abstimmungen wurden nicht gespeichert.
+- Beim Boot wird nun zuerst die gespeicherte UKW-Frequenz geladen und an `radio.begin()` übergeben. Fehlt ein gültiger NVS-Wert, bleibt 94.50 MHz der sichere Standard.
+- Nach einer UKW-Abstimmung wird die Frequenz erkannt und nach 1 Sekunde ohne weitere Abstimmung in NVS gespeichert. Das Debouncing vermeidet einen Flash-Schreibvorgang bei jedem Encoder-Schritt.
+- Beim Wechsel auf Nicht-FM-Bänder wird eine noch ausstehende FM-Speicherung verworfen; der zuletzt gültige UKW-Sender bleibt erhalten.
+- Geändert: `firmware/ats-mini-os/ats-mini-os.ino`.
+- Code-Commit: `4af3cf50a1881778c6e282b941232474c2d0c30b`.
+- **Status:** GitHub-Änderung gespeichert. Noch nicht kompiliert oder auf Hardware geprüft. Kein Workflow gestartet und nichts geflasht; der nächste Build wird vom Nutzer manuell gestartet.
