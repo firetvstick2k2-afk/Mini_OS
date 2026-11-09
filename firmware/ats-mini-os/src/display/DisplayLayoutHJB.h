@@ -53,7 +53,7 @@ void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifi
     // The HJB layout uses the right-aligned frequency anchor at x=260.
     LegacyFrequencyRenderer::draw(
       d, s, 235, 92, 240, 92, 100,
-      YELLOW, GREEN, YELLOW, GREEN
+      YELLOW, GREEN, YELLOW, GREEN, 0x07E0, false
     );
   }
 
@@ -85,6 +85,14 @@ void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifi
   d.setFont(&lgfx::fonts::Font0);
   d.setTextColor(BLUE,BG); d.drawString("RSSI",gx+2,gy-10);
   d.setTextColor(RED,BG); d.drawString("SNR",gx+34,gy-10);
+
+  // HJB is an AM/USB/LSB layout: show its fixed kHz unit in a separate
+  // badge below the left RSSI/SNR history, never beside the frequency.
+  constexpr int unitBoxX=7, unitBoxY=102, unitBoxW=62, unitBoxH=16;
+  d.drawRect(unitBoxX,unitBoxY,unitBoxW,unitBoxH,GRID);
+  d.setTextDatum(MC_DATUM);
+  d.setTextColor(BLUE,BG);
+  d.drawString("kHz",unitBoxX+unitBoxW/2,unitBoxY+unitBoxH/2,&lgfx::fonts::Font0);
 
   // Right signal bars.
   const int bx=258;
