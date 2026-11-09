@@ -2260,3 +2260,17 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Netzwerkabfragen zeitlich begrenzen, nicht im Waterfall-Rendering oder zeitkritischen Radio-/Displaypfad ausführen. Letzte erfolgreiche Wetterdaten möglichst zwischenspeichern; bei fehlendem Internet verständlichen Offline-/Fehlerstatus anzeigen.
 - Keine Änderungen an Waterfall, CPU-Taktung, Boot-/Partition-/LittleFS-Mount- oder Flash-Verhalten. Kein automatischer GitHub-Actions-Build/Flash.
 - **Status:** Anforderungen konkretisiert; noch keine Wetterdienst-Firmware implementiert oder kompiliert.
+
+
+## Wetterbericht: Menü, Web-Konfiguration und layoutunabhängige Wetterdaten – 2026-11-09
+
+- Menüeintrag heißt exakt **„Wetterbericht“**.
+- Nach dem Öffnen gibt es zwei Ansichtsseiten:
+  1. **Heute:** aktueller Tagesüberblick mit Ort, aktueller Temperatur und Wetterzustand; sinnvolle Tageswerte wie Höchst-/Tiefsttemperatur und Niederschlagswahrscheinlichkeit.
+  2. **Nächste Tage:** kompakte Mehrtagesvorhersage.
+- Standort wird über die bestehende WLAN-Weboberfläche konfiguriert, nicht über die Encoder-Menüs. Die Weboberfläche erhält dafür einen Wetter-/Standortbereich; Standortänderungen werden dauerhaft gespeichert.
+- Zusätzlich wird der heutige Wetter-Kurzstatus als eigenständige, layoutunabhängige Datenquelle bereitgestellt: mindestens Ortsname, aktuelle Temperatur, Wettercode/Zustand, Beobachtungs-/Abrufzeit und Datenstatus. Layouts können diese Daten später unabhängig vom Menü abrufen, ohne selbst HTTP-Anfragen zu stellen.
+- Wetterdienst und Layouts bleiben getrennt: ein zentraler WeatherService lädt und cached Daten; Layouts lesen nur den letzten verfügbaren Snapshot. WLAN-/HTTP-Abfragen laufen außerhalb zeitkritischer Radio-, Display- und Waterfall-Routinen.
+- Provider-Vorschlag: Open-Meteo; Koordinaten werden anhand des über die Weboberfläche eingegebenen Orts/PLZ ermittelt. API-Nutzung und Attribution/Lizenzhinweise sind bei Umsetzung zu berücksichtigen.
+- Offline-Verhalten: letzten gültigen Cache behalten und Datenalter/Status kenntlich machen; keine blockierenden Netzwerkaufrufe im Renderpfad.
+- **Noch nicht implementiert.** Vor der Implementierung zuerst vorhandene Weboberfläche, Menü-Navigation, Settings/NVS-Muster und Task-/Update-Architektur prüfen. Waterfall-Rendering und CPU-Profil/Taktung nicht verändern.
