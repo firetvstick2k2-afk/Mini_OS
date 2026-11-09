@@ -572,7 +572,8 @@ void loop() {
   const bool waterfallVisible = !menuOpen && currentSnapshot.modulation != RadioModulation::FM && display.amLayout() == 4;
   performance.setWaterfallActive(waterfallVisible);
   stationLogoClient.update(currentSnapshot, wifi.connected());
-  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading());
+  const NewsService::Snapshot currentNews = newsService.snapshot();
+  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews);
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
     lastStatusMs=now; const RadioSnapshot& s=radio.snapshot();
