@@ -2082,3 +2082,13 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - RSSI-/SNR-Anzeige, Station/RDS-Zeilen, Frequenzskala und andere Layouts unverändert.
 - Commit: `e6231f3f9d8b0db059ed4061d62f130a5bf94e76`.
 - **Status:** gespeichert; noch nicht kompiliert oder auf Hardware geprüft. Kein Workflow gestartet; Nutzer startet den Build manuell.
+
+
+## HJB-Frequenzskala lesbarer gestaltet – 2026-11-09
+
+- In `DisplayLayoutHJB.h` die Skalenbeschriftung von elf auf fünf Werte reduziert: Anfang, Ende und drei gleichmäßig verteilte Zwischenwerte.
+- Alle 40 Teilstriche bleiben erhalten; jeder fünfte Teilstrich ist etwas länger, jeder zehnte ist die beschriftete Hauptmarkierung.
+- Die Beschriftungen an den Skalenenden werden nach innen versetzt, damit sie nicht am Displayrand abgeschnitten werden.
+- Frequenzbereich und aktuelle Positionsmarkierung bleiben dynamisch und unverändert.
+- Commit: `cdef421cef13ffa07781d8c47485bb7bbafed9f6`.
+- **Status:** gespeichert; noch nicht kompiliert oder auf Hardware geprüft. Kein Workflow gestartet.
