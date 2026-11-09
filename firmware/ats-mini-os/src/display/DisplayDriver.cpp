@@ -807,25 +807,28 @@ void drawTef6686FmNewsfeed(Canvas& c, const RadioSnapshot& s, bool wifiConnected
   c.setTextDatum(TL_DATUM);
   c.setTextColor(CYAN,BG);
   c.drawString("NT:",ntX+5,ntY+2);
-  // Rotate real headlines every eight seconds; scroll only inside the NT field.
-  static uint32_t tickerStartMs=0;
-  if(!tickerStartMs) tickerStartMs=millis();
-  char fallback[64];
-  const char* message=nullptr;
-  if(newsSnapshot && newsSnapshot->hasData && newsSnapshot->count) {
-    const uint8_t index=static_cast<uint8_t>((millis()/8000UL)%newsSnapshot->count);
-    message=newsSnapshot->items[index].title;
-  } else {
-    snprintf(fallback,sizeof(fallback),"%s",wifiConnected?"NEWSFEED - WARTE AUF MELDUNGEN":"NEWSFEED - WLAN OFFLINE");
-    message=fallback;
-  }
+  // Show each headline for one complete scroll cycle, then advance to the next.
+  static uint8_t headlineIndex=0;
+  static uint32_t headlineStartedMs=0;
+  const bool haveHeadlines=newsSnapshot && newsSnapshot->hasData && newsSnapshot->count;
+  if(haveHeadlines) headlineIndex%=newsSnapshot->count;
+  else headlineIndex=0;
+  const char* message=haveHeadlines?newsSnapshot->items[headlineIndex].title:
+    (wifiConnected?"NEWSFEED - WARTE AUF MELDUNGEN":"NEWSFEED - WLAN OFFLINE");
   const int textX=ntX+40;
   const int clipX=textX, clipY=ntY+1, clipW=ntW-45, clipH=ntH-2;
   c.setTextColor(GREEN_TEF,BG);
   c.setClipRect(clipX,clipY,clipW,clipH);
   const int width=c.textWidth(message);
-  const int travel=width+clipW+24;
-  const int offset=static_cast<int>(((millis()-tickerStartMs)/35UL)%static_cast<uint32_t>(travel));
+  const uint32_t travelMs=static_cast<uint32_t>(width+clipW+24)*35UL+1200UL;
+  if(!headlineStartedMs) headlineStartedMs=millis();
+  uint32_t elapsed=millis()-headlineStartedMs;
+  if(elapsed>=travelMs) {
+    headlineStartedMs=millis();
+    if(haveHeadlines) headlineIndex=static_cast<uint8_t>((headlineIndex+1)%newsSnapshot->count);
+    elapsed=0;
+  }
+  const int offset=static_cast<int>((elapsed/35UL)%static_cast<uint32_t>(width+clipW+24));
   c.drawString(message,textX+clipW-offset,ntY+2);
   c.clearClipRect();
 }
