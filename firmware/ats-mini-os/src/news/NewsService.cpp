@@ -3,6 +3,7 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <string.h>
+#include "../system/BootDiagnostics.h"
 
 namespace {
 // Arduino-ESP32 3.3.x exposes the built-in ESP-IDF certificate bundle through
@@ -116,16 +117,21 @@ void parseFeed(const String& xml,uint8_t source,NewsService::Snapshot& snap) {
   }
 }
 bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
+  BootDiagnostics::printf("[NEWS] fetch start feed=%u", static_cast<unsigned>(source + 1));
   NewsFeedTlsClient tls;
+  BootDiagnostics::write("[NEWS] before default CA bundle attach");
   tls.useDefaultCertificateBundle();
+  BootDiagnostics::write("[NEWS] default CA bundle attached");
   HTTPClient http;
   http.setConnectTimeout(CONNECT_TIMEOUT_MS);
   http.setTimeout(READ_TIMEOUT_MS);
   http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
   http.setRedirectLimit(3);
   http.setUserAgent("ATS-Mini-OS-Newsfeed/1.0");
-  if(!http.begin(tls,url)) return false;
+  if(!http.begin(tls,url)) { BootDiagnostics::printf("[NEWS] HTTP begin failed feed=%u", static_cast<unsigned>(source + 1)); return false; }
+  BootDiagnostics::printf("[NEWS] HTTP begin OK feed=%u; before GET", static_cast<unsigned>(source + 1));
   int code=http.GET();
+  BootDiagnostics::printf("[NEWS] GET returned feed=%u http_code=%d", static_cast<unsigned>(source + 1), code);
   if(code!=HTTP_CODE_OK) { http.end(); return false; }
   int length=http.getSize();
   if(length>static_cast<int>(MAX_RESPONSE_BYTES)) { http.end(); return false; }
@@ -147,6 +153,7 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
   return snap.count>before;
 }
 void newsWorker(void*) {
+  BootDiagnostics::write("[NEWS] worker task entered");
   NewsService* service=workerInstance;
   for(;;) {
     bool connected=false, requested=false;
@@ -157,6 +164,7 @@ void newsWorker(void*) {
       NewsService::Configuration cfg=service->configuration();
       const uint32_t interval=(uint32_t)cfg.refreshMinutes*60000UL;
       if(cfg.enabled && (requested || !lastAttemptMs || millis()-lastAttemptMs>=interval)) {
+        BootDiagnostics::printf("[NEWS] refresh triggered requested=%s interval_min=%u", requested ? "yes" : "no", static_cast<unsigned>(cfg.refreshMinutes));
         lastAttemptMs=millis();
         NewsService::Snapshot fresh;
         fresh.fetchedAtMs=millis();
@@ -195,9 +203,11 @@ void NewsService::publish(const Snapshot& updated) {
 void NewsService::markStale() { portENTER_CRITICAL(&snapshotMux); snapshot_.stale=true; portEXIT_CRITICAL(&snapshotMux); }
 NewsService::Snapshot NewsService::snapshot() const { Snapshot copy; portENTER_CRITICAL(&snapshotMux); copy=snapshot_; portEXIT_CRITICAL(&snapshotMux); return copy; }
 void NewsService::begin() {
-  if(workerRunning) return;
+  BootDiagnostics::write("[NEWS] begin entered");
+  if(workerRunning) { BootDiagnostics::write("[NEWS] worker already running"); return; }
   workerInstance=this;
-  if(xTaskCreatePinnedToCore(newsWorker,"NewsFeed",TASK_STACK_WORDS,nullptr,TASK_PRIORITY,nullptr,TASK_CORE)==pdPASS) workerRunning=true;
+  if(xTaskCreatePinnedToCore(newsWorker,"NewsFeed",TASK_STACK_WORDS,nullptr,TASK_PRIORITY,nullptr,TASK_CORE)==pdPASS) { workerRunning=true; BootDiagnostics::write("[NEWS] worker task created"); }
+  else BootDiagnostics::write("[NEWS] ERROR: worker task creation failed");
 }
 void NewsService::update(bool wifiConnected) {
   portENTER_CRITICAL(&configMux); workerWifiConnected=wifiConnected; portEXIT_CRITICAL(&configMux);
