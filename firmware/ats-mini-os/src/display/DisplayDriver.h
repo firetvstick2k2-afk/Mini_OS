@@ -238,7 +238,7 @@ public:
 class DisplayDriver {
 public:
   bool begin(uint8_t initialBrightness = 180);
-  void render(const RadioSnapshot& state, bool radioReady, bool wifiConnected, const char* lastInputEvent, uint32_t inputEventCount, StationLogoClient* logoClient = nullptr, bool menuOpen = false, uint8_t menuPage = 0, uint8_t menuSelection = 0, uint8_t volume = 25, const char* filePath = "/", FileManager::Entry* fileEntries = nullptr, uint8_t fileCount = 0, uint8_t fileSelection = 0, uint8_t fileMode = 0, uint8_t fileActionSelection = 0, const char* fileSelectedName = "", const char* fileMessage = "", bool sliderAdjustmentActive = false, const char* eibiStation = "", const char* eibiStatus = "", bool eibiAvailable = false, bool eibiDownloading = false, const NewsService::Snapshot* newsSnapshot = nullptr, uint8_t wifiMode = 2, const char* wifiSsid = "", const char* wifiIp = "");
+  void render(const RadioSnapshot& state, bool radioReady, bool wifiConnected, const char* lastInputEvent, uint32_t inputEventCount, StationLogoClient* logoClient = nullptr, bool menuOpen = false, uint8_t menuPage = 0, uint8_t menuSelection = 0, uint8_t volume = 25, const char* filePath = "/", FileManager::Entry* fileEntries = nullptr, uint8_t fileCount = 0, uint8_t fileSelection = 0, uint8_t fileMode = 0, uint8_t fileActionSelection = 0, const char* fileSelectedName = "", const char* fileMessage = "", bool sliderAdjustmentActive = false, const char* eibiStation = "", const char* eibiStatus = "", bool eibiAvailable = false, bool eibiDownloading = false, const NewsService::Snapshot* newsSnapshot = nullptr, uint8_t wifiMode = 2, const char* wifiSsid = "", const char* wifiIp = "", bool bootLogEnabled = true);
   bool isReady() const { return ready_; }
   uint8_t fmLayout() const { return fmLayout_; }
   void setFmLayout(uint8_t mode);
@@ -270,6 +270,7 @@ private:
   uint8_t lastMenuLayout_ = 0xFF;
   uint8_t lastMenuBrightness_ = 0xFF;
   uint8_t lastMenuTheme_ = 0xFF;
+  bool lastMenuBootLogEnabled_ = true;
   char lastStationRow_[32] = {};
   char lastRadioTextRow_[65] = {};
   int16_t radioTextOffset_ = 0;
