@@ -35,6 +35,17 @@ bool SettingsStore::saveLastFmFrequencyKHz(uint32_t frequencyKHz) {
   return preferences_.putUInt(kFrequencyKey, frequencyKHz) == sizeof(uint32_t);
 }
 
+uint8_t SettingsStore::volume(uint8_t fallback) {
+  if (!ready_) return fallback;
+  const uint8_t saved = preferences_.getUChar(kVolumeKey, fallback);
+  return saved <= 63 ? saved : fallback;
+}
+
+bool SettingsStore::saveVolume(uint8_t volume) {
+  return ready_ && volume <= 63 &&
+         preferences_.putUChar(kVolumeKey, volume) == sizeof(uint8_t);
+}
+
 uint8_t SettingsStore::displayBrightness(uint8_t fallback) {
   if (!ready_) return fallback;
   const uint8_t saved = preferences_.getUChar(kDisplayBrightnessKey, fallback);
