@@ -216,7 +216,7 @@ template<class C> void drawTiny(C& d,const RadioSnapshot& s,bool ready,bool wifi
   drawNetworkBatteryStatus(d, wifi, 218);
   // Shared ATS Mini DEV frequency renderer, moved upward and left-aligned.
   LegacyFrequencyRenderer::draw(
-    d, s, 184, 27, 190, 27, 100,
+    d, s, 310, 27, 312, 27, 100,
     YELLOW, YELLOW, YELLOW, 0x07E0, true
   );
   const char* modes[]={"FM","AM","LSB","USB"}; const RadioModulation vals[]={RadioModulation::FM,RadioModulation::AM,RadioModulation::LSB,RadioModulation::USB}; const int mx[]={3,43,83,123};
