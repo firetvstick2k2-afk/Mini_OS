@@ -2207,3 +2207,13 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Die drei verbleibenden Kästchen bleiben rechts angeordnet (X=43, 83, 123); der frühere FM-Platz links bleibt frei.
 - Code-Commit: `9a863e8766f028dbc2b3fe953964859f4323a659`.
 - Noch nicht neu gebaut oder am Gerät geprüft.
+
+
+## Diagnostic-Log endgültig deaktiviert – 2026-11-09
+
+- Nutzerfoto aus DBFM zeigte, dass `/ats-mini-os.log` trotz früherer Entfernung weiterhin neu angelegt wurde.
+- Ursache im aktuellen Branch gefunden: `ats-mini-os.ino` enthielt weiterhin `writeDiagnosticLog()` und schrieb beim erfolgreichen Bandwechsel einen `BAND_SELECT`-Eintrag nach LittleFS.
+- Die Logger-Implementierung, der Header-Include, die Pfadkonstanten und der Bandwechsel-Aufruf wurden vollständig aus dem aktiven Sketch entfernt.
+- Beim nächsten Start mit dieser Firmware werden vorhandene Altdateien `/ats-mini-os.log` und `/ats-mini-os.log.1` gezielt gelöscht, sofern StorageDiscovery LittleFS erfolgreich und sicher bereitgestellt hat. Es wird kein Formatieren ausgelöst. Das bestehende LittleFS-/Anchor-Schutzverhalten bleibt unverändert.
+- Code-Commit: `26ab169f84a196b93c6d1c6832485c1ce5117976`.
+- **Status:** Gespeichert. Noch nicht neu kompiliert oder auf dem Gerät gestartet. Die bereits auf dem Gerät liegende Firmware kann die Datei bis zum Flashen/Start der korrigierten Firmware weiterhin führen.
