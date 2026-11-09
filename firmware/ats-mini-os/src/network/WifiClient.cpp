@@ -1,5 +1,6 @@
 #include "WifiClient.h"
 #include "../news/NewsService.h"
+#include "../system/BootDiagnostics.h"
 
 namespace {
 constexpr char SETTINGS_NAMESPACE[] = "network";
@@ -23,9 +24,12 @@ bool WifiClient::accessPointEnabled() const {
 }
 
 void WifiClient::begin() {
+  BootDiagnostics::write("[WIFI] begin entered");
   WiFi.persistent(false);
   WiFi.setAutoReconnect(true);
+  BootDiagnostics::write("[WIFI] before Preferences.begin");
   preferencesReady_ = preferences_.begin(SETTINGS_NAMESPACE, false, "settings");
+  BootDiagnostics::printf("[WIFI] Preferences.begin ready=%s", preferencesReady_ ? "yes" : "no");
   if (preferencesReady_) {
     loadNetworks();
     loadNewsConfig();
@@ -34,11 +38,17 @@ void WifiClient::begin() {
       ? static_cast<Mode>(savedMode) : Mode::AP_CONNECT;
   }
   if (newsService_) newsService_->setConfiguration(newsConfig_);
+  BootDiagnostics::printf("[WIFI] config loaded mode=%u news_enabled=%s interval=%u feed1_configured=%s", static_cast<unsigned>(mode_), newsConfig_.enabled ? "yes" : "no", static_cast<unsigned>(newsConfig_.refreshMinutes), newsConfig_.urls[0][0] ? "yes" : "no");
+  BootDiagnostics::write("[WIFI] before startWebServer");
   startWebServer();
+  BootDiagnostics::write("[WIFI] startWebServer returned");
+  BootDiagnostics::write("[WIFI] before applyMode");
   applyMode();
+  BootDiagnostics::write("[WIFI] applyMode returned");
 }
 
 void WifiClient::applyMode() {
+  BootDiagnostics::printf("[WIFI] applyMode mode=%u", static_cast<unsigned>(mode_));
   WiFi.softAPdisconnect(false);
   WiFi.disconnect(false, false);
   apActive_ = false;
@@ -48,13 +58,17 @@ void WifiClient::applyMode() {
     Serial.println("[WIFI] mode OFF: station and setup access point disabled");
     return;
   }
+  BootDiagnostics::write("[WIFI] setting radio mode");
   if (accessPointEnabled() && stationEnabled()) WiFi.mode(WIFI_AP_STA);
   else if (accessPointEnabled()) WiFi.mode(WIFI_AP);
   else WiFi.mode(WIFI_STA);
 
+  BootDiagnostics::write("[WIFI] radio mode set");
   if (accessPointEnabled()) {
+    BootDiagnostics::write("[WIFI] before softAPConfig/softAP");
     WiFi.softAPConfig(SETUP_IP, SETUP_GATEWAY, SETUP_SUBNET);
     apActive_ = WiFi.softAP(SETUP_AP_SSID);
+    BootDiagnostics::printf("[WIFI] softAP returned active=%s", apActive_ ? "yes" : "no");
   }
   if (stationEnabled()) {
     bool found = false;
@@ -62,7 +76,9 @@ void WifiClient::applyMode() {
       if (ssid_[i][0]) { activeNetwork_ = i; found = true; break; }
     }
     if (found) {
+      BootDiagnostics::printf("[WIFI] before WiFi.begin saved_slot=%u", static_cast<unsigned>(activeNetwork_ + 1));
       WiFi.begin(ssid_[activeNetwork_], password_[activeNetwork_]);
+      BootDiagnostics::write("[WIFI] WiFi.begin returned");
       lastAttemptMs_ = millis();
       Serial.printf("[WIFI] connecting to saved network slot %u\\n",
                     static_cast<unsigned>(activeNetwork_ + 1));
