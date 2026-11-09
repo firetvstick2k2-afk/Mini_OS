@@ -38,6 +38,8 @@ public:
   bool saveBfoOffsetHz(int16_t offsetHz);
   uint8_t cpuProfile(uint8_t fallback = 0);
   bool saveCpuProfile(uint8_t profile);
+  bool bootLogEnabled(bool fallback = true);
+  bool saveBootLogEnabled(bool enabled);
   bool isReady() const { return ready_; }
 
 private:
@@ -55,6 +57,7 @@ private:
   static constexpr char kSsbBandwidthKey[] = "ssb_bw";
   static constexpr char kBfoOffsetKey[] = "ssb_bfo";
   static constexpr char kCpuProfileKey[] = "cpu_prof";
+  static constexpr char kBootLogEnabledKey[] = "boot_log";
 
   Preferences preferences_;
   bool ready_ = false;
