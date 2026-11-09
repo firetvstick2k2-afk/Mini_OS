@@ -2304,3 +2304,14 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - **Noch nicht implementiert:** Webformular, NVS-Laden/Speichern der Feed-Konfiguration, sicherer Hintergrund-HTTPS-Abruf, RSS-/Atom-Parser, Offline-Persistenz, Scroll-Renderer und Verbindung zum Hauptprogramm. Aktuell werden noch keine News geladen oder angezeigt.
 - **Nächster Schritt:** Vorhandenes `WifiClient` um Feed-Formular/POST-Validierung/NVS ergänzen; anschließend dedizierten Netzwerk-Worker mit begrenzten Abrufen und robustem Parsing implementieren. Danach einen optionalen Layout-Renderer hinzufügen, ohne Waterfall-Rendering oder CPU-Profile zu ändern.
 - Kein Build, keine Actions und kein Flashvorgang durch den Assistenten ausgelöst; Änderungen noch nicht kompiliert oder auf Hardware getestet.
+
+
+### News-Ticker – Web-Konfiguration, Stufe 2 (2026-11-09)
+- Nutzer bestätigt Intervallbereich **1 bis 1440 Minuten**; 1 Minute ist der Standard-/Mindestwert, 1440 Minuten (24 h) das Maximum.
+- `WifiClient` Weboberfläche erweitert: eigener Abschnitt „News-Ticker“ mit Aktivierung, vier RSS-/Atom-URL-Eingabefeldern und Zahlenfeld für das Intervall.
+- Neue POST-Route `/news/save`; prüft Intervall strikt auf 1–1440, Feed-URL-Länge auf 191 Zeichen und erlaubt nur `https://` ohne Leerzeichen.
+- Einstellungen werden in der bestehenden dedizierten `settings`-NVS-Partition im Namespace `network` gespeichert (Keys `newson`, `nmin`, `nurl1` bis `nurl4`). WLAN-Zugangsdaten bleiben im bestehenden Ablauf.
+- Beim Start werden News-Einstellungen geladen und ungültige/alte Werte sicher auf Defaults zurückgesetzt. Leere Feed-Slots sind erlaubt.
+- Commits: `79c9e6a2616a7ab1d72a71851addcb7ea5e90421` (Header), `33086e4eb14f33fe8b49eb1b8e80b1c5ead3d614` (Weboberfläche).
+- **Noch offen:** News-Konfiguration an die zentrale `NewsService`-Instanz weiterreichen; HTTPS-Feed-Abruf, RSS/Atom-Parsing, Cache und Layout-Renderer. Die Web-Konfiguration allein lädt noch keine Nachrichten.
+- Noch kein Build/Hardwaretest; Nutzer startet Builds selbst. Waterfall und CPU-Profile nicht verändert.
