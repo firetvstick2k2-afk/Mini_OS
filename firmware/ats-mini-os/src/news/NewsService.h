@@ -9,7 +9,7 @@ public:
   static constexpr size_t MAX_HEADLINE_BYTES = 192;
   static constexpr uint8_t MAX_FEEDS = 4;
   static constexpr size_t MAX_URL_BYTES = 192;
-  static constexpr uint16_t MIN_REFRESH_MINUTES = 5;
+  static constexpr uint16_t MIN_REFRESH_MINUTES = 1;
   static constexpr uint16_t MAX_REFRESH_MINUTES = 1440;
 
   struct Headline {
