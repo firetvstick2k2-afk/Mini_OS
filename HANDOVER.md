@@ -2200,3 +2200,10 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Frequenzrenderer-Anker nach rechts auf X=310 verschoben; kHz-Anker auf X=312. Y bleibt 27. Damit soll die Frequenz rechts neben den fünf Kopfzeilenfeldern liegen statt diese zu überdecken.
 - Korrekturcommit: `4c1413b693a3625ec477ff6e2d893185a5e0f163`.
 - Noch nicht neu gebaut oder am Gerät geprüft.
+
+
+### TinyRadio-Modulationszeile bereinigt – 2026-11-09
+- FM-Kästchen aus der unteren Modulationsauswahl entfernt. TinyRadio zeigt dort ausschließlich AM, LSB und USB.
+- Die drei verbleibenden Kästchen bleiben rechts angeordnet (X=43, 83, 123); der frühere FM-Platz links bleibt frei.
+- Code-Commit: `9a863e8766f028dbc2b3fe953964859f4323a659`.
+- Noch nicht neu gebaut oder am Gerät geprüft.
