@@ -31,7 +31,7 @@
 ## 3. Projekt- und Referenzabgrenzung
 
 - Das aktive Projekt ist ausschließlich `firetvstick2k2-afk/Mini_OS`.
-- Das frühere Repository `früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv)` ist kein aktives Ziel und darf nicht mehr als aktuelles Projekt bezeichnet werden.
+- Das frühere Repository `früheres, nicht mehr aktives Repository` ist kein aktives Ziel und darf nicht mehr als aktuelles Projekt bezeichnet werden.
 - `13HN2709/ats-mini-dev` kann weiterhin als historische Quellcode-Referenz genannt werden, wenn eine konkrete Portierung oder Herkunft von Code erläutert werden muss. Es ist kein Zielrepository und darf nur lesend verwendet werden, sofern der Nutzer nichts anderes freigibt.
 
 ## 4. Bestätigte Anforderungen und Grenzen
@@ -208,7 +208,7 @@ Der Nutzer hat ausdrücklich darum gebeten, diesen Plan dauerhaft festzuhalten u
 ## 13. Erste Web-/GitHub-Recherche zu Wetterdaten und RDS-Logos
 
 Die erste Recherche ist in `docs/NETWORK_DATA_SOURCES.md` dokumentiert:
-[früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/blob/main/docs/NETWORK_DATA_SOURCES.md
+[früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/blob/main/docs/NETWORK_DATA_SOURCES.md
 
 Vorläufige Auswahl:
 - **Wetter:** Open-Meteo ist der bevorzugte erste Kandidat, weil Geocoding Ortsnamen/Postleitzahlen unterstützt und die Wetter-API aktuelle Bedingungen, Wettercodes, Bewölkung, Niederschlagswahrscheinlichkeit und Wind liefert. Nutzung für nicht kommerzielle Zwecke grundsätzlich ohne API-Schlüssel; Daten-Attribution und Terms beachten.
@@ -319,7 +319,7 @@ Die exakt verwendete PU2CLR-SI4735-Version 2.1.8 und die RDS-Rohblock-/FIFO-Sema
 
 Der Nutzer hat ausdrücklich freigegeben, dass für ATS Mini OS alle erforderlichen Informationen selbständig recherchiert werden dürfen: öffentliche GitHub-Repositories, Quellcodes, Releases/Tags, Wikis, Dokumentationen, Standards, Hersteller-Datenblätter, Webseiten und andere geeignete öffentliche Informationsquellen. Die Recherche soll nicht auf das Referenz-Repository beschränkt sein.
 
-Diese Freigabe gilt für Informationsbeschaffung und read-only Prüfung. Die bestehenden Projektgrenzen bleiben bestehen: `13HN2709/ats-mini-dev` und alle vorhandenen Firmware-Repositories bleiben unverändert; keine Builds starten, keine GitHub Actions auslösen, nichts flashen und keine ausführbare Firmware implementieren, solange der Nutzer das nicht ausdrücklich freigibt. Dokumentationsänderungen im neuen Repository `früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv)` sind im bisherigen Planungsumfang zulässig.
+Diese Freigabe gilt für Informationsbeschaffung und read-only Prüfung. Die bestehenden Projektgrenzen bleiben bestehen: `13HN2709/ats-mini-dev` und alle vorhandenen Firmware-Repositories bleiben unverändert; keine Builds starten, keine GitHub Actions auslösen, nichts flashen und keine ausführbare Firmware implementieren, solange der Nutzer das nicht ausdrücklich freigibt. Dokumentationsänderungen im neuen Repository `früheres, nicht mehr aktives Repository` sind im bisherigen Planungsumfang zulässig.
 
 ## 19. Ergebnis: PU2CLR SI4735 2.1.8 und RadioDNS-Standards geprüft
 
@@ -472,7 +472,7 @@ Außerdem wurde in `PerformanceManager.cpp` ein irreführender Kommentar korrigi
 
 ## 29. Erster Compile-Lauf fehlgeschlagen – Toolchain-Fehler
 
-GitHub Actions Run: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41263944157 (2026-11-01). Beide Jobs (`Compile-only / esp32s3-ospi` und `Compile-only / esp32s3-qspi`) endeten mit `failure`. Die Logs zeigen Download/Installation von ESP32-3.3.12-Paketbestandteilen und danach `Error during build: Platform 'arduino:avr' not found: platform not installed`. Dies ist zunächst ein Fehler bei Plattformauflösung/Toolchain-Setup, kein bestätigter C++-Fehler im OS-Scaffold. Die Workflow-/CLI-Konfiguration muss vor dem nächsten Lauf korrigiert werden. Es wurde nichts auf das ATS Mini geflasht und kein Boot-Slot verändert.
+GitHub Actions Run: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41263944157 (2026-11-01). Beide Jobs (`Compile-only / esp32s3-ospi` und `Compile-only / esp32s3-qspi`) endeten mit `failure`. Die Logs zeigen Download/Installation von ESP32-3.3.12-Paketbestandteilen und danach `Error during build: Platform 'arduino:avr' not found: platform not installed`. Dies ist zunächst ein Fehler bei Plattformauflösung/Toolchain-Setup, kein bestätigter C++-Fehler im OS-Scaffold. Die Workflow-/CLI-Konfiguration muss vor dem nächsten Lauf korrigiert werden. Es wurde nichts auf das ATS Mini geflasht und kein Boot-Slot verändert.
 
 
 ## 30. Korrektur des Compile-Workflows nach Run 41263944157 (2026-11-01)
@@ -598,7 +598,7 @@ Nächste Workflow-Korrektur in Commit `63e3a85b5973ac5bb137ac11c3848756cbd6e3df`
 
 ## Build-Fehlerstand – 2026-11-01 (Run 41267328096)
 
-- Der manuell gestartete Compile-only-Lauf ist in beiden Profilen fehlgeschlagen: [QSPI-Job]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41267328096/job/124732757205) und [OSPI-Job]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41267328096/job/124732757271).
+- Der manuell gestartete Compile-only-Lauf ist in beiden Profilen fehlgeschlagen: [QSPI-Job]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41267328096/job/124732757205) und [OSPI-Job]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41267328096/job/124732757271).
 - Beide Jobs finden die installierte Datei laut vorgeschaltetem Header-Check, scheitern aber beim Übersetzen von `TunerDriver.h` weiterhin mit `fatal error: SI4735.h: No such file or directory`.
 - Der direkte `--library`-Pfad allein hat das Problem nicht behoben. Neuer Workflow-Commit `c78e8488729f3f83ce4aa6ee303312d5802cbbe6` ergänzt zusätzlich den expliziten Include-Pfad `.../PU2CLR_SI4735/src` als `compiler.cpp.extra_flags`. Das ist eine weitere Build-Konfigurationskorrektur, noch nicht verifiziert.
 - **Nächster Schritt:** Nutzer startet den Workflow erneut manuell. Keine Actions selbst starten. Falls der Header-Fehler verschwindet, die dann sichtbaren Compilerfehler als nächsten Schritt bearbeiten.
@@ -657,7 +657,7 @@ Nächste Workflow-Korrektur in Commit `63e3a85b5973ac5bb137ac11c3848756cbd6e3df`
 
 ## 42. Erster erfolgreicher Compile des modularen FM-Scaffolds – Run 41272465032 (2026-11-01)
 
-Der Nutzer hat den manuellen Workflow-Lauf [41272465032]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41272465032) bereitgestellt. Beide Jobs sind erfolgreich abgeschlossen:
+Der Nutzer hat den manuellen Workflow-Lauf [41272465032]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41272465032) bereitgestellt. Beide Jobs sind erfolgreich abgeschlossen:
 - QSPI: Job `124747871639`, Ergebnis `success`.
 - OSPI: Job `124747871789`, Ergebnis `success`.
 
@@ -737,11 +737,11 @@ Sources:
 
 ### Aktueller Stand
 - Entwicklungsbranch: `dev/first-build-preparation`.
-- Der letzte zuvor gemeldete erfolgreiche Compile-only-Lauf war GitHub Actions Run [41273167361]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41273167361). Dieser Lauf enthält noch nicht die nachfolgend beschriebenen späteren Änderungen.
+- Der letzte zuvor gemeldete erfolgreiche Compile-only-Lauf war GitHub Actions Run [41273167361]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41273167361). Dieser Lauf enthält noch nicht die nachfolgend beschriebenen späteren Änderungen.
 - In `TunerDriver.cpp` wurde danach RDS-Initialisierung ergänzt: `radio_.RdsInit()` und `radio_.setRdsConfig(1, 2, 2, 2, 2)`.
 - Commit für diese RDS-Initialisierung: `0bb00c68f3e1e9848e1e5c13291bcf01b2afc6a7`.
 - Bereits im Code vorhanden ist `refreshSignalQuality()`, das vor dem Lesen von RSSI/SNR/Pilot `getCurrentReceivedSignalQuality()` aufruft. `RadioCore` ruft diese Methode bei der Initialisierung und bei seinem 500-ms-Poll auf.
-- **Erfolgreicher Compile-only-Nachweis:** GitHub Actions Run [41274168929]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41274168929) ist für beide Jobs erfolgreich: `esp32s3-qspi` und `esp32s3-ospi`. Damit ist die RDS-Initialisierung im aktuellen Build kompilierbar. Die RDS-Daten (PS, PI, PTY, Radiotext) werden noch nicht aktiv in den Snapshot übernommen; die RDS-Initialisierung allein bedeutet noch keine fertige RDS-Anzeige.
+- **Erfolgreicher Compile-only-Nachweis:** GitHub Actions Run [41274168929]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41274168929) ist für beide Jobs erfolgreich: `esp32s3-qspi` und `esp32s3-ospi`. Damit ist die RDS-Initialisierung im aktuellen Build kompilierbar. Die RDS-Daten (PS, PI, PTY, Radiotext) werden noch nicht aktiv in den Snapshot übernommen; die RDS-Initialisierung allein bedeutet noch keine fertige RDS-Anzeige.
 
 ### Referenz aus `13HN2709/ats-mini-dev`
 - Alte `Station.cpp` verarbeitet RDS-Gruppen in begrenzten Batches (Limit 25) und behandelt Sendername/PS, PI, PTY und Radiotext getrennt.
@@ -750,7 +750,7 @@ Sources:
 - Ziel ist ein eigener, modularer RDS-Service mit stabilem Sendernamen-Puffer und getrenntem Radiotext-Puffer. Vor Implementierung sind die tatsächlichen RDS-Methoden der im neuen OS verwendeten PU2CLR-SI4735-Version zu verifizieren.
 
 ### Nächste Schritte
-1. Der Compile-only-Workflow wurde vom Nutzer manuell gestartet und ist in Run [41274168929]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41274168929) für QSPI und OSPI erfolgreich durchgelaufen.
+1. Der Compile-only-Workflow wurde vom Nutzer manuell gestartet und ist in Run [41274168929]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41274168929) für QSPI und OSPI erfolgreich durchgelaufen.
 2. Als Nächstes die installierte SI4735-API verifizieren und einen separaten RDS-Service ergänzen (PS, PI, PTY, RT), ohne die alte Firmware zu verändern.
 4. Kein Firmware-Flash und keine Änderung an Bootloader, APP0/APP1, Recovery oder Partitionen ohne ausdrückliche Freigabe. Die 8-MB-Partitionsdatei bleibt ausschließlich Compile-Referenz und darf nicht auf das 16-MB-Gerät geflasht werden.
 
@@ -777,7 +777,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 - Radiotext benötigt zusätzlich die Behandlung von Text-Flag A/B und Textsegmenten, damit beim Wechsel einer Meldung keine Fragmente alter und neuer Texte vermischt werden.
 
 ### Verifikationsstatus
-- Compile-only-Run [41274168929]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41274168929) ist für QSPI und OSPI erfolgreich; er bestätigt die RDS-Initialisierung, aber noch keine RDS-Decodierung.
+- Compile-only-Run [41274168929]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41274168929) ist für QSPI und OSPI erfolgreich; er bestätigt die RDS-Initialisierung, aber noch keine RDS-Decodierung.
 - Diese API-Prüfung ist eine Quellcodeprüfung. Es wurde kein Gerät getestet, kein Firmware-Image geflasht und keine Partition oder Bootkomponente geändert.
 - Nächster Schritt: den RDS-Service und eine schmale Treiberschnittstelle implementieren; danach den Nutzer den manuellen Compile-only-Workflow erneut starten lassen.
 
@@ -797,7 +797,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 - RadioCore-Integration: `72af1d4277f0be49e6c88da2916904901646712b`
 
 ### Einschränkungen und nächste Prüfung
-- **Build noch nicht verifiziert.** Der Nutzer muss den Compile-only-Workflow manuell starten: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/workflows/ats-mini-os-first-compile.yml
+- **Build noch nicht verifiziert.** Der Nutzer muss den Compile-only-Workflow manuell starten: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/workflows/ats-mini-os-first-compile.yml
 - Nach einem erfolgreichen Build soll die RDS-Textsegment-/A/B-Flag-Behandlung gezielt überprüft werden. Die PU2CLR-Bibliothek hält interne RT-Puffer; die aktuelle Schnittstelle übernimmt deren Inhalt, daher ist die saubere Trennung alter und neuer RT-Segmente noch im Build-/Hardwaretest zu validieren.
 - `rdsAvailable` wird gesetzt, sobald ein empfangener RDS-Status vorliegt; tatsächliche Stabilität und Empfangsqualität müssen am Gerät geprüft werden.
 - Kein Firmware-Flash, kein Hardwaretest und keine Änderung der Partitionstabelle durchgeführt. Die 8-MB-Compile-Referenzpartition bleibt ausschließlich für CI.
@@ -806,7 +806,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 ## 49. RDS-A/B-Pufferbereinigung und Startdiagnose (2026-11-01)
 
 ### Nach dem grünen Lauf 41274825544 vorgenommene Änderungen
-- Nutzerbestätigter Lauf [41274825544]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41274825544): beide Compile-only-Jobs `esp32s3-ospi` und `esp32s3-qspi` erfolgreich.
+- Nutzerbestätigter Lauf [41274825544]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41274825544): beide Compile-only-Jobs `esp32s3-ospi` und `esp32s3-qspi` erfolgreich.
 - Danach wurde `TunerDriver.cpp` angepasst: Die PU2CLR-SI4735-2.1.8-Implementierung löscht die RT-Puffer bei Wechsel des Text-Flags A/B nicht automatisch. Beim erkannten Wechsel werden nun `clearRdsBuffer2A()` und `clearRdsBuffer2B()` aufgerufen, bevor das aktuelle Segment der neuen Meldung übernommen wird.
 - `ats-mini-os.ino` gibt im 2-Sekunden-Serienstatus zusätzlich RDS-Verfügbarkeit, PI, PTY, PS und RT aus. Das erleichtert den ersten sicheren Bring-up über den seriellen Monitor, bevor Display und Encoder integriert werden.
 - Commits nach Run 41274825544:
@@ -814,7 +814,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
   - RDS-Seriendiagnose: `006702e8388153073f29b86d2eb474eae83855ba`
 
 ### Nächster Schritt
-- Nutzer startet den Compile-only-Workflow manuell: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/workflows/ats-mini-os-first-compile.yml
+- Nutzer startet den Compile-only-Workflow manuell: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/workflows/ats-mini-os-first-compile.yml
 - Beide Profile müssen nach diesen letzten Commits erneut erfolgreich kompilieren.
 - Wenn der Build grün bleibt, ist als nächster Entwicklungsblock die erste Display-/Encoder-Inventarisierung und eine separate, minimale UI-Anbindung vorzubereiten. Pins, Displaycontroller und benötigte Bibliotheken müssen vor Codeannahmen verifiziert werden.
 
@@ -826,7 +826,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 
 ## 50. Compile-Fehler aus Run 41275391304 behoben (2026-11-01)
 
-- Run: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41275391304/job/124756434503
+- Run: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41275391304/job/124756434503
 - OSPI-Compile schlug fehl, weil `SI4735::clearRdsBuffer2A()` und `clearRdsBuffer2B()` in PU2CLR SI4735 2.1.8 als `protected` deklariert sind und daher nicht direkt von `TunerDriver` aufgerufen werden dürfen.
 - Korrektur: `TunerSI4735` erbt von `SI4735` und stellt eine kleine öffentliche Adaptermethode `clearRadioTextBuffers()` bereit, die intern die beiden geschützten Methoden aufruft. `TunerDriver` verwendet nun diesen Adapter.
 - Fix-Commits:
@@ -839,7 +839,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 
 ## 51. Compile-Fehler aus Run 41275768795 korrigiert (2026-11-01)
 
-- Run: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41275768795
+- Run: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41275768795
 - Beide Compile-only-Jobs (QSPI und OSPI) scheiterten in `TunerDriver.cpp` an vier `const_cast`-Ausdrücken. Nach dem Wechsel des Feldtyps von `SI4735` zu `TunerSI4735` versuchten die Casts weiterhin, eine `const TunerSI4735`-Referenz direkt als `SI4735&` zu behandeln; das ist kein gültiger `const_cast`.
 - Korrektur in Commit `e0bac0c1e56622295b0429123f990051a0908741`: Die vier Cast-Ziele in `frequencyKHz()`, `rssi()`, `snr()` und `stereo()` wurden auf `TunerSI4735&` geändert.
 - Nächster Schritt: Nutzer startet den manuellen Compile-only-Workflow erneut und sendet den neuen Run-Link. Der Assistent löst keine GitHub Actions selbst aus.
@@ -849,7 +849,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 
 ## 52. Compile-only-Build wieder grün – Run 41276405931 (2026-11-01)
 
-- Nutzerbestätigter Lauf: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41276405931
+- Nutzerbestätigter Lauf: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41276405931
 - Branch: `dev/first-build-preparation`; geprüfter Commit: `b7374e047549cbcb18d392c4d50203cc630b10cd`.
 - Beide Jobs erfolgreich:
   - QSPI: Job `124759364156`, Ergebnis `success`.
@@ -874,7 +874,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 
 ## 54. Displaytreiber-Headerguard korrigiert nach Run 41281847197 (2026-11-01)
 
-- Run: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41281847197
+- Run: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41281847197
 - Beide Compile-only-Jobs (QSPI und OSPI) erreichten den Sketch-Compile-Schritt, scheiterten jedoch in `DisplayDriver.h` mit `error: unterminated #ifndef`.
 - Ursache: Am Ende der Headerdatei fehlte das abschließende `#endif` für `ATS_MINI_OS_DISPLAY_DRIVER_H`.
 - Korrektur in Commit `ac4411d63e6c9ea641acfa1bbea5e813855f9a1e): `#endif // ATS_MINI_OS_DISPLAY_DRIVER_H` ergänzt.
@@ -885,7 +885,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 
 ## 55. LovyanGFX-Linkerfehler aus Run 41282435431 eingegrenzt (2026-11-01)
 
-- Run: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41282435431
+- Run: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41282435431
 - Beide Profile erreichen jetzt den Linker; die Headerdatei wird gefunden und der fehlende Headerguard ist behoben.
 - Linker meldet zahlreiche `undefined reference`-Symbole aus `lgfx::LGFXBase`, `Panel_Device` und `LGFX_Device`. Die Compile-Ausgabe listet LovyanGFX nicht unter den tatsächlich verwendeten/kompilierten Bibliotheken.
 - Korrektur in Commit `2ef743515afa5eb39bbd90873ca862f1c863dcc7`: die zwei singulären `--library`-Argumente entfernt; Arduino CLI soll LovyanGFX über den angegebenen Bibliotheksordner `--libraries "$HOME/Arduino/libraries"` regulär erkennen und dessen Implementierungsdateien mitkompilieren.
@@ -895,7 +895,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 
 ## 56. LovyanGFX weiterhin nicht gelinkt – Workflow-Anpassung nach Run 41283059049 (2026-11-01)
 
-- Run: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41283059049
+- Run: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41283059049
 - Beide Profile scheitern weiterhin beim Linken mit zahlreichen fehlenden LovyanGFX-Symbolen. In der „Used library“-Liste stehen nur `Wire` und `Preferences`; LovyanGFX wird nicht als verwendete Bibliothek geführt.
 - Wahrscheinlicher Auslöser: Der manuell ergänzte `-I.../LovyanGFX/src`-Include-Pfad lässt den Header direkt auffindbar werden, ohne dass Arduino CLI die Bibliothek korrekt als Abhängigkeit aufnimmt. Das ist eine Diagnose-Hypothese, noch kein bestätigter Befund.
 - Workflow-Anpassung in Commit `1276a7bb119bc47b08d150b6e5492a555d8f3136`: LovyanGFX wird wieder ausdrücklich über `--library "$HOME/Arduino/libraries/LovyanGFX"` angegeben; der manuelle LovyanGFX-Include-Pfad wurde aus `compiler.cpp.extra_flags` entfernt. Der SI4735-Include-Pfad bleibt erhalten.
@@ -905,7 +905,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 
 ## 57. Arduino CLI findet LovyanGFX aus User-Library-Ordner nicht – Run 41283468733 (2026-11-01)
 
-- Run: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41283468733
+- Run: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41283468733
 - Beide Profile brechen nun bereits beim Header ab: `fatal error: LovyanGFX.hpp: No such file or directory`. Die vorherige Änderung, die den zusätzlichen Include-Pfad entfernt hatte, machte den Header nicht mehr sichtbar.
 - Arduino CLI-Dokumentation beschreibt Library-Auflösung über installierte Libraries; es gibt außerdem einen aktuellen Arduino CLI Issue mit ähnlichem Verhalten bei User-Libraries unter `directories.user` (Issue #3253, 2026). Das ist ein plausibler Tooling-Fehler, nicht belegt als alleinige Ursache für diesen konkreten Build.
 - Workflow-Workaround in Commit `eea3684a0f4f56f558154e2ea9d54b396e16a5a6`: Die installierte LovyanGFX-Bibliothek wird im temporären GitHub-Runner zusätzlich nach `~/.arduino15/packages/esp32/hardware/esp32/3.3.12/libraries/LovyanGFX` kopiert. Der Sketch-Compile-Schritt kann die Bibliothek dann als ESP32-Core-Bibliothek auflösen und deren Quellen einbinden. Diese Kopie existiert ausschließlich im kurzlebigen CI-Runner, nicht auf dem Radio.
@@ -915,7 +915,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 
 ## 58. Build #36 grün und Encoder-Modul angebunden (2026-11-02)
 
-- Nutzerbestätigter Run: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41361949091
+- Nutzerbestätigter Run: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41361949091
 - Commit ef26676c4fedb141855464d480024dd33d51065e; beide Compile-only-Profile esp32s3-qspi und esp32s3-ospi erfolgreich.
 - Der Fehler LGFX_Sprite.inl: No such file or directory ist für den aktuellen Workflow behoben.
 - Nächster isolierter Entwicklungsschritt: Encoder GPIO A=2, B=1, Push=21 per Polling integrieren; Drehen verändert FM-Frequenz in 100-kHz-Schritten über RadioCore::nextChannel(). Kurz-/Langdruck werden zunächst nur seriell protokolliert; keine Menüaktion ist damit verbunden.
@@ -947,13 +947,13 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 ### Änderungen auf `dev/first-build-preparation`
 1. Commit `1120d02dfe0c0e7f98cbae0de42eb09c7b9e1c65`: `TunerDriver.cpp` registriert GPIO 3 nun zusätzlich mit `radio_.setAudioMuteMcuPin(kAudioMutePin)`. Mute bleibt vor der SI4735-Initialisierung HIGH, Amp GPIO 10 zunächst LOW, LDO GPIO 15 HIGH; nach Tuner-Setup wird Amp HIGH und Mute LOW gesetzt. Volume bleibt 35. Die offizielle PU2CLR-SI4735-API wurde read-only geprüft: `setAudioMuteMcuPin(int8_t)` setzt den Pin als Ausgang und hinterlegt ihn als externe Mute-Leitung; `setHardwareAudioMute(bool)` setzt den Pegel mit 300-µs-Verzögerung. Die Hardwarewirkung und das Verhalten bei Tune-/Power-Übergängen sind noch nicht am Gerät bestätigt.
 2. Commit `e5c69045941baabf171d168a4061768f3a1f54d2`: `DisplayDriver.cpp` initialisiert bei Nicht-LILYGO-Builds GPIO 38 per `ledcAttach(38, 16000, 8)`, schaltet die Hintergrundbeleuchtung vor Panel-Init aus und setzt sie nach erfolgreichem Display-Init auf Helligkeitswert 180. Noch nicht am Gerät bestätigt.
-- Links: [Audio-Mute-Anbindung]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/commit/1120d02dfe0c0e7f98cbae0de42eb09c7b9e1c65), [Backlight GPIO38]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/commit/e5c69045941baabf171d168a4061768f3a1f54d2).
+- Links: [Audio-Mute-Anbindung]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/commit/1120d02dfe0c0e7f98cbae0de42eb09c7b9e1c65), [Backlight GPIO38]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/commit/e5c69045941baabf171d168a4061768f3a1f54d2).
 - Die Dateien wurden im Branch `dev/first-build-preparation` geändert. Die `HANDOVER.md`-Einträge werden sowohl hier auf `main` als auch im Dev-Branch gepflegt.
 
 ### Letzter bestätigter Build und nächster Schritt
-- Letzter bestätigter Compile-only-Run vor den beiden oben genannten Commits: [Run 41365786325 / Build #39]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41365786325), beide Jobs OSPI und QSPI erfolgreich.
+- Letzter bestätigter Compile-only-Run vor den beiden oben genannten Commits: [Run 41365786325 / Build #39]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41365786325), beide Jobs OSPI und QSPI erfolgreich.
 - Dieser grüne Build enthält die Commits `1120d02` und `e5c6904` noch nicht. Sie sind deshalb **noch nicht neu kompiliert** und nicht auf echter Hardware getestet.
-- Nächster Schritt: Nutzer startet den manuellen Workflow [ATS Mini OS First Compile]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/workflows/ats-mini-os-first-compile.yml) und teilt den Run-Link. Beide Profile OSPI/QSPI kontrollieren; erst danach sichere Hardwaretests nach Zustimmung des Nutzers planen.
+- Nächster Schritt: Nutzer startet den manuellen Workflow [ATS Mini OS First Compile]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/workflows/ats-mini-os-first-compile.yml) und teilt den Run-Link. Beide Profile OSPI/QSPI kontrollieren; erst danach sichere Hardwaretests nach Zustimmung des Nutzers planen.
 - Build-Artefakte des bisherigen Laufs heißen `ats-mini-os-compile-report-esp32s3-ospi` und `ats-mini-os-compile-report-esp32s3-qspi`; je ca. 46 MB und Compile-Reports, kein bestätigter flashbarer Firmware-Release. Ablaufdatum 16.11.2026.
 - Display-UI ist derzeit RDS-Testansicht (Frequenz, PS, PI/PTY, RT, Stereo/Mono, RSSI/SNR und RDS-Status). RT-Scrolling und Encoderbedienung/volle Radiofunktionen sind noch nicht vollständig integriert bzw. verifiziert. Compile-Erfolg allein bestätigt keine Hardwarefunktion.
 
@@ -961,7 +961,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 
 ## Buildstatus – Run 41367291150 (2026-11-02)
 
-- Nutzer hat den manuellen Compile-only-Run geteilt: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41367291150
+- Nutzer hat den manuellen Compile-only-Run geteilt: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41367291150
 - Branch: `dev/first-build-preparation`; getesteter Commit: `4e31ef4ca13c20337e095ce77e238a983bf41b26`.
 - Beide Jobs erfolgreich: `Compile-only / esp32s3-qspi` und `Compile-only / esp32s3-ospi`. Alle angezeigten Schritte einschließlich `Compile ATS Mini OS scaffold` und `Preserve compile report` waren erfolgreich.
 - Damit sind die vorher dokumentierten Änderungen für Hardware-Audio-Mute an GPIO3 und Backlight-PWM an GPIO38 in diesem Compile-Lauf enthalten und kompilieren in beiden Profilen.
@@ -974,8 +974,8 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 
 - Bei der Codeprüfung von `EncoderInput.cpp` wurde ein konkreter Fehler gefunden: Der bisherige einzelne `pendingEvent_`-Speicher konnte ein zuvor erkanntes Ereignis überschreiben, wenn innerhalb eines `update()`-Durchlaufs beispielsweise eine Drehung und ein Tastendruckereignis entstanden.
 - Korrektur auf `dev/first-build-preparation`: feste Ringwarteschlange mit 8 `EncoderEvent)-Einträgen. `poll()` entnimmt Ereignisse FIFO; beim vollen Puffer wird das neueste Ereignis verworfen und eine serielle Diagnose ausgegeben, statt ein wartendes Ereignis zu überschreiben.
-- Header-Commit: `e487dde375422df765602abc5d26850e1bfb63db` – [EncoderInput.h]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/blob/dev/first-build-preparation/firmware/ats-mini-os/src/input/EncoderInput.h).
-- Implementierungs-Commit: `55e8b0e4bf1efe974ba24d1ee315469acc64a7f4` – [EncoderInput.cpp]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/blob/dev/first-build-preparation/firmware/ats-mini-os/src/input/EncoderInput.cpp).
+- Header-Commit: `e487dde375422df765602abc5d26850e1bfb63db` – [EncoderInput.h]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/blob/dev/first-build-preparation/firmware/ats-mini-os/src/input/EncoderInput.h).
+- Implementierungs-Commit: `55e8b0e4bf1efe974ba24d1ee315469acc64a7f4` – [EncoderInput.cpp]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/blob/dev/first-build-preparation/firmware/ats-mini-os/src/input/EncoderInput.cpp).
 - Noch nicht kompiliert; der vorherige grüne Run `41367291150` enthält diese beiden Commits nicht. Nutzer muss den manuellen Compile-only-Workflow erneut starten und QSPI/OSPI kontrollieren.
 - Danach bleibt der praktische Encoder-Test am Gerät offen: Drehrichtung, Frequenzschritt 100 kHz, Grenzüberlauf 87,5/108,0 MHz, kurzer Tastendruck, langer Tastendruck und Anzeige-/Radio-Konsistenz. Die aktuelle Firmware ordnet kurzen/lange Tastendruck-Ereignisse bislang nur seriellen Diagnosemeldungen zu; Menüaktionen sind nicht implementiert.
 - Grenzen unverändert: keine Actions durch den Assistenten gestartet, nichts geflasht, Bootloader/Partitionen und bestehende Firmware-Repositories unangetastet.
@@ -984,7 +984,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 ## Benannte OSPI-DE-/QSPI-DE-Artefakte (2026-11-02)
 
 - Nutzerwunsch: getrennte deutsche Builds für OSPI und QSPI mit klaren Dateinamen im Stil `ATS-Mini-OS.ino.bin`, dazu Quellcode-ZIP; künftig nach geprüfter Kompatibilität auch eine echte OTA-Datei.
-- Workflow-Commit auf `dev/first-build-preparation`: `c3f99a2360691128e5289bd6414326cff3a1b6a0` – [Workflow ansehen]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/commit/c3f99a2360691128e5289bd6414326cff3a1b6a0).
+- Workflow-Commit auf `dev/first-build-preparation`: `c3f99a2360691128e5289bd6414326cff3a1b6a0` – [Workflow ansehen]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/commit/c3f99a2360691128e5289bd6414326cff3a1b6a0).
 - Der manuelle Workflow verwendet nun `arduino-cli compile --export-binaries`, benennt das jeweilige App-Image `ATS-Mini-OS-OSPI-DE.ino.bin` bzw. `ATS-Mini-OS-QSPI-DE.ino.bin` und packt den Firmware-Projektordner als `ATS-Mini-OS-Source-Code-OSPI-DE.zip` bzw. `ATS-Mini-OS-Source-Code-QSPI-DE.zip` ein. Die Dateien werden in getrennten GitHub-Artefakten mit 14 Tagen Aufbewahrung bereitgestellt; ein Build-NOTEs-Text weist auf Grenzen hin.
 - Wichtig: Diese Workflow-Änderung ist noch nicht durch einen neuen Run verifiziert. Der Nutzer muss den manuellen Workflow selbst starten; der Assistent startet keine Actions.
 - OTA-Datei absichtlich noch nicht erzeugt: Vorher müssen OTA-Updatepfad, App-Binärformat und Partition-/Bootloader-Kompatibilität geprüft werden. Das bisherige 8-MiB-Compile-Profil ist kein Freigabenachweis für das 16-MiB-Gerät; nichts flashen.
@@ -993,7 +993,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 
 ## Build-Artefakt-Diagnose – 2026-11-02
 
-- GitHub Actions Run: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/41369282686
+- GitHub Actions Run: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/41369282686
 - Beide Profile (esp32s3-qspi und esp32s3-ospi) haben den eigentlichen Compile-Schritt erfolgreich abgeschlossen (Sketch ca. 395 KB QSPI / 397 KB OSPI; diese Werte sind nur die gemeldete Sketchgröße).
 - Fehler danach: Der Artefakt-Schritt suchte firmware/ats-mini-os/ats-mini-os.ino.bin, fand dort aber keine .bin; deshalb schlugen die beiden Jobs beim Vorbereiten/Upload der Artefakte fehl und es wurden keine Artefakte veröffentlicht.
 - Korrektur auf dev/first-build-preparation: Commit 25f3ecc6a282aeffd403b800fab397f78a0b0d8e ändert die Ausgabe auf einen deterministischen --output-dir pro Profil (build/esp32s3-qspi bzw. build/esp32s3-ospi) und lässt den Artefakt-Schritt dort nach ats-mini-os.ino.bin suchen.
@@ -1154,7 +1154,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 - Nutzer meldet weiterhin kein Senderlogo. Status bestätigt gültige Testidentität (z. B. `PI=D399`, `GCC=DE0`, `Identity status=3`), verbundenes WLAN und erkannte LittleFS-Partition; Log bestätigt wiederholt `lookup started`.
 - Fehlerursache noch nicht bekannt: Der bisherige Code schrieb wichtige Ergebnisse/Fehler (SRV-Lookup fehlgeschlagen, SI.xml HTTP-Fehler, Logo-Download-Fehler und Cache-Schreibfehler) nur über `Serial.printf/println`. Die über den Webdiagnose-Endpunkt gespeicherte `/RDS/radiodns-debug.log` zeigte diese entscheidenden Ergebnisse deshalb nicht zuverlässig. Nutzer arbeitet ohne PC/Serial Monitor.
 - Änderung in `firmware/ats-mini-os/src/radiodns/RadioDnsClient.cpp`: Cache-Hits, fehlgeschlagene SRV-Abfrage samt konfiguriertem DNS-Server, gefundener Metadatenserver, SI.xml-Fehler inkl. Status/URL, Logo-Download-Fehler inkl. Status/URL und erfolgreicher/fehlgeschlagener Cache-Schreibvorgang werden jetzt über `logRadioDns()` auch in die abrufbare Debug-Logdatei geschrieben. Fehler beim Anlegen/Starten des Lookup-Tasks ebenfalls in der Datei protokolliert.
-- Commit: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/commit/59b2fd69128fc6d05cb8bf12d7be87ac2a0176ef
+- Commit: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/commit/59b2fd69128fc6d05cb8bf12d7be87ac2a0176ef
 - Status: **noch nicht kompiliert oder am Gerät getestet**. Nutzer startet Compile-only-Workflow selbst; keine GitHub Actions gestartet und nichts geflasht. Bootloader, Partitionstabelle und vorhandene Dateien wurden nicht verändert.
 - Nächster Schritt nach dem manuellen Compile-only-Test: Nutzer testet mit OSPI-DE, wartet auf `lookup started`, ruft danach `/radiodns-log` ab und sendet den neuen Log. Dann lässt sich anhand der tatsächlichen SRV-/HTTP-/Logo-Meldung gezielt weiterarbeiten. Recovery-Dateiansicht ist kein verlässlicher Beleg für das Vorhandensein/Fehlen von `/RDS`, sofern LittleFS dort nicht explizit angezeigt wird.
 
@@ -1164,8 +1164,8 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 - `firmware/ats-mini-os/src/radiodns/RadioDnsClient.cpp` protokolliert jetzt getrennte Ergebnisse: kein DNS-Server, UDP-Socket-/Sendeproblem, Timeout, ungültige/abgeschnittene Antwort, NXDOMAIN, SERVFAIL, REFUSED, sonstiger DNS-Fehler und erfolgreiche Antwort ohne SRV-Record. Bei Fehlern werden FQDN, vollständiger SRV-Qname, DNS-Server, RCODE und Answer-Anzahl protokolliert; bei Erfolg der gefundene Metadatenserver und Port.
 - Fallback-Pfad in `RadioCore.cpp` geprüft: gültiger empfangener ECC hat Vorrang; ohne ECC wird der temporäre Testwert `DE0` nur bei PI-Ländercode-Nibble `D` verwendet. Das ist weiterhin ein ausdrücklich temporärer Test-Fallback und kein Beweis, dass die Senderidentität korrekt ist.
 - Commits:
-  - DNS-Ergebnisse detaillierter protokollieren: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/commit/e021cace4cc991bea807b843b4b4ac1236cdc213
-  - DNS-Answer-Anzahl auch bei DNS-Fehlerantworten erfassen: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/commit/d60df0fbfe903491084f09c4055292e18462b45a
+  - DNS-Ergebnisse detaillierter protokollieren: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/commit/e021cace4cc991bea807b843b4b4ac1236cdc213
+  - DNS-Answer-Anzahl auch bei DNS-Fehlerantworten erfassen: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/commit/d60df0fbfe903491084f09c4055292e18462b45a
 - Noch nicht kompiliert oder am Gerät getestet. Nutzer startet den manuellen Compile-only-Workflow selbst. Keine Actions gestartet, nichts geflasht und keine Bootloader-/Partition-/Datenänderung vorgenommen.
 - Nächster Schritt: manueller Compile-only-Build, danach Gerätetest und Abruf von `/radiodns-log`. Die neue Meldung soll zeigen, ob der Resolver ein echtes NXDOMAIN, einen Timeout oder einen anderen DNS-Fehler liefert. Erst dann die Ursache beheben.
 
@@ -1184,16 +1184,16 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
   - `firmware/ats-mini-os/src/display/DisplayDriver.cpp`
   - `firmware/ats-mini-os/ats-mini-os.ino`
 - Änderungskette auf `dev/first-build-preparation`:
-  - [RAM-Logo-Schnittstelle]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/commit/e782e703202dee463892c828df1e63575cfaa0c9)
-  - [CNAME vor SRV, Logo nur im RAM]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/commit/3d6dc216cbd771ba4a9f1b5eee36e77cea3bf09e)
-  - [Display rendert Logo aus RAM]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/commit/aa26a2adc1fe23b7dda9ea87944e89e2f1360470)
-  - [RadioDNS-Client an Display übergeben]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/commit/26e7cfe0fc3d544874b3d207d99ae235898dfe0a)
-  - [CNAME-Diagnose präzisiert]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/commit/8645f8e5ffa992673706d6ddef851ccb956d9d31)
+  - [RAM-Logo-Schnittstelle]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/commit/e782e703202dee463892c828df1e63575cfaa0c9)
+  - [CNAME vor SRV, Logo nur im RAM]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/commit/3d6dc216cbd771ba4a9f1b5eee36e77cea3bf09e)
+  - [Display rendert Logo aus RAM]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/commit/aa26a2adc1fe23b7dda9ea87944e89e2f1360470)
+  - [RadioDNS-Client an Display übergeben]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/commit/26e7cfe0fc3d544874b3d207d99ae235898dfe0a)
+  - [CNAME-Diagnose präzisiert]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/commit/8645f8e5ffa992673706d6ddef851ccb956d9d31)
 - **Teststatus: noch nicht kompiliert und nicht auf dem Gerät geprüft.** Der Assistent hat keine GitHub Actions gestartet und nichts geflasht. Nutzer soll den manuellen Compile-only-Workflow ausführen; erst nach erfolgreichem Compile folgt der Test auf dem ATS Mini V4. Bootloader, Partitionstabelle und bestehende Dateien wurden nicht verändert.
 - Beim Gerätetest bitte `/radiodns-log` nach einer neuen Suche abrufen. Gesucht werden die Meldungen `CNAME DNS lookup succeeded`, `SRV DNS lookup succeeded`, `SI.xml received` und `logo ready in RAM for display`. Wenn der Ablauf bis zum RAM-Logo reicht, prüfen wir danach, ob es sichtbar ist. Erst danach wird das Speicherproblem separat angegangen.
 
 
-- Ergänzende Absicherung im selben Diagnosezweig: Die Logo-Endung wird nicht mehr aus der URL geraten, sondern anhand der tatsächlichen Datei-Signatur (JPEG/PNG) erkannt. So wird ein Logo mit URL-Query oder abweichender Endung nicht automatisch an den falschen Decoder übergeben. Commit: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/commit/cb73054d79e5f95f9206cb6d72a1311969d26ce0
+- Ergänzende Absicherung im selben Diagnosezweig: Die Logo-Endung wird nicht mehr aus der URL geraten, sondern anhand der tatsächlichen Datei-Signatur (JPEG/PNG) erkannt. So wird ein Logo mit URL-Query oder abweichender Endung nicht automatisch an den falschen Decoder übergeben. Commit: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/commit/cb73054d79e5f95f9206cb6d72a1311969d26ce0
 
 
 ## RadioDNS: modernes SPI-SRV vor Legacy-EPG testen (2026-11-03)
@@ -1339,7 +1339,7 @@ Auf Branch `dev/first-build-preparation` wurde ein erstes scrollbares Vollbild-M
   - Erst nach erfolgreicher Prüfung wird die bisherige Datei mit exakt gleichem Zielnamen vorübergehend gesichert, die neue Datei installiert und danach werden andere Logo-Dateien mit demselben PI-Präfix entfernt.
   - Wenn Kopie/Prüfung oder Installation fehlschlägt, bleibt die bisherige Logo-Datei erhalten; bei einem Fehler beim Installieren wird die exakt gleichnamige Sicherung zurückbenannt.
   - `splash.png` bleibt ausdrücklich ausgeschlossen. Es wird nicht formatiert und es werden keine Partitionen verändert.
-- Commit: [771c3d839249e782cff0fa8420b2b044ed675c3a]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/commit/771c3d839249e782cff0fa8420b2b044ed675c3a)
+- Commit: [771c3d839249e782cff0fa8420b2b044ed675c3a]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/commit/771c3d839249e782cff0fa8420b2b044ed675c3a)
 - **Status: Code geändert, noch nicht kompiliert und nicht auf dem ATS Mini V4 getestet.** Keine GitHub Actions gestartet, nichts geflasht.
 - Nächster Schritt: Nutzer führt den manuellen Compile-only-Build aus. Danach testen, indem ein neues Logo mit bereits vorhandenem PI (z. B. D394) in das LittleFS-Stammverzeichnis hochgeladen wird; nach dem Neustart muss die neue Datei unter `/logos` liegen und die alte PI-Variante entfernt sein.
 
@@ -1351,7 +1351,7 @@ Auf Branch `dev/first-build-preparation` wurde ein erstes scrollbares Vollbild-M
 - Sicherheitsablauf: neues Root-PNG zunächst nach `/logos/.replace_<PI>.tmp` kopieren und Dateigröße/Bytezahl prüfen; bei identischem Zieldateinamen wird die alte Datei vorübergehend als Backup umbenannt; erst nach erfolgreichem Installieren wird das Backup und werden andere alte Varianten desselben PI entfernt. Bei fehlgeschlagener Installation wird das exakte alte Ziel zurückbenannt und die Root-Quelldatei bleibt erhalten.
 - Vorhandene temporäre/Backup-Dateien führen jetzt zum Abbruch dieses PI-Imports, statt automatisch gelöscht zu werden. Nicht unterstützte Dateitypen werden bei der PI-Bereinigung nicht entfernt. `splash.png` bleibt weiterhin ausgeschlossen.
 - Änderung: `firmware/ats-mini-os/src/storage/StorageDiscovery.cpp`.
-- Commit: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/commit/ceb62787fb33853e815a117634f0217259456254
+- Commit: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/commit/ceb62787fb33853e815a117634f0217259456254
 - **Status: noch nicht kompiliert und nicht erneut auf dem ATS Mini V4 getestet.** Kein Build/keine GitHub Actions gestartet, nichts geflasht. Nutzer startet den manuellen Compile-only-Workflow selbst.
 
 
@@ -1425,7 +1425,7 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 
 ## 2026-11-07 – Build #114 erfolgreich: Display-Helligkeit im Menü
 
-- **Build:** [GitHub Actions #114]([früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/42348325947)
+- **Build:** [GitHub Actions #114]([früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/42348325947)
 - **Branch:** `dev/first-build-preparation`
 - **Workflow:** `ATS Mini OS - First Compile (manual only)`
 - **Commit / HEAD:** `ad24099b5a4221bb82164e4c1bbe6facc8300a7e` – `Label brightness adjustment in display menu`
@@ -1500,7 +1500,7 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 
 ### Build #115 – erster Compile-Fehler und Korrektur (2026-11-07)
 
-- Run: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/42351728925
+- Run: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/42351728925
 - Ergebnis: `completed / failure`; QSPI und OSPI beide beim Schritt „Compile ATS Mini OS scaffold“ fehlgeschlagen.
 - Exakte Ursache in beiden Logs:
   `src/display/DisplayDriver.h:249:3: error: 'Preferences' does not name a type`
@@ -1515,7 +1515,7 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 
 ### Build #116 – Display-Helligkeit mit NVS-Persistenz erfolgreich kompiliert (2026-11-07)
 
-- Run: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/42352366602
+- Run: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/42352366602
 - Branch: `dev/first-build-preparation`
 - Getesteter Commit: `036502d46ecdb327daacfcf136513df779d5017c`
 - Ergebnis: `completed / success`; beide Compile-only-Jobs erfolgreich:
@@ -1558,7 +1558,7 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 
 ## Build #117 – Theme-System erfolgreich kompiliert (2026-11-07)
 
-- Run: [früheres Repository früheres Repository 13HN2709/ATS_Mini_-OS (nicht mehr aktiv) – nicht mehr aktiv]/actions/runs/42357809506
+- Run: [früheres Repository früheres, nicht mehr aktives Repository – nicht mehr aktiv]/actions/runs/42357809506
 - Branch: `dev/first-build-preparation`
 - Getesteter Commit: `8903df9c4d1bb8ba685f2f01c82a765a7649b376`
 - Ergebnis: `completed / success`; QSPI und OSPI erfolgreich.
