@@ -2162,3 +2162,12 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - `LegacyFrequencyRenderer.h` erhielt einen optionalen Parameter `showUnit` (Standard `true`). Damit kann HJB die Inline-Einheit unterdrücken, ohne das Standardverhalten anderer Aufrufer zu ändern.
 - Nur `DisplayLayoutHJB.h`, `LegacyFrequencyRenderer.h` und dieses HANDOVER wurden geändert. Keine anderen Layouts, Radio-Core-Funktionen, Speicher-/Bootpfade oder Workflows wurden verändert.
 - **Status:** Änderungen auf `dev/first-build-preparation` gespeichert. Noch nicht kompiliert und nicht auf Hardware geprüft. Kein GitHub-Actions-Workflow gestartet und nichts geflasht. Nutzer startet den nächsten Compile-only-Build manuell.
+
+
+## Compile-Lauf #25 – HJB-Renderer-Aufruf korrigiert – 2026-11-09
+
+- GitHub Actions Run #25: https://github.com/firetvstick2k2-afk/Mini_OS/actions/runs/42627194501
+- OSPI-Compile scheiterte in `DisplayLayoutHJB.h`: Der Aufruf der `RadioSnapshot`-Überladung von `LegacyFrequencyRenderer::draw()` übergab ein Argument zu viel (13 statt 12 insgesamt). Die vierte Farbposition ist `normalUnitColor`; der zusätzliche `GREEN`-Wert war veraltet. Da HJB die Inline-Einheit mit `showUnit=false` ausblendet, bleibt `0x07E0` als normalUnitColor erhalten.
+- Korrektur: Aufrufparameter auf `YELLOW, GREEN, YELLOW, 0x07E0, false` reduziert. Keine Koordinaten, Frequenzdarstellung, Highlight-Geometrie oder andere Layouts geändert.
+- Code-Commit: `3c43bbcf245268a32e19cd94c5d398c4ec7cfad5`.
+- **Status:** Korrektur gespeichert. Noch nicht kompiliert oder auf Hardware geprüft. Kein weiterer Workflow gestartet; Nutzer startet den nächsten Compile-only-Build manuell.
