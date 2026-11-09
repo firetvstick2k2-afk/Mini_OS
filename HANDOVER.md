@@ -2328,3 +2328,22 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - FM-Layout-Persistenzbereich wurde auf Modus 3 erweitert; Auswahl bleibt nach Neustart speicherbar.
 - Relevante Commits: `b09f9bb`, `2edd971`, `5c5dab0`, `c327edb`, plus Driver-/Settings-Änderungen aus derselben Arbeitsfolge.
 - Noch kein Build/Hardwaretest. Nutzer startet Compile-only-Builds selbst. Waterfall-Rendering und CPU-Profil-/Taktlogik wurden nicht bearbeitet.
+
+
+## Newsfeed-Integration: Live-RSS-Anbindung – 2026-11-09
+
+**Dieser Abschnitt ist der aktuelle Status und ersetzt die älteren „noch offen“-Notizen in den vorangehenden Newsfeed-Abschnitten.**
+
+- Nutzer hat als ersten Feed ausdrücklich `https://www.n-tv.de/rss` vorgegeben. Beim ersten Start ohne gespeicherte Feed-Adresse wird dieser Feed als Slot 1 vorbelegt; News-Ticker und 1-Minuten-Aktualisierung sind Standardwerte. Das Webformular erlaubt weiterhin 1 bis 1440 Minuten und bis zu vier HTTPS-Feeds.
+- `NewsService` lädt RSS-/Atom-Feeds in einem separaten FreeRTOS-Worker. HTTP(S) läuft nicht im Display-/Radio-Renderpfad. HTTPS verwendet das ESP32-Zertifikatsbundle über `WiFiClientSecure::setCACertBundle`; kein `setInsecure()`.
+- Begrenzungen: maximal 4 Feed-URLs, 12 Schlagzeilen, 24 KiB Feed-Antwort, 5 s Verbindungs-/Lese-Timeout, maximal 3 Redirects. RSS-`item` und Atom-`entry` werden ausgewertet; Titel werden von Markup/Entities bereinigt und dedupliziert.
+- Die zentrale News-Konfiguration wird beim WLAN-Start geladen und nach Änderungen im Webformular an `NewsService` weitergereicht. Worker startet nach `wifi.begin()`; WLAN-Status wird über die Hauptschleife aktualisiert.
+- `DisplayDriver::render()` erhält jetzt einen Snapshot. Ausschließlich FM-Layout-Modus 3 („TEF6686 - Newsfeed“) zeigt daraus Schlagzeilen im NT-Feld. Schlagzeilen laufen nacheinander vollständig durch; der bestehende TEF6686-FM-Modus 2 und alle anderen Layouts bleiben unverändert.
+- Ein beim vorherigen Stand fehlerhaft eingefügter FM-Dispatch-Block mit wörtlichen `\\n`-Sequenzen wurde in gültige C++-Zeilen korrigiert.
+- Waterfall-Renderer, Waterfall-Scan, CPU-Takt-/Performance-Steuerung, Radio-Core, Boot-/Partitionskonfiguration und LittleFS wurden nicht geändert.
+- Relevante Commits dieser Integration:
+  - `a2995bf938036e4f6d46c566b32ceafca3d20961` – Display-Schnittstelle um News-Snapshot ergänzt.
+  - `a5428a680f3cd806b4a8c33b94936e98a0148f3a` – NT-Renderer an echte Schlagzeilen angebunden und fehlerhaften Dispatch korrigiert.
+  - `2cdce18918a956aca6f69b34389df9bac7abc968` – News-Snapshot aus dem Hauptprogramm übergeben.
+  - `a414bf45bd5075f05a6a18e9727585f70fac0a87` – Scroll-/Wechselzeit pro Schlagzeile angepasst.
+- **Status:** Quellcode auf `dev/first-build-preparation` gespeichert. Noch kein Build, keine GitHub Action und kein Gerätetest durch den Assistenten. Nutzer startet den nächsten OSPI-Compile-only-Build selbst. Wenn der Build einen Fehler meldet, zuerst den konkreten Compiler-Log prüfen.
