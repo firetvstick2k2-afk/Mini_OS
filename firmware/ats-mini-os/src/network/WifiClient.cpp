@@ -14,32 +14,85 @@ void WifiClient::setNewsService(NewsService* service) {
   if (newsService_) newsService_->setConfiguration(newsConfig_);
 }
 
+bool WifiClient::stationEnabled() const {
+  return mode_ == Mode::AP_CONNECT || mode_ == Mode::CONNECT || mode_ == Mode::SYNC_ONLY;
+}
+
+bool WifiClient::accessPointEnabled() const {
+  return mode_ == Mode::AP_ONLY || mode_ == Mode::AP_CONNECT;
+}
+
 void WifiClient::begin() {
   WiFi.persistent(false);
-  WiFi.mode(WIFI_AP_STA);
   WiFi.setAutoReconnect(true);
-
   preferencesReady_ = preferences_.begin(SETTINGS_NAMESPACE, false, "settings");
-  if (preferencesReady_) { loadNetworks(); loadNewsConfig(); }
+  if (preferencesReady_) {
+    loadNetworks();
+    loadNewsConfig();
+    const uint8_t savedMode = preferences_.getUChar("wmode", static_cast<uint8_t>(Mode::AP_CONNECT));
+    mode_ = savedMode <= static_cast<uint8_t>(Mode::SYNC_ONLY)
+      ? static_cast<Mode>(savedMode) : Mode::AP_CONNECT;
+  }
   if (newsService_) newsService_->setConfiguration(newsConfig_);
-
-  // The local setup page remains reachable even when the router is unavailable.
-  WiFi.softAPConfig(SETUP_IP, SETUP_GATEWAY, SETUP_SUBNET);
-  apActive_ = WiFi.softAP(SETUP_AP_SSID);
   startWebServer();
+  applyMode();
+}
 
-  bool found = false;
-  for (uint8_t i = 0; i < NETWORK_COUNT; ++i) {
-    if (ssid_[i][0]) { activeNetwork_ = i; found = true; break; }
-  }
-  if (found) {
-    WiFi.begin(ssid_[activeNetwork_], password_[activeNetwork_]);
+void WifiClient::applyMode() {
+  WiFi.softAPdisconnect(true);
+  WiFi.disconnect(false, false);
+  apActive_ = false;
+  if (mode_ == Mode::OFF) {
+    WiFi.mode(WIFI_OFF);
     lastAttemptMs_ = millis();
-    Serial.printf("[WIFI] connecting to saved network slot %u; setup page http://10.1.1.1/\n",
-                  static_cast<unsigned>(activeNetwork_ + 1));
-  } else {
-    Serial.printf("[WIFI] no saved network; setup AP %s at http://10.1.1.1/\n", SETUP_AP_SSID);
+    Serial.println("[WIFI] mode OFF: station and setup access point disabled");
+    return;
   }
+  if (accessPointEnabled() && stationEnabled()) WiFi.mode(WIFI_AP_STA);
+  else if (accessPointEnabled()) WiFi.mode(WIFI_AP);
+  else WiFi.mode(WIFI_STA);
+
+  if (accessPointEnabled()) {
+    WiFi.softAPConfig(SETUP_IP, SETUP_GATEWAY, SETUP_SUBNET);
+    apActive_ = WiFi.softAP(SETUP_AP_SSID);
+  }
+  if (stationEnabled()) {
+    bool found = false;
+    for (uint8_t i = 0; i < NETWORK_COUNT; ++i) {
+      if (ssid_[i][0]) { activeNetwork_ = i; found = true; break; }
+    }
+    if (found) {
+      WiFi.begin(ssid_[activeNetwork_], password_[activeNetwork_]);
+      lastAttemptMs_ = millis();
+      Serial.printf("[WIFI] connecting to saved network slot %u\\n",
+                    static_cast<unsigned>(activeNetwork_ + 1));
+    } else Serial.println("[WIFI] no saved router network");
+  }
+  Serial.printf("[WIFI] mode=%u AP=%s STA=%s\\n",
+    static_cast<unsigned>(mode_), apActive_ ? "ON" : "OFF",
+    stationEnabled() ? "ON" : "OFF");
+}
+
+bool WifiClient::setMode(Mode mode) {
+  if (static_cast<uint8_t>(mode) > static_cast<uint8_t>(Mode::SYNC_ONLY)) return false;
+  if (mode_ == mode) return true;
+  if (preferencesReady_ &&
+      preferences_.putUChar("wmode", static_cast<uint8_t>(mode)) != sizeof(uint8_t)) return false;
+  mode_ = mode;
+  applyMode();
+  return true;
+}
+
+String WifiClient::networkName() const {
+  if (connected()) return WiFi.SSID();
+  if (apActive_) return String(SETUP_AP_SSID);
+  return String();
+}
+
+String WifiClient::ipAddress() const {
+  if (connected()) return WiFi.localIP().toString();
+  if (apActive_) return WiFi.softAPIP().toString();
+  return String();
 }
 
 void WifiClient::loadNetworks() {
@@ -183,7 +236,7 @@ void WifiClient::handleSave() {
     "<meta charset='utf-8'><meta http-equiv='refresh' content='5;url=/'><p>WLAN-Daten gespeichert. "
     "Verbindungsaufbau läuft. Diese Seite lädt in fünf Sekunden neu.</p>");
   WiFi.disconnect(false, false);
-  if (any) connectNextNetwork();
+  if (any && stationEnabled()) connectNextNetwork();
 }
 
 
@@ -250,6 +303,7 @@ void WifiClient::handleStatus() {
 }
 
 void WifiClient::connectNextNetwork() {
+  if (!stationEnabled()) return;
   for (uint8_t n = 0; n < NETWORK_COUNT; ++n) {
     activeNetwork_ = static_cast<uint8_t>((activeNetwork_ + n) % NETWORK_COUNT);
     if (!ssid_[activeNetwork_][0]) continue;
@@ -276,7 +330,7 @@ void WifiClient::update() {
       Serial.println("[WIFI] disconnected; setup AP remains active");
     }
   }
-  if (status != WL_CONNECTED && now - lastAttemptMs_ >= RETRY_INTERVAL_MS) {
+  if (stationEnabled() && status != WL_CONNECTED && now - lastAttemptMs_ >= RETRY_INTERVAL_MS) {
     lastAttemptMs_ = now;
     connectNextNetwork();
   }
@@ -288,5 +342,5 @@ void WifiClient::update() {
 }
 
 bool WifiClient::connected() const {
-  return WiFi.status() == WL_CONNECTED;
+  return stationEnabled() && WiFi.status() == WL_CONNECTED;
 }
