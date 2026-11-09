@@ -126,7 +126,7 @@ void newsWorker(void*) {
     portEXIT_CRITICAL(&configMux);
     if(connected && service) {
       NewsService::Configuration cfg;
-      portENTER_CRITICAL(&configMux); cfg=service->configuration_; portEXIT_CRITICAL(&configMux);
+      portENTER_CRITICAL(&configMux); cfg=service->configuration(); portEXIT_CRITICAL(&configMux);
       const uint32_t interval=(uint32_t)cfg.refreshMinutes*60000UL;
       if(cfg.enabled && (requested || !lastAttemptMs || millis()-lastAttemptMs>=interval)) {
         lastAttemptMs=millis();
@@ -152,6 +152,7 @@ bool NewsService::validFeedUrl(const char* url) {
   for(size_t i=0;i<len;i++) if((uint8_t)url[i]<=32) return false;
   return true;
 }
+NewsService::Configuration NewsService::configuration() const { Configuration copy; portENTER_CRITICAL(&configMux); copy=configuration_; portEXIT_CRITICAL(&configMux); return copy; }
 void NewsService::setConfiguration(const Configuration& config) {
   Configuration next{}; next.enabled=config.enabled;
   next.refreshMinutes=constrain(config.refreshMinutes,MIN_REFRESH_MINUTES,MAX_REFRESH_MINUTES);
