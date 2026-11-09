@@ -21,7 +21,8 @@ void draw(Canvas& spr,
           uint16_t frequencyColor,
           uint16_t normalHighlightColor,
           uint16_t selectedHighlightColor,
-          uint16_t normalUnitColor = 0x07E0) {
+          uint16_t normalUnitColor = 0x07E0,
+          bool showUnit = true) {
   static uint32_t lastFreq = 0;
   static uint32_t lastTuneTime = 0;
 
@@ -80,9 +81,11 @@ void draw(Canvas& spr,
   spr.setTextColor(frequencyColor);
   if (isFm) {
     spr.drawFloat(freq / 1000.0f, 2, x, y, &lgfx::fonts::Font7);
-    spr.setTextDatum(ML_DATUM);
-    spr.setTextColor(unitColor);
-    spr.drawString("MHz", ux, uy + 10, &lgfx::fonts::FreeSansBold9pt7b);
+    if (showUnit) {
+      spr.setTextDatum(ML_DATUM);
+      spr.setTextColor(unitColor);
+      spr.drawString("MHz", ux, uy + 10, &lgfx::fonts::FreeSansBold9pt7b);
+    }
   } else {
     if (isSsb) {
       const int64_t tunedHz = static_cast<int64_t>(freq) * 1000LL + currentBFO;
@@ -104,9 +107,11 @@ void draw(Canvas& spr,
       spr.drawNumber(freq, x, y, &lgfx::fonts::Font7);
     }
 
-    spr.setTextColor(unitColor);
-    spr.setTextDatum(ML_DATUM);
-    spr.drawString("kHz", ux, uy + 10, &lgfx::fonts::FreeSansBold9pt7b);
+    if (showUnit) {
+      spr.setTextColor(unitColor);
+      spr.setTextDatum(ML_DATUM);
+      spr.drawString("kHz", ux, uy + 10, &lgfx::fonts::FreeSansBold9pt7b);
+    }
   }
 
   if (li) {
@@ -129,10 +134,11 @@ void draw(Canvas& canvas, const RadioSnapshot& state,
           int x, int y, int unitX, int unitY, uint8_t highlight,
           uint16_t frequencyColor, uint16_t normalHighlightColor,
           uint16_t selectedHighlightColor,
-          uint16_t normalUnitColor = 0x07E0) {
+          uint16_t normalUnitColor = 0x07E0,
+          bool showUnit = true) {
   draw(canvas, state.frequencyKHz, state.modulation, x, y, unitX, unitY,
        highlight, state.bfoOffsetHz, frequencyColor, normalHighlightColor,
-       selectedHighlightColor, normalUnitColor);
+       selectedHighlightColor, normalUnitColor, showUnit);
 }
 
 } // namespace LegacyFrequencyRenderer
