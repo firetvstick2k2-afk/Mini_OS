@@ -36,6 +36,9 @@ EncoderInput encoder;
 WifiClient wifi;
 StationLogoClient stationLogoClient;
 uint32_t lastStatusMs = 0;
+uint32_t lastObservedFmFrequencyKHz = DEFAULT_FM_FREQUENCY_KHZ;
+uint32_t fmFrequencyChangedAtMs = 0;
+bool fmFrequencySavePending = false;
 uint32_t encoderEventCount = 0;
 const char* lastEncoderEvent = "WAIT";
 bool menuOpen = false;
@@ -52,6 +55,29 @@ char fmSelectedName[48] = "";
 uint8_t fmCount = 0, fmSelection = 0, fmActionSelection = 0, fmMode = 0;
 uint8_t fmPendingAction = 0, fmEditCursor = 0;
 char fmEditName[48] = "";
+void updateLastFmFrequencyPersistence() {
+  if (!radio.isReady()) return;
+  const RadioSnapshot& state = radio.snapshot();
+  if (state.modulation != RadioModulation::FM) {
+    fmFrequencySavePending = false;
+    return;
+  }
+
+  if (state.frequencyKHz != lastObservedFmFrequencyKHz) {
+    lastObservedFmFrequencyKHz = state.frequencyKHz;
+    fmFrequencyChangedAtMs = millis();
+    fmFrequencySavePending = true;
+  }
+
+  // Debounce encoder tuning so NVS is written once after the user stops tuning.
+  if (fmFrequencySavePending && millis() - fmFrequencyChangedAtMs >= 1000) {
+    const bool saved = settingsStore.saveLastFmFrequencyKHz(lastObservedFmFrequencyKHz);
+    Serial.printf("[SETTINGS] last FM frequency %.2f MHz %s\\n",
+      lastObservedFmFrequencyKHz / 1000.0f, saved ? "saved" : "save failed");
+    fmFrequencySavePending = false;
+  }
+}
+
 void saveBrightnessIfPending() {
   if (!brightnessSavePending) return;
   if (settingsStore.saveDisplayBrightness(display.brightness())) {
@@ -149,7 +175,13 @@ void setup() {
     Serial.printf("[DISPLAY] first UI initialized; brightness=%u/255\n",
       static_cast<unsigned>(display.brightness()));
   }
-  if (radio.begin(DEFAULT_FM_FREQUENCY_KHZ)) {
+  const uint32_t startupFmFrequencyKHz =
+    settingsStore.lastFmFrequencyKHz(DEFAULT_FM_FREQUENCY_KHZ);
+  Serial.printf("[SETTINGS] startup FM frequency %.2f MHz (%s)\\n",
+    startupFmFrequencyKHz / 1000.0f,
+    settingsStore.isReady() ? "restored/default" : "NVS unavailable; default");
+  if (radio.begin(startupFmFrequencyKHz)) {
+    lastObservedFmFrequencyKHz = radio.snapshot().frequencyKHz;
     const bool agcAuto = settingsStore.agcAutomatic(true);
     const uint8_t agcIndex = settingsStore.agcGainIndex(20);
     const uint8_t softMuteDb = settingsStore.softMuteAttenuationDb(8);
@@ -531,6 +563,7 @@ void loop() {
     }
   }
   radio.update();
+  updateLastFmFrequencyPersistence();
   const RadioSnapshot& currentSnapshot = radio.snapshot();
   const bool waterfallVisible = !menuOpen && currentSnapshot.modulation != RadioModulation::FM && display.amLayout() == 4;
   performance.setWaterfallActive(waterfallVisible);
