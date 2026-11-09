@@ -219,8 +219,10 @@ template<class C> void drawTiny(C& d,const RadioSnapshot& s,bool ready,bool wifi
     d, s, 310, 27, 312, 27, 100,
     YELLOW, YELLOW, YELLOW, 0x07E0, true
   );
-  const char* modes[]={"FM","AM","LSB","USB"}; const RadioModulation vals[]={RadioModulation::FM,RadioModulation::AM,RadioModulation::LSB,RadioModulation::USB}; const int mx[]={3,43,83,123};
-  for(int i=0;i<4;i++){bool active=s.modulation==vals[i];uint16_t col=active?CYAN:DIM;d.drawRect(mx[i],66,36,21,col);d.setTextColor(col,BG);d.setTextDatum(MC_DATUM);d.setFont(&lgfx::fonts::Font0);d.drawString(modes[i],mx[i]+18,76);}
+  // TinyRadio is the LW/MW/SW layout: no FM modulation tile.
+  // Keep AM/LSB/USB grouped to the right, leaving the former FM slot clear.
+  const char* modes[]={"AM","LSB","USB"}; const RadioModulation vals[]={RadioModulation::AM,RadioModulation::LSB,RadioModulation::USB}; const int mx[]={43,83,123};
+  for(int i=0;i<3;i++){bool active=s.modulation==vals[i];uint16_t col=active?CYAN:DIM;d.drawRect(mx[i],66,36,21,col);d.setTextColor(col,BG);d.setTextDatum(MC_DATUM);d.setFont(&lgfx::fonts::Font0);d.drawString(modes[i],mx[i]+18,76);}
   // BW/AGC/SM controls are not displayed because these states are not exposed by RadioSnapshot.
   const int rssi=constrain((int)s.rssi,0,80); for(int i=0;i<8;i++)d.fillRect(5+i*6,93,4,8,i<(rssi/10)?GREEN:DIM);
   d.setTextDatum(TL_DATUM);d.setFont(&lgfx::fonts::Font0);d.setTextColor(WHITE,BG);char stats[20];
