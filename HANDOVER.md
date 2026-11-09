@@ -2029,3 +2029,15 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Keine Änderungen an Encoder, Abstimmungslogik, Frequenzwerten oder Skalenberechnung.
 - Code-Commit: `8d6ea8b3a9a97fcbfceef613fef3d9cdaf406f12`.
 - **Status:** gespeichert; nicht kompiliert und noch nicht erneut auf Hardware geprüft. Nutzer startet Builds manuell.
+
+
+## Optionaler Legacy-Frequenzrenderer aus ATS Mini DEV – 2026-11-09
+
+- Neue, zusätzliche Headerdatei: `firmware/ats-mini-os/src/display/LegacyFrequencyRenderer.h`.
+- Enthält einen eigenständigen, namespaced Renderer `LegacyFrequencyRenderer::draw(...)), portiert aus `ats-mini-dev/ats-mini/Draw.cpp::drawFrequency()`.
+- Unterstützt FM mit MHz/2 Nachkommastellen, AM mit kHz-Ganzzahl, USB/LSB mit separater dreistelliger SSB-Präzision, frei wählbare Koordinaten, Einheitenposition, Highlight-Digit und Farben.
+- Optionaler BFO-Wert wird als `bfoHz` übergeben. Da `RadioSnapshot` aktuell keinen BFO-Wert enthält, ist der Standardwert 0; bestehende Layouts bleiben dadurch unabhängig.
+- Zwei Aufrufvarianten: Einzelwerte oder direkt mit `RadioSnapshot`. Ein Layout bindet den Renderer explizit durch Include und Funktionsaufruf ein. Es wurde absichtlich kein bestehendes Layout umgestellt.
+- Die vorhandenen Layout-Renderer und Frequenzlogik wurden nicht verändert. Die neue Funktion ist nur ein zusätzlicher Baustein und wird noch nicht automatisch angezeigt.
+- Code-Commit: `b2b430eb0096ed08f7332c52490976f929f837fd`.
+- **Status:** Datei erstellt; noch nicht kompiliert und nicht auf Hardware geprüft. Kein Workflow gestartet.
