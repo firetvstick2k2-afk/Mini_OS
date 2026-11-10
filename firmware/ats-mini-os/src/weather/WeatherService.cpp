@@ -184,12 +184,14 @@ void WeatherService::taskLoop() {
   }
 }
 bool WeatherService::fetchJson(const String& url, String& body) {
-  const bool geocoding = url.indexOf("geocoding-api.open-meteo.com") >= 0;
+  const char* requestType = url.indexOf("openplzapi.org") >= 0 ? "postcode" :
+    url.indexOf("geocoding-api.open-meteo.com") >= 0 ? "geocoding" :
+    url.indexOf("current_weather") >= 0 ? "current" : "forecast";
   BootDiagnostics::printf("[WEATHER] HTTP request start type=%s\n", requestType);
   WiFiClientSecure client; client.setTimeout(8000); client.useBuiltinCACertBundle();
   HTTPClient http; http.setTimeout(8000); http.setReuse(false);
   if (!http.begin(client, url)) {
-    BootDiagnostics::printf("[WEATHER] HTTP begin failed type=%s\n", geocoding ? "geocoding" : "forecast");
+    BootDiagnostics::printf("[WEATHER] HTTP begin failed type=%s\n", requestType);
     return false;
   }
   const int status = http.GET();
@@ -236,7 +238,6 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
   JsonObjectConst locality = localities[0];
   const char* localityName = locality["name"] | "";
   const char* municipalityName = locality["municipality"]["name"] | "";
-  const char* stateName = locality["federalState"]["name"] | "";
   String searchName = localityName[0] ? String(localityName) : String(municipalityName);
   if (!searchName.length()) {
     BootDiagnostics::write("[WEATHER] OpenPLZ result has no locality name");
