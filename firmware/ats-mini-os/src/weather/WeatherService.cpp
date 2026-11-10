@@ -194,57 +194,189 @@ bool WeatherService::fetchJson(const String& url, String& body) {
   return true;
 }
 bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
+  // Resolve German postcodes through the postal-code directory first. This
+  // avoids relying on weather-provider geocoders accepting numeric postcodes.
+  String localityBody;
+  const String localityUrl = String("https://openplzapi.org/de/Localities?postalCode=") + postalCode + "&page=1&pageSize=5";
+  if (!fetchJson(localityUrl, localityBody)) {
+    BootDiagnostics::write("[WEATHER] OpenPLZ postcode lookup failed");
+    return false;
+  }
+
+  JsonDocument localityDoc;
+  if (deserializeJson(localityDoc, localityBody)) {
+    BootDiagnostics::write("[WEATHER] OpenPLZ JSON parse failed");
+    return false;
+  }
+  JsonArrayConst localities = localityDoc.as<JsonArrayConst>();
+  if (localities.isNull() || localities.size() == 0) {
+    BootDiagnostics::printf("[WEATHER] no locality found for postal code %s", postalCode);
+    return false;
+  }
+
+  JsonObjectConst locality = localities[0];
+  const char* localityName = locality["name"] | "";
+  const char* municipalityName = locality["municipality"]["name"] | "";
+  const char* stateName = locality["federalState"]["name"] | "";
+  String searchName = localityName[0] ? String(localityName) : String(municipalityName);
+  if (!searchName.length()) {
+    BootDiagnostics::write("[WEATHER] OpenPLZ result has no locality name");
+    return false;
+  }
+  BootDiagnostics::printf("[WEATHER] postcode resolved locality='%s' municipality='%s'",
+    searchName.c_str(), municipalityName);
+
+  // Open-Meteo is used only as a place-name geocoder here; all weather data
+  // comes from Bright Sky / DWD.
   String geoBody;
-  const String geoUrl = String("https://geocoding-api.open-meteo.com/v1/search?name=") + postalCode + "&count=1&language=de&countryCode=DE&format=json";
+  const String geoUrl = String("https://geocoding-api.open-meteo.com/v1/search?name=") +
+    searchName + "&count=5&language=de&countryCode=DE&format=json";
   if (!fetchJson(geoUrl, geoBody)) return false;
   JsonDocument geo;
-  if (deserializeJson(geo, geoBody)) { BootDiagnostics::write("[WEATHER] geocoding JSON parse failed"); return false; }
+  if (deserializeJson(geo, geoBody)) {
+    BootDiagnostics::write("[WEATHER] locality geocoding JSON parse failed");
+    return false;
+  }
   JsonArrayConst matches = geo["results"].as<JsonArrayConst>();
-  if (matches.isNull() || matches.size() == 0) { BootDiagnostics::printf("[WEATHER] postal code not found: %s\n", postalCode); return false; }
+  if (matches.isNull() || matches.size() == 0) {
+    BootDiagnostics::printf("[WEATHER] locality geocoding returned no coordinates for '%s'", searchName.c_str());
+    return false;
+  }
+
   JsonObjectConst place = matches[0];
   const double latitude = place["latitude"] | 0.0;
   const double longitude = place["longitude"] | 0.0;
   if (latitude == 0.0 && longitude == 0.0) {
-    BootDiagnostics::write("[WEATHER] geocoding returned invalid coordinates");
+    BootDiagnostics::write("[WEATHER] locality geocoding returned invalid coordinates");
     return false;
   }
-  BootDiagnostics::printf("[WEATHER] geocoding matched location='%s' lat=%.4f lon=%.4f\n",
-    place["name"] | "Standort", latitude, longitude);
-  strlcpy(result.location, place["name"] | "Standort", sizeof(result.location));
-  strlcpy(result.country, place["country"] | "Deutschland", sizeof(result.country));
+  strlcpy(result.location, searchName.c_str(), sizeof(result.location));
+  strlcpy(result.country, "Deutschland", sizeof(result.country));
+  BootDiagnostics::printf("[WEATHER] location coordinates lat=%.4f lon=%.4f", latitude, longitude);
 
-  const String forecastUrl = String("https://api.open-meteo.com/v1/forecast?latitude=") + String(latitude, 4) +
-    "&longitude=" + String(longitude, 4) +
-    "&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m,surface_pressure"
-    "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=5&timezone=auto";
+  // Current conditions are compiled by Bright Sky from recent DWD SYNOP data.
+  const String locationArgs = String("?lat=") + String(latitude, 4) +
+    "&lon=" + String(longitude, 4) + "&tz=Europe%2FBerlin";
+  String currentBody;
+  if (!fetchJson(String("https://api.brightsky.dev/current_weather") + locationArgs, currentBody)) return false;
+  JsonDocument currentDoc;
+  if (deserializeJson(currentDoc, currentBody)) {
+    BootDiagnostics::write("[WEATHER] Bright Sky current-weather JSON parse failed");
+    return false;
+  }
+  JsonObjectConst current = currentDoc["weather"];
+  if (current.isNull()) {
+    BootDiagnostics::write("[WEATHER] Bright Sky current-weather record missing");
+    return false;
+  }
+  result.temperatureC = roundedTemperature(current["temperature"]);
+  result.feelsLikeC = result.temperatureC;
+  result.humidity = boundedPercent(current["relative_humidity"]);
+  result.pressureHpa = static_cast<uint16_t>(constrain(current["pressure_msl"] | 0.0f, 0.0f, 1500.0f));
+  result.windKmh = static_cast<uint16_t>(constrain(lroundf(current["wind_speed_10"] | 0.0f), 0L, 500L));
+  const char* condition = current["condition"] | "dry";
+  if (!strcmp(condition, "fog")) result.weatherCode = 45;
+  else if (!strcmp(condition, "rain")) result.weatherCode = 61;
+  else if (!strcmp(condition, "sleet")) result.weatherCode = 66;
+  else if (!strcmp(condition, "snow")) result.weatherCode = 71;
+  else if (!strcmp(condition, "hail")) result.weatherCode = 96;
+  else if (!strcmp(condition, "thunderstorm")) result.weatherCode = 95;
+  else result.weatherCode = 0;
+  strlcpy(result.description, weatherDescription(result.weatherCode), sizeof(result.description));
+
+  // Bright Sky's /weather endpoint returns hourly observations and forecasts.
+  // Request six calendar days so the display can reliably fill five day slots.
+  time_t now = time(nullptr);
+  if (now < 1704067200) {
+    BootDiagnostics::write("[WEATHER] system clock not synchronized; cannot request dated DWD forecast");
+    return false;
+  }
+  struct tm dateParts;
+  gmtime_r(&now, &dateParts);
+  char firstDate[12] = {};
+  strftime(firstDate, sizeof(firstDate), "%Y-%m-%d", &dateParts);
+  time_t endTime = now + 5 * 24 * 60 * 60;
+  struct tm endParts;
+  gmtime_r(&endTime, &endParts);
+  char lastDate[12] = {};
+  strftime(lastDate, sizeof(lastDate), "%Y-%m-%d", &endParts);
+
+  const String forecastUrl = String("https://api.brightsky.dev/weather") + locationArgs +
+    "&date=" + firstDate + "&last_date=" + lastDate;
   String forecastBody;
   if (!fetchJson(forecastUrl, forecastBody)) return false;
   JsonDocument forecast;
-  if (deserializeJson(forecast, forecastBody)) { BootDiagnostics::write("[WEATHER] forecast JSON parse failed"); return false; }
-  JsonObjectConst current = forecast["current"];
-  if (current.isNull()) return false;
-  result.temperatureC = roundedTemperature(current["temperature_2m"]);
-  result.feelsLikeC = roundedTemperature(current["apparent_temperature"]);
-  result.humidity = boundedPercent(current["relative_humidity_2m"]);
-  result.pressureHpa = static_cast<uint16_t>(constrain(current["surface_pressure"] | 0.0f, 0.0f, 1500.0f));
-  result.windKmh = static_cast<uint16_t>(constrain(lroundf(current["wind_speed_10m"] | 0.0f), 0L, 500L));
-  result.weatherCode = static_cast<uint8_t>(current["weather_code"] | 0);
-  strlcpy(result.description, weatherDescription(result.weatherCode), sizeof(result.description));
-  JsonObjectConst daily = forecast["daily"];
-  JsonArrayConst dates = daily["time"].as<JsonArrayConst>();
-  JsonArrayConst codes = daily["weather_code"].as<JsonArrayConst>();
-  JsonArrayConst highs = daily["temperature_2m_max"].as<JsonArrayConst>();
-  JsonArrayConst lows = daily["temperature_2m_min"].as<JsonArrayConst>();
-  JsonArrayConst rain = daily["precipitation_probability_max"].as<JsonArrayConst>();
-  if (dates.size() < FORECAST_DAYS || codes.size() < FORECAST_DAYS || highs.size() < FORECAST_DAYS || lows.size() < FORECAST_DAYS || rain.size() < FORECAST_DAYS) return false;
-  result.precipitation = rain.size() ? boundedPercent(rain[0]) : 0;
-  for (uint8_t i=0; i<FORECAST_DAYS; ++i) {
-    result.days[i].weatherCode = static_cast<uint8_t>(codes[i] | 0);
-    result.days[i].maximumC = roundedTemperature(highs[i]);
-    result.days[i].minimumC = roundedTemperature(lows[i]);
-    result.days[i].precipitationChance = boundedPercent(rain[i]);
-    const String date = dates[i].as<String>();
-    weekdayFromDate(date.c_str(), result.weekdays[i], sizeof(result.weekdays[i]), i);
+  if (deserializeJson(forecast, forecastBody)) {
+    BootDiagnostics::write("[WEATHER] Bright Sky forecast JSON parse failed");
+    return false;
   }
+  JsonArrayConst records = forecast["weather"].as<JsonArrayConst>();
+  if (records.isNull() || records.size() == 0) {
+    BootDiagnostics::write("[WEATHER] Bright Sky returned no hourly forecast records");
+    return false;
+  }
+
+  static const char* const names[] = {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"};
+  int16_t highs[FORECAST_DAYS];
+  int16_t lows[FORECAST_DAYS];
+  uint8_t rain[FORECAST_DAYS] = {};
+  uint8_t codes[FORECAST_DAYS] = {};
+  bool found[FORECAST_DAYS] = {};
+  for (uint8_t i = 0; i < FORECAST_DAYS; ++i) {
+    highs[i] = INT16_MIN;
+    lows[i] = INT16_MAX;
+  }
+
+  for (JsonObjectConst record : records) {
+    const char* timestamp = record["timestamp"] | "";
+    if (strlen(timestamp) < 10) continue;
+    int year = 0, month = 0, day = 0;
+    if (sscanf(timestamp, "%4d-%2d-%2d", &year, &month, &day) != 3) continue;
+    struct tm recordDate = {};
+    recordDate.tm_year = year - 1900;
+    recordDate.tm_mon = month - 1;
+    recordDate.tm_mday = day;
+    const time_t recordDay = timegm(&recordDate);
+    const time_t startDay = (time / 86400) * 86400;
+    const int dayIndex = static_cast<int>((recordDay - startDay) / 86400);
+    if (dayIndex < 0 || dayIndex >= FORECAST_DAYS) continue;
+
+    const int16_t temperature = roundedTemperature(record["temperature"]);
+    if (temperature > highs[dayIndex]) highs[dayIndex] = temperature;
+    if (temperature < lows[dayIndex]) lows[dayIndex] = temperature;
+    const uint8_t probability = boundedPercent(record["precipitation_probability"]);
+    if (probability > rain[dayIndex]) rain[dayIndex] = probability;
+    const char* icon = record["icon"] | "";
+    uint8_t code = 0;
+    if (strstr(icon, "thunderstorm")) code = 95;
+    else if (strstr(icon, "snow")) code = 71;
+    else if (strstr(icon, "sleet")) code = 66;
+    else if (strstr(icon, "hail")) code = 96;
+    else if (strstr(icon, "rain")) code = 61;
+    else if (strstr(icon, "fog")) code = 45;
+    else if (strstr(icon, "cloud")) code = 2;
+    if (!found[dayIndex] || code > codes[dayIndex]) codes[dayIndex] = code;
+    found[dayIndex] = true;
+  }
+
+  for (uint8_t i = 0; i < FORECAST_DAYS; ++i) {
+    if (!found[i] || highs[i] == INT16_MIN || lows[i] == INT16_MAX) {
+      BootDiagnostics::printf("[WEATHER] forecast day %u missing from Bright Sky response",
+        static_cast<unsigned>(i + 1));
+      return false;
+    }
+    result.days[i].maximumC = highs[i];
+    result.days[i].minimumC = lows[i];
+    result.days[i].precipitationChance = rain[i];
+    result.days[i].weatherCode = codes[i];
+    time_t dayTime = (time / 86400) * 86400 + static_cast<time_t>(i) * 86400;
+    struct tm weekdayParts;
+    gmtime_r(&dayTime, &weekdayParts);
+    if (i == 0) strlcpy(result.weekdays[i], "Heute", sizeof(result.weekdays[i]));
+    else strlcpy(result.weekdays[i], names[weekdayParts.tm_wday], sizeof(result.weekdays[i]));
+  }
+  result.precipitation = rain[0];
+  BootDiagnostics::printf("[WEATHER] Bright Sky forecast parsed hourly_records=%u days=%u",
+    static_cast<unsigned>(records.size()), static_cast<unsigned>(FORECAST_DAYS));
   return true;
 }
