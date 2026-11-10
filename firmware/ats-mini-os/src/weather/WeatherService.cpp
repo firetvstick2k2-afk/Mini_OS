@@ -19,7 +19,8 @@ int32_t civilDayNumber(int year, unsigned month, unsigned day) {
   year -= month <= 2;
   const int era = (year >= 0 ? year : year - 399) / 400;
   const unsigned yearOfEra = static_cast<unsigned>(year - era * 400);
-  const unsigned dayOfYear = (153 * (month + (month > 2 ? -3 : 9)) + 2) / 5 + day - 1;
+  const unsigned adjustedMonth = month > 2 ? month - 3 : month + 9;
+  const unsigned dayOfYear = (153 * adjustedMonth + 2) / 5 + day - 1;
   const unsigned dayOfEra = yearOfEra * 365 + yearOfEra / 4 - yearOfEra / 100 + dayOfYear;
   return era * 146097 + static_cast<int>(dayOfEra) - 719468;
 }
@@ -59,18 +60,7 @@ const char* weatherDescription(uint8_t code) {
   if (code >= 95) return "Gewitter";
   return "Wetter";
 }
-void weekdayFromDate(const char* date, char* output, size_t capacity, uint8_t index) {
-  static const char* const names[] = {"So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"};
-  if (index == 0) { strlcpy(output, "Heute", capacity); return; }
-  int year=0, month=0, day=0;
-  if (!date || sscanf(date, "%4d-%2d-%2d", &year, &month, &day) != 3) {
-    snprintf(output, capacity, "Tag %u", static_cast<unsigned>(index + 1)); return;
-  }
-  static const int offsets[] = {0,3,2,5,0,3,5,1,4,6,2,4};
-  year -= month < 3;
-  const int weekday = (year + year/4 - year/100 + year/400 + offsets[month-1] + day) % 7;
-  strlcpy(output, names[weekday], capacity);
-}
+
 }
 
 bool WeatherService::begin() {
