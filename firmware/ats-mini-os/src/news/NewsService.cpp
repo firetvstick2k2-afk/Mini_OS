@@ -103,6 +103,8 @@ void addTitle(NewsService::Snapshot& snap,const String& raw,uint8_t source) {
 }
 void parseFeed(const String& xml,uint8_t source,NewsService::Snapshot& snap) {
   int pos=0,next=0; String block,title;
+  uint16_t blocks=0, titleTags=0;
+  const uint8_t before=snap.count;
   // RSS 2.0 <item>, RSS 1.0 <item>, and Atom <entry> are supported.
   while(snap.count<NewsService::MAX_HEADLINES) {
     int item=xml.indexOf("<item",pos), entry=xml.indexOf("<entry",pos);
@@ -112,9 +114,17 @@ void parseFeed(const String& xml,uint8_t source,NewsService::Snapshot& snap) {
     int end=xml.indexOf(atom?"</entry>":"</item>",start);
     if(end<0) break;
     block=xml.substring(start,end+ (atom?8:7));
-    if(extractTag(block,0,"title",title,next)) addTitle(snap,title,source);
+    ++blocks;
+    if(extractTag(block,0,"title",title,next)) {
+      ++titleTags;
+      addTitle(snap,title,source);
+    }
     pos=end+(atom?8:7);
   }
+  BootDiagnostics::printf("[NEWS] parser feed=%u format_blocks=%u title_tags=%u added=%u total=%u",
+    static_cast<unsigned>(source + 1), static_cast<unsigned>(blocks),
+    static_cast<unsigned>(titleTags), static_cast<unsigned>(snap.count - before),
+    static_cast<unsigned>(snap.count));
 }
 bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
   BootDiagnostics::printf("[NEWS] fetch start feed=%u", static_cast<unsigned>(source + 1));
@@ -153,6 +163,8 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
   http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
   http.setRedirectLimit(3);
   http.setUserAgent("ATS-Mini-OS-Newsfeed/1.0");
+  const char* responseHeaders[] = {"Content-Type", "Content-Length", "Transfer-Encoding", "Content-Encoding"};
+  http.collectHeaders(responseHeaders, 4);
   if(!http.begin(tls,url)) { BootDiagnostics::printf("[NEWS] HTTP begin failed feed=%u", static_cast<unsigned>(source + 1)); return false; }
   BootDiagnostics::printf("[NEWS] HTTP begin OK feed=%u; before GET", static_cast<unsigned>(source + 1));
   const uint32_t getStartMs = millis();
@@ -162,9 +174,17 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
     static_cast<unsigned>(source + 1), code, errorText.c_str(),
     static_cast<unsigned long>(millis() - getStartMs),
     static_cast<int>(WiFi.status()));
-  if(code!=HTTP_CODE_OK) { http.end(); return false; }
+  if(code!=HTTP_CODE_OK) { BootDiagnostics::printf("[NEWS] abort feed=%u reason=http_status code=%d", static_cast<unsigned>(source + 1), code); http.end(); return false; }
   int length=http.getSize();
-  if(length>static_cast<int>(MAX_RESPONSE_BYTES)) { http.end(); return false; }
+  BootDiagnostics::printf("[NEWS] headers feed=%u content_length=%d content_type=%s transfer_encoding=%s content_encoding=%s",
+    static_cast<unsigned>(source + 1), length,
+    http.header("Content-Type").c_str(), http.header("Transfer-Encoding").c_str(),
+    http.header("Content-Encoding").c_str());
+  if(length>static_cast<int>(MAX_RESPONSE_BYTES)) {
+    BootDiagnostics::printf("[NEWS] abort feed=%u reason=content_too_large bytes=%d limit=%u",
+      static_cast<unsigned>(source + 1), length, static_cast<unsigned>(MAX_RESPONSE_BYTES));
+    http.end(); return false;
+  }
   WiFiClient* stream=http.getStreamPtr();
   String body; body.reserve(length>0?length:4096);
   uint32_t lastData=millis();
@@ -177,10 +197,31 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
     } else vTaskDelay(pdMS_TO_TICKS(10));
   }
   http.end();
-  if(body.length()<32 || body.length()>=MAX_RESPONSE_BYTES) return false;
+  BootDiagnostics::printf("[NEWS] body received feed=%u bytes=%u declared=%d",
+    static_cast<unsigned>(source + 1), static_cast<unsigned>(body.length()), length);
+  if(body.length()) {
+    String preview=body.substring(0, body.length()<180 ? body.length() : 180);
+    preview.replace("\r"," "); preview.replace("\n"," ");
+    BootDiagnostics::printf("[NEWS] body preview feed=%u: %s",
+      static_cast<unsigned>(source + 1), preview.c_str());
+  }
+  if(body.length()<32) {
+    BootDiagnostics::printf("[NEWS] abort feed=%u reason=body_too_short bytes=%u",
+      static_cast<unsigned>(source + 1), static_cast<unsigned>(body.length()));
+    return false;
+  }
+  if(body.length()>=MAX_RESPONSE_BYTES) {
+    BootDiagnostics::printf("[NEWS] abort feed=%u reason=body_limit_reached bytes=%u",
+      static_cast<unsigned>(source + 1), static_cast<unsigned>(body.length()));
+    return false;
+  }
   const uint8_t before=snap.count;
   parseFeed(body,source,snap);
-  return snap.count>before;
+  const bool found=snap.count>before;
+  BootDiagnostics::printf("[NEWS] fetch result feed=%u headlines_added=%u success=%s",
+    static_cast<unsigned>(source + 1), static_cast<unsigned>(snap.count-before),
+    found ? "yes" : "no");
+  return found;
 }
 void newsWorker(void*) {
   BootDiagnostics::write("[NEWS] worker task entered");
@@ -202,8 +243,15 @@ void newsWorker(void*) {
           if(cfg.urls[i][0]) fetchOne(cfg.urls[i],i,fresh);
           vTaskDelay(pdMS_TO_TICKS(20));
         }
-        if(fresh.count) { fresh.hasData=true; fresh.stale=false; service->publish(fresh); }
-        else service->markStale();
+        if(fresh.count) {
+          fresh.hasData=true; fresh.stale=false;
+          service->publish(fresh);
+          BootDiagnostics::printf("[NEWS] cache published headlines=%u hasData=yes stale=no",
+            static_cast<unsigned>(fresh.count));
+        } else {
+          service->markStale();
+          BootDiagnostics::write("[NEWS] cache not updated: zero valid headlines; previous snapshot marked stale");
+        }
       }
     }
     vTaskDelay(pdMS_TO_TICKS(250));
