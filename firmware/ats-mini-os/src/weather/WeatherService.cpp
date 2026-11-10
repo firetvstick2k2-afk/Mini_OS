@@ -339,7 +339,7 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
     recordDate.tm_mon = month - 1;
     recordDate.tm_mday = day;
     const time_t recordDay = timegm(&recordDate);
-    const time_t startDay = (time / 86400) * 86400;
+    const time_t startDay = (now / 86400) * 86400;
     const int dayIndex = static_cast<int>((recordDay - startDay) / 86400);
     if (dayIndex < 0 || dayIndex >= FORECAST_DAYS) continue;
 
@@ -371,7 +371,7 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
     result.days[i].minimumC = lows[i];
     result.days[i].precipitationChance = rain[i];
     result.days[i].weatherCode = codes[i];
-    time_t dayTime = (time / 86400) * 86400 + static_cast<time_t>(i) * 86400;
+    time_t dayTime = (now / 86400) * 86400 + static_cast<time_t>(i) * 86400;
     struct tm weekdayParts;
     gmtime_r(&dayTime, &weekdayParts);
     if (i == 0) strlcpy(result.weekdays[i], "Heute", sizeof(result.weekdays[i]));
