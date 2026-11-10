@@ -153,7 +153,6 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
   result.temperatureC = roundedTemperature(current["temperature_2m"]);
   result.feelsLikeC = roundedTemperature(current["apparent_temperature"]);
   result.humidity = boundedPercent(current["relative_humidity_2m"]);
-  result.precipitation = boundedPercent(current["precipitation"]);
   result.pressureHpa = static_cast<uint16_t>(constrain(current["surface_pressure"] | 0.0f, 0.0f, 1500.0f));
   result.windKmh = static_cast<uint16_t>(constrain(lroundf(current["wind_speed_10m"] | 0.0f), 0L, 500L));
   result.weatherCode = static_cast<uint8_t>(current["weather_code"] | 0);
@@ -165,6 +164,7 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
   JsonArrayConst lows = daily["temperature_2m_min"].as<JsonArrayConst>();
   JsonArrayConst rain = daily["precipitation_probability_max"].as<JsonArrayConst>();
   if (dates.size() < FORECAST_DAYS || highs.size() < FORECAST_DAYS || lows.size() < FORECAST_DAYS) return false;
+  result.precipitation = rain.size() ? boundedPercent(rain[0]) : 0;
   for (uint8_t i=0; i<FORECAST_DAYS; ++i) {
     result.days[i].weatherCode = static_cast<uint8_t>(codes[i] | 0);
     result.days[i].maximumC = roundedTemperature(highs[i]);
