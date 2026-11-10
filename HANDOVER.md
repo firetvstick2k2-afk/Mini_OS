@@ -2422,3 +2422,10 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Commit: `f98c98fb068dc256193d8adf9f015a954f1e80ac`.
 - No feed URLs or credentials are logged. No changes to feed parsing, refresh cadence, radio, WLAN configuration or TLS verification.
 - No build/workflow started and no device flashed; await user-run build and new boot log.
+
+### Newsfeed TLS certificate-verification diagnostic test — 2026-11-10
+- Temporary diagnostic change in `NewsService.cpp`: replace default CA-bundle attachment with `tls.setInsecure()` for the Newsfeed HTTPS client.
+- **HTTPS encryption remains enabled; only server-certificate verification is disabled.** This is intentionally temporary and must not be retained for production.
+- Also corrected the GET diagnostic to pass `errorText.c_str()` to `BootDiagnostics::printf(..., "%s", ...)`, so the next log can show the actual HTTPClient error text.
+- Commit: `a1cd3d62ce3f7275ab0e0bbb947f8f135e9983d6`.
+- No workflow/build started and no device flashed. User runs compile-only build and APP1 test. If the feed starts working, certificate validation / CA-bundle handling is implicated; restore proper certificate verification after diagnosis. If it still fails, investigate the socket/connect path rather than assuming a certificate problem.
