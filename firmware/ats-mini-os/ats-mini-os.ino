@@ -161,17 +161,11 @@ void setup() {
     storageReady ? "READY" : "UNAVAILABLE",
     StorageDiscovery::partitionLabel(),
     StorageDiscovery::anchorPath());
-  BootDiagnostics::write("[BOOT] entering EiBi initialization");
   eibi.begin();
-  BootDiagnostics::write("[BOOT] EiBi initialization returned");
   FileManager::begin();
-  BootDiagnostics::write("[BOOT] FileManager initialization returned");
   stationLogoClient.begin();
-  BootDiagnostics::write("[BOOT] StationLogoClient initialization returned");
 
   encoder.begin();
-  BootDiagnostics::write("[BOOT] encoder initialized");
-  BootDiagnostics::printf("[BOOT] settings store ready=%s", settingsReady ? "yes" : "no");
   Serial.printf("[SETTINGS] dedicated NVS %s\n", settingsReady ? "ready" : "unavailable; using defaults");
   const uint8_t savedBrightness = settingsStore.displayBrightness(180);
   const uint8_t savedTheme = settingsStore.displayTheme(0);
@@ -179,8 +173,6 @@ void setup() {
   const uint8_t savedAmLayout = settingsStore.displayAmLayout(0);
   const uint8_t savedCpuProfile = settingsStore.cpuProfile(0);
   performance.setProfile(static_cast<CpuProfile>(savedCpuProfile));
-  BootDiagnostics::printf("[BOOT] saved settings brightness=%u theme=%u fm_layout=%u am_layout=%u cpu_profile=%u", savedBrightness, savedTheme, savedFmLayout, savedAmLayout, savedCpuProfile);
-  BootDiagnostics::write("[BOOT] before display.begin");
   if (display.begin(savedBrightness)) {
     display.setTheme(savedTheme);
     display.setFmLayout(savedFmLayout);
@@ -188,15 +180,12 @@ void setup() {
     Serial.printf("[DISPLAY] first UI initialized; brightness=%u/255\n",
       static_cast<unsigned>(display.brightness()));
   }
-  BootDiagnostics::write("[BOOT] display initialization stage returned");
   const uint32_t startupFmFrequencyKHz =
     settingsStore.lastFmFrequencyKHz(DEFAULT_FM_FREQUENCY_KHZ);
   Serial.printf("[SETTINGS] startup FM frequency %.2f MHz (%s)\\n",
     startupFmFrequencyKHz / 1000.0f,
     settingsStore.isReady() ? "restored/default" : "NVS unavailable; default");
-  BootDiagnostics::printf("[BOOT] before radio.begin frequency_khz=%lu", static_cast<unsigned long>(startupFmFrequencyKHz));
   if (radio.begin(startupFmFrequencyKHz)) {
-    BootDiagnostics::write("[BOOT] radio.begin succeeded");
     lastObservedFmFrequencyKHz = radio.snapshot().frequencyKHz;
     const uint8_t startupVolume = settingsStore.volume(32);
     if (radio.setVolume(startupVolume)) {
@@ -223,20 +212,12 @@ void setup() {
     Serial.printf("Radio ready: %.1f MHz\n",radio.snapshot().frequencyKHz/1000.0f);
   } else {
     Serial.println("[TUNER] init failed; check I2C, radio power and GPIO configuration.");
-    BootDiagnostics::write("[BOOT] radio.begin FAILED");
   }
-  BootDiagnostics::write("[BOOT] before wifi.setNewsService");
   wifi.setNewsService(&newsService);
   wifi.setWeatherService(&weatherService);
-  BootDiagnostics::write("[BOOT] before wifi.begin");
   wifi.begin();
-  BootDiagnostics::write("[BOOT] wifi.begin returned");
-  BootDiagnostics::write("[BOOT] before newsService.begin");
   newsService.begin();
-  BootDiagnostics::write("[BOOT] newsService.begin returned");
-  BootDiagnostics::write("[BOOT] before weatherService.begin");
   weatherService.begin();
-  BootDiagnostics::write("[BOOT] weatherService.begin returned");
   Serial.printf("CPU profile: %s\n",performance.profileName());
 }
 void loop() {
@@ -244,7 +225,6 @@ void loop() {
   wifi.update();
   if (millis() - lastBootHeartbeatMs >= 5000) {
     lastBootHeartbeatMs = millis();
-    BootDiagnostics::printf("[LOOP] heartbeat heap=%u wifi_connected=%s",
       static_cast<unsigned>(ESP.getFreeHeap()), wifi.connected() ? "yes" : "no");
   }
   newsService.update(wifi.connected() && wifi.dataServicesAllowed());
