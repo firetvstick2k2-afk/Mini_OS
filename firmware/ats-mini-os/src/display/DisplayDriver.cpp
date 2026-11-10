@@ -252,7 +252,7 @@ void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8
   c.setTextColor(WHITE_TEXT,PANEL);
   if (!weather || !weather->valid) {
     c.drawString("WETTERBERICHT",12,12);
-    c.setFont(&lgfx::fonts::FreeSans9pt7b);
+    c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
     c.setTextColor(MUTED_TEXT,PANEL);
     c.drawString(weather && weather->fetching ? "Wetterdaten werden geladen..." : "Keine Wetterdaten vorhanden",12,66);
     c.drawString("PLZ in der WLAN-Webseite einstellen",12,91);
