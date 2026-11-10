@@ -15,6 +15,14 @@ constexpr uint32_t kRefreshIntervalMs = 15UL * 60UL * 1000UL;
 constexpr uint32_t kRetryIntervalMs = 60UL * 1000UL;
 constexpr size_t kMaxJsonBytes = 48000;
 
+int32_t civilDayNumber(int year, unsigned month, unsigned day) {
+  year -= month <= 2;
+  const int era = (year >= 0 ? year : year - 399) / 400;
+  const unsigned yearOfEra = static_cast<unsigned>(year - era * 400);
+  const unsigned dayOfYear = (153 * (month + (month > 2 ? -3 : 9)) + 2) / 5 + day - 1;
+  const unsigned dayOfEra = yearOfEra * 365 + yearOfEra / 4 - yearOfEra / 100 + dayOfYear;
+  return era * 146097 + static_cast<int>(dayOfEra) - 719468;
+}
 int16_t roundedTemperature(JsonVariantConst value) {
   return value.isNull() ? 0 : static_cast<int16_t>(lroundf(value.as<float>()));
 }
@@ -347,22 +355,17 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
     lows[i] = INT16_MAX;
   }
 
+  int firstYear = 0, firstMonth = 0, firstDay = 0;
+  if (sscanf(firstDate, "%4d-%2d-%2d", &firstYear, &firstMonth, &firstDay) != 3) return false;
+  const int32_t startDay = civilDayNumber(firstYear, firstMonth, firstDay);
+
   for (JsonObjectConst record : records) {
     const char* timestamp = record["timestamp"] | "";
     if (strlen(timestamp) < 10) continue;
     int year = 0, month = 0, day = 0;
     if (sscanf(timestamp, "%4d-%2d-%2d", &year, &month, &day) != 3) continue;
-    struct tm recordDate = {};
-    recordDate.tm_year = year - 1900;
-    recordDate.tm_mon = month - 1;
-    recordDate.tm_mday = day;
-    const time_t recordDay = timegm(&recordDate);
-    struct tm firstParts = {};
-    sscanf(firstDate, "%4d-%2d-%2d", &firstParts.tm_year, &firstParts.tm_mon, &firstParts.tm_mday);
-    firstParts.tm_year -= 1900;
-    firstParts.tm_mon -= 1;
-    const time_t startDay = timegm(&firstParts);
-    const int dayIndex = static_cast<int>((recordDay - startDay) / 86400);
+    const int32_t recordDay = civilDayNumber(year, month, day);
+    const int dayIndex = recordDay - startDay;
     if (dayIndex < 0 || dayIndex >= FORECAST_DAYS) continue;
 
     const int16_t temperature = roundedTemperature(record["temperature"]);
@@ -393,11 +396,9 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
     result.days[i].minimumC = lows[i];
     result.days[i].precipitationChance = rain[i];
     result.days[i].weatherCode = codes[i];
-    time_t dayTime = startDay + static_cast<time_t>(i) * 86400;
-    struct tm weekdayParts;
-    gmtime_r(&dayTime, &weekdayParts);
+    const int weekday = (startDay + i + 4) % 7;
     if (i == 0) strlcpy(result.weekdays[i], "Heute", sizeof(result.weekdays[i]));
-    else strlcpy(result.weekdays[i], names[weekdayParts.tm_wday], sizeof(result.weekdays[i]));
+    else strlcpy(result.weekdays[i], names[weekday], sizeof(result.weekdays[i]));
   }
   result.precipitation = rain[0];
   BootDiagnostics::printf("[WEATHER] Bright Sky forecast parsed hourly_records=%u days=%u",
