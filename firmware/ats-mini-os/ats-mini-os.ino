@@ -206,13 +206,17 @@ void setup() {
   BootDiagnostics::printf("[BOOT][STAGE] before wifi.begin free_heap=%u max_block=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
   wifi.begin();
   BootDiagnostics::printf("[BOOT][STAGE] after wifi.begin free_heap=%u max_block=%u min_free=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
-  newsService.begin();
-  BootDiagnostics::printf("[BOOT][STAGE] after newsService.begin free_heap=%u max_block=%u min_free=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
-  // TEMPORARY BOOT-SAFETY ISOLATION:
-  // Keep the WeatherService attached to the web UI, but do not start its
-  // background HTTPS worker until the postcode/TLS reset is diagnosed.
-  // This preserves saved weather settings and allows the setup page to load.
-  BootDiagnostics::write("[WEATHER] background worker temporarily disabled for boot safety; settings/service retained");
+  // TEMPORARY ISOLATION TEST:
+  // Do not start the News HTTPS worker while testing Weather by itself.
+  // NewsService remains attached to the web UI; no News code/settings are removed.
+  BootDiagnostics::write("[NEWS] background worker temporarily disabled for Weather-only test");
+  // Start Weather normally so saved postcode settings are loaded and its
+  // HTTPS request stages are captured by BootDiagnostics.
+  const bool weatherStarted = weatherService.begin();
+  BootDiagnostics::printf("[WEATHER] background worker start result=%s postal='%s'",
+    weatherStarted ? "success" : "failed", weatherService.postalCode().c_str());
+  BootDiagnostics::printf("[BOOT][STAGE] after weatherService.begin free_heap=%u max_block=%u min_free=%u",
+    static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
   BootDiagnostics::printf("[BOOT][STAGE] setup complete free_heap=%u max_block=%u min_free=%u loop_stack_high_water=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()), static_cast<unsigned>(uxTaskGetStackHighWaterMark(nullptr)));
   Serial.printf("CPU profile: %s\n",performance.profileName());
 }
