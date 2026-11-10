@@ -243,7 +243,7 @@ void drawWeatherIcon(Canvas& c, int cx, int cy, uint8_t code, int scale) {
 template <typename Canvas>
 void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8_t page) {
   const int w=c.width(), h=c.height();
-  constexpr uint16_t FRAME=0x0320, WHITE_TEXT=0xFFFF, MUTED_TEXT=0xA514, PANEL=0x0000;
+  constexpr uint16_t FRAME=0x001F, WHITE_TEXT=0xFFFF, MUTED_TEXT=0xA514, PANEL=0x0000;
   c.fillScreen(0x0000);
   c.fillRoundRect(3,3,w-6,h-6,7,0x0000);
   c.drawRoundRect(3,3,w-6,h-6,7,FRAME);
