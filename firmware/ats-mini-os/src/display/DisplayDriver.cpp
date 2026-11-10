@@ -6,6 +6,7 @@
 #include "DisplayStatusBar.h"
 #include "../radio/BandManager.h"
 #include "../menus/MenuSSB.h"
+#include "../weather/WeatherService.h"
 #include <LittleFS.h>
 
 namespace {
@@ -206,16 +207,134 @@ void drawFileMenu(Canvas& c,const char* path,FileManager::Entry* entries,uint8_t
 }
 
 template <typename Canvas>
-void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled) {
+void drawWeatherIcon(Canvas& c, int cx, int cy, uint8_t code, int scale) {
+  const uint16_t cloud = 0xBDF7;
+  const bool storm = code >= 95;
+  const bool rain = (code >= 51 && code <= 67) || (code >= 80 && code <= 82) || (code >= 85 && code <= 86);
+  const bool snow = code >= 71 && code <= 77;
+  const bool fog = code == 45 || code == 48;
+  if (code == 0 || code == 1 || code == 2) {
+    c.fillCircle(cx, cy-8*scale, 9*scale, 0xFFE0);
+    for (int a=0; a<8; ++a) {
+      const float angle=a*0.785398f;
+      c.drawLine(cx+static_cast<int>(cosf(angle)*13*scale),cy-8*scale+static_cast<int>(sinf(angle)*13*scale),
+                 cx+static_cast<int>(cosf(angle)*18*scale),cy-8*scale+static_cast<int>(sinf(angle)*18*scale),0xFFE0);
+    }
+  }
+  if (code != 0) {
+    c.fillCircle(cx-9*scale,cy+2*scale,9*scale,cloud);
+    c.fillCircle(cx+2*scale,cy-4*scale,12*scale,cloud);
+    c.fillCircle(cx+13*scale,cy+3*scale,8*scale,cloud);
+    c.fillRoundRect(cx-16*scale,cy,34*scale,11*scale,5*scale,cloud);
+  }
+  if (rain) {
+    for (int i=0;i<3;++i) c.drawLine(cx-10*scale+i*10*scale,cy+15*scale,cx-14*scale+i*10*scale,cy+23*scale,0x5DDF);
+  } else if (snow) {
+    for (int i=0;i<3;++i) c.drawCircle(cx-10*scale+i*10*scale,cy+19*scale,2*scale,WHITE);
+  } else if (storm) {
+    c.fillTriangle(cx+1*scale,cy+10*scale,cx-7*scale,cy+25*scale,cx+1*scale,cy+25*scale,0xFFE0);
+    c.fillTriangle(cx+1*scale,cy+20*scale,cx+10*scale,cy+20*scale,cx-1*scale,cy+34*scale,0xFFE0);
+  } else if (fog) {
+    for (int i=0;i<3;++i) c.drawFastHLine(cx-18*scale,cy+14*scale+i*5*scale,36*scale,0x7BEF);
+  }
+}
+
+template <typename Canvas>
+void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8_t page) {
+  const int w=c.width(), h=c.height();
+  constexpr uint16_t FRAME=0x0320, WHITE_TEXT=0xFFFF, MUTED_TEXT=0xA514, PANEL=0x0000;
+  c.fillScreen(0x0000);
+  c.fillRoundRect(3,3,w-6,h-6,7,0x0000);
+  c.drawRoundRect(3,3,w-6,h-6,7,FRAME);
+  c.setTextDatum(TL_DATUM);
+  c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  c.setTextColor(WHITE_TEXT,PANEL);
+  if (!weather || !weather->valid) {
+    c.drawString("WETTERBERICHT",12,12);
+    c.setFont(&lgfx::fonts::FreeSans9pt7b);
+    c.setTextColor(MUTED_TEXT,PANEL);
+    c.drawString(weather && weather->fetching ? "Wetterdaten werden geladen..." : "Keine Wetterdaten vorhanden",12,66);
+    c.drawString("PLZ in der WLAN-Webseite einstellen",12,91);
+    c.drawString("Datenquelle: Open-Meteo.com",12,136);
+    return;
+  }
+  c.drawString(weather->location,12,8);
+  c.setFont(&lgfx::fonts::Font0);
+  c.setTextColor(MUTED_TEXT,PANEL);
+  c.drawRightString(weather->stale ? "LETZTE DATEN" : "AKTUELL",w-12,12);
+  c.drawFastHLine(10,27,w-20,FRAME);
+
+  if (page == 0) {
+    drawWeatherIcon(c,58,78,weather->weatherCode,2);
+    char temperature[16];
+    snprintf(temperature,sizeof(temperature),"%d",weather->temperatureC);
+    c.setTextColor(WHITE_TEXT,PANEL);
+    c.setFont(&lgfx::fonts::Font7);
+    c.drawString(temperature,126,34);
+    c.setFont(&lgfx::fonts::FreeSansBold18pt7b);
+    c.drawString("C",235,48);
+    c.drawCircle(229,48,3,WHITE_TEXT);
+    c.setFont(&lgfx::fonts::FreeSans9pt7b);
+    c.drawString(weather->description,126,83);
+    char feels[32];
+    snprintf(feels,sizeof(feels),"Gefuehlt %d C",weather->feelsLikeC);
+    c.setFont(&lgfx::fonts::Font2);
+    c.setTextColor(MUTED_TEXT,PANEL);
+    c.drawString(feels,126,105);
+
+    const int x0=9, y=127, gap=4, boxW=(w-18-3*gap)/4, boxH=30;
+    const char* labels[]={"FEUCHTE","WIND","REGEN","DRUCK"};
+    char values[4][20];
+    snprintf(values[0],sizeof(values[0]),"%u%%",weather->humidity);
+    snprintf(values[1],sizeof(values[1]),"%u km/h",weather->windKmh);
+    snprintf(values[2],sizeof(values[2]),"%u%%",weather->precipitation);
+    snprintf(values[3],sizeof(values[3]),"%u hPa",weather->pressureHpa);
+    for(int i=0;i<4;++i) {
+      const int x=x0+i*(boxW+gap);
+      c.drawRoundRect(x,y,boxW,boxH,2,FRAME);
+      c.setFont(&lgfx::fonts::Font0); c.setTextColor(MUTED_TEXT,PANEL);
+      c.drawString(labels[i],x+4,y+3);
+      c.setFont(&lgfx::fonts::Font2); c.setTextColor(WHITE_TEXT,PANEL);
+      c.drawString(values[i],x+4,y+15);
+    }
+  } else {
+    const int left=7, gap=3, cardW=(w-14-4*gap)/5, top=32, cardH=126;
+    for(uint8_t i=0;i<WeatherService::FORECAST_DAYS;++i) {
+      const int x=left+i*(cardW+gap);
+      c.drawRoundRect(x,top,cardW,cardH,3,FRAME);
+      c.setFont(&lgfx::fonts::Font2); c.setTextDatum(MC_DATUM);
+      c.setTextColor(WHITE_TEXT,PANEL);
+      c.drawCenterString(weather->weekdays[i],x+cardW/2,top+7);
+      drawWeatherIcon(c,x+cardW/2,top+43,weather->days[i].weatherCode,1);
+      char value[12];
+      snprintf(value,sizeof(value),"%d",weather->days[i].maximumC);
+      c.setFont(&lgfx::fonts::Font4); c.drawCenterString(value,x+cardW/2,top+65);
+      snprintf(value,sizeof(value),"%d",weather->days[i].minimumC);
+      c.setFont(&lgfx::fonts::Font2); c.setTextColor(MUTED_TEXT,PANEL);
+      c.drawCenterString(value,x+cardW/2,top+94);
+      snprintf(value,sizeof(value),"%u%%",weather->days[i].precipitationChance);
+      c.setFont(&lgfx::fonts::Font0); c.drawCenterString(value,x+cardW/2,top+110);
+      c.drawFastHLine(x+5,top+122,cardW-10,0x5DDF);
+    }
+  }
+  c.setTextDatum(TL_DATUM);
+  c.setFont(&lgfx::fonts::Font0);
+  c.setTextColor(MUTED_TEXT,PANEL);
+  c.drawString("Weather data by Open-Meteo.com",10,h-12);
+}
+
+template <typename Canvas>
+void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot) {
   const int w = canvas.width();
   const int h = canvas.height();
+  if (page == 18) { drawWeatherScreen(canvas, weatherSnapshot, selection); return; }
   // Main-menu labels intentionally match ATS Mini Dev verbatim.
   // A trailing * marks entries that are not implemented in ATS Mini OS yet.
   static const char* const mainItems[] = {
     "Zurück", "Modulation", "Bänder", "Lautstärke", "Keypad*", "DUAL RX*", "VFO A/B*",
     "Frequenz*", "BFO", "STEP", "Suche*", "Scannen*", "Speicher*", "Rauschsperre*",
     "Bandbreite", "AGC/Dämpfung", "Auto-Lautstärke", "Soft-Mute", "Einstellungen",
-    "VHF Spektrum*", "ALL-Band Spektrum*"
+    "VHF Spektrum*", "ALL-Band Spektrum*", "Wetterbericht"
   };
   static const char* const volumeItems[] = {
     "Zurück", "Lautstärke", "Stumm (später)"
@@ -523,11 +642,11 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
     if(menuPage==6){if(useSprite_){sprite_.fillSprite(BLACK);drawFileMenu(sprite_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFileMenu(device_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);}return;}
     if (useSprite_) {
       sprite_.fillSprite(BLACK);
-      drawMenu(sprite_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled);
+      drawMenu(sprite_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled, weatherSnapshot);
       sprite_.pushSprite(0,0);
     } else {
       device_.fillScreen(BLACK);
-      drawMenu(device_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled);
+      drawMenu(device_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled, weatherSnapshot);
     }
     return;
   }
