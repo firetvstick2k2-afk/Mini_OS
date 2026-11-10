@@ -48,7 +48,7 @@ private:
   void publish(const Snapshot& value);
   void loadSettings();
 
-  char postalCode_[POSTAL_CODE_BYTES] = "48143";
+  char postalCode_[POSTAL_CODE_BYTES] = {};
   mutable portMUX_TYPE snapshotMux_ = portMUX_INITIALIZER_UNLOCKED;
   Snapshot snapshot_{};
   TaskHandle_t taskHandle_ = nullptr;
