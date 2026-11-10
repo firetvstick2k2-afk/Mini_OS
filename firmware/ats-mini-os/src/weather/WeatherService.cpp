@@ -238,7 +238,7 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
   JsonObjectConst locality = localities[0];
   const char* localityName = locality["name"] | "";
   const char* municipalityName = locality["municipality"]["name"] | "";
-  String searchName = localityName[0] ? String(localityName) : String(municipalityName);
+  String searchName = municipalityName[0] ? String(municipalityName) : String(localityName);
   if (!searchName.length()) {
     BootDiagnostics::write("[WEATHER] OpenPLZ result has no locality name");
     return false;
