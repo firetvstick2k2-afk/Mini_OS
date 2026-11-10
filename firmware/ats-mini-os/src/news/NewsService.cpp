@@ -3,6 +3,7 @@
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <string.h>
+#include <esp_heap_caps.h>
 #include "../system/BootDiagnostics.h"
 
 namespace {
@@ -25,6 +26,13 @@ constexpr uint32_t TASK_STACK_WORDS = 8192;
 constexpr UBaseType_t TASK_PRIORITY = 1;
 constexpr BaseType_t TASK_CORE = 0;
 NewsService* workerInstance = nullptr;
+void logNewsResources(const char* stage) {
+  BootDiagnostics::printf("[NEWS][MEM] stage=%s free_heap=%u max_block=%u min_free=%u task_stack_high_water=%u",
+    stage, static_cast<unsigned>(ESP.getFreeHeap()),
+    static_cast<unsigned>(ESP.getMaxAllocHeap()),
+    static_cast<unsigned>(ESP.getMinFreeHeap()),
+    static_cast<unsigned>(uxTaskGetStackHighWaterMark(nullptr)));
+}
 portMUX_TYPE snapshotMux = portMUX_INITIALIZER_UNLOCKED;
 portMUX_TYPE configMux = portMUX_INITIALIZER_UNLOCKED;
 bool workerRunning = false;
@@ -154,11 +162,13 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
     return false;
   }
 
+  logNewsResources("before_tls_client");
   NewsFeedTlsClient tls;
   // Verify the server certificate using the ESP32 built-in CA bundle.
   // HTTPS remains encrypted and certificate validation is enabled.
   tls.useDefaultCertificateBundle();
   BootDiagnostics::write("[NEWS] TLS certificate verification enabled (default CA bundle)");
+  logNewsResources("after_tls_setup_before_http");
   HTTPClient http;
   http.setConnectTimeout(CONNECT_TIMEOUT_MS);
   http.setTimeout(READ_TIMEOUT_MS);
@@ -170,7 +180,9 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
   if(!http.begin(tls,url)) { BootDiagnostics::printf("[NEWS] HTTP begin failed feed=%u", static_cast<unsigned>(source + 1)); return false; }
   BootDiagnostics::printf("[NEWS] HTTP begin OK feed=%u; before GET", static_cast<unsigned>(source + 1));
   const uint32_t getStartMs = millis();
+  logNewsResources("before_http_get_tls_handshake");
   int code=http.GET();
+  logNewsResources("after_http_get");
   const String errorText = code < 0 ? HTTPClient::errorToString(code) : String("HTTP response");
   BootDiagnostics::printf("[NEWS] GET returned feed=%u http_code=%d error=%s elapsed_ms=%lu wifi_status=%d",
     static_cast<unsigned>(source + 1), code, errorText.c_str(),
@@ -191,7 +203,9 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
   // Reading getStreamPtr() directly would expose the raw chunk framing (e.g. "6000\\r\\n")
   // and make the XML parser see invalid data.
   const uint32_t bodyStartMs = millis();
+  logNewsResources("before_body_read");
   String body = http.getString();
+  logNewsResources("after_body_read");
   const uint32_t bodyElapsedMs = millis() - bodyStartMs;
   http.end();
   BootDiagnostics::printf("[NEWS] HTTPClient body read feed=%u bytes=%u elapsed_ms=%lu",
@@ -225,6 +239,7 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
 }
 void newsWorker(void*) {
   BootDiagnostics::write("[NEWS] worker task entered");
+  logNewsResources("worker_start");
   NewsService* service=workerInstance;
   for(;;) {
     bool connected=false, requested=false;
