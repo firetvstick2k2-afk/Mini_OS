@@ -252,7 +252,7 @@ void WifiClient::handleRoot() {
   page += F("<button type='submit'>News-Einstellungen speichern</button></form></section>");
   page += F("<section><h2>Wetterbericht</h2><p>Standort über deutsche Postleitzahl einstellen. Wetterdaten werden automatisch alle 15 Minuten aktualisiert.</p>");
   page += F("<form method='post' action='/weather/save'><label>Postleitzahl</label><input name='postal' inputmode='numeric' pattern='[0-9]{5}' minlength='5' maxlength='5' required value='");
-  page += weatherService_ ? htmlEscape(weatherService_->postalCode()) : String("48143");
+  page += weatherService_ ? htmlEscape(weatherService_->postalCode()) : String("");
   page += F("'><button type='submit'>Wetter-Standort speichern</button></form></section>");
   page += F("<form id='wifi' method='post' action='/wifi/save'><button type='submit'>Speichern und verbinden</button></form>"
             "<section><h3>Verbindungsstatus</h3><p id='status'>Wird geladen ...</p>"
