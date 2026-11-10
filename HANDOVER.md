@@ -2451,3 +2451,12 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Entfernt wurde die dadurch nicht mehr benötigte Hilfsfunktion `weekdayFromDate`.
 - **Commits:** `8f259c1`, `0c50e4c`.
 - **Status:** Quelltext erneut aus GitHub abgerufen und betroffene Stellen kontrolliert. Noch kein neuer Compile-Lauf; Nutzer soll Compile-only-Workflow erneut starten. Kein Flash.
+
+
+## 2026-11-10 – Boot-/HTTPS-Diagnostik nach Weather-Worker-Isolation
+
+- Commit `6ab8d11`: WeatherService bleibt angebunden, sein automatischer Hintergrundtask wird vorübergehend nicht gestartet, um die Weboberfläche wieder erreichbar zu machen. Gespeicherte Wetter-PLZ/Einstellungen bleiben erhalten.
+- Commit `a8bb1ee`: News-Worker protokolliert Heap, größten freien Block, Minimum-Free-Heap und Stack-High-Water-Mark vor/nach TLS-Setup, vor/nach HTTP-GET und vor/nach Body-Download.
+- Commit `34298a6`: WLAN-Bootdiagnostik ergänzt: Mode-Setup, AP/STA-Zustand, Registrierung der Web-Routen sowie Eintritt/Austritt von `WebServer.begin()` mit Heap-Werten.
+- Commit `be9f0f1`: Boot-Start protokolliert zusätzlich Minimum-Free-Heap; Setup-Meilensteine und 2-Sekunden-Heartbeat protokollieren Heap, größten Block, Minimum-Free-Heap, Loop-Stack-High-Water-Mark und WLAN-Status.
+- Nächster Schritt: Compile-only-Workflow ausführen, danach Firmware flashen. Prüfen, ob Webserver stabil erreichbar ist und Boot-Log die neuen `[WIFI][BOOT]`, `[NEWS][MEM]`, `[BOOT][STAGE]` und `[BOOT][HEARTBEAT]` Einträge enthält. Wetterworker bleibt bis zur Ursachenklärung deaktiviert.
