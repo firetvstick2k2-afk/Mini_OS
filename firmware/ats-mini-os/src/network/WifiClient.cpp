@@ -29,12 +29,9 @@ bool WifiClient::accessPointEnabled() const {
 }
 
 void WifiClient::begin() {
-  BootDiagnostics::write("[WIFI] begin entered");
   WiFi.persistent(false);
   WiFi.setAutoReconnect(true);
-  BootDiagnostics::write("[WIFI] before Preferences.begin");
   preferencesReady_ = preferences_.begin(SETTINGS_NAMESPACE, false, "settings");
-  BootDiagnostics::printf("[WIFI] Preferences.begin ready=%s", preferencesReady_ ? "yes" : "no");
   if (preferencesReady_) {
     loadNetworks();
     loadNewsConfig();
@@ -43,19 +40,13 @@ void WifiClient::begin() {
       ? static_cast<Mode>(savedMode) : Mode::AP_CONNECT;
   }
   if (newsService_) newsService_->setConfiguration(newsConfig_);
-  BootDiagnostics::printf("[WIFI] config loaded mode=%u news_enabled=%s interval=%u feed1_configured=%s", static_cast<unsigned>(mode_), newsConfig_.enabled ? "yes" : "no", static_cast<unsigned>(newsConfig_.refreshMinutes), newsConfig_.urls[0][0] ? "yes" : "no");
   // Bring up the selected WiFi interface before opening the HTTP listener.
   // WebServer::begin() must run after the network interface is configured.
-  BootDiagnostics::write("[WIFI] before applyMode");
   applyMode();
-  BootDiagnostics::write("[WIFI] applyMode returned");
-  BootDiagnostics::write("[WIFI] before startWebServer");
   startWebServer();
-  BootDiagnostics::write("[WIFI] startWebServer returned");
 }
 
 void WifiClient::applyMode() {
-  BootDiagnostics::printf("[WIFI] applyMode mode=%u", static_cast<unsigned>(mode_));
   WiFi.softAPdisconnect(false);
   WiFi.disconnect(false, false);
   apActive_ = false;
@@ -65,17 +56,13 @@ void WifiClient::applyMode() {
     Serial.println("[WIFI] mode OFF: station and setup access point disabled");
     return;
   }
-  BootDiagnostics::write("[WIFI] setting radio mode");
   if (accessPointEnabled() && stationEnabled()) WiFi.mode(WIFI_AP_STA);
   else if (accessPointEnabled()) WiFi.mode(WIFI_AP);
   else WiFi.mode(WIFI_STA);
 
-  BootDiagnostics::write("[WIFI] radio mode set");
   if (accessPointEnabled()) {
-    BootDiagnostics::write("[WIFI] before softAPConfig/softAP");
     WiFi.softAPConfig(SETUP_IP, SETUP_GATEWAY, SETUP_SUBNET);
     apActive_ = WiFi.softAP(SETUP_AP_SSID);
-    BootDiagnostics::printf("[WIFI] softAP returned active=%s", apActive_ ? "yes" : "no");
   }
   if (stationEnabled()) {
     bool found = false;
@@ -83,9 +70,7 @@ void WifiClient::applyMode() {
       if (ssid_[i][0]) { activeNetwork_ = i; found = true; break; }
     }
     if (found) {
-      BootDiagnostics::printf("[WIFI] before WiFi.begin saved_slot=%u", static_cast<unsigned>(activeNetwork_ + 1));
       WiFi.begin(ssid_[activeNetwork_], password_[activeNetwork_]);
-      BootDiagnostics::write("[WIFI] WiFi.begin returned");
       lastAttemptMs_ = millis();
       Serial.printf("[WIFI] connecting to saved network slot %u\\n",
                     static_cast<unsigned>(activeNetwork_ + 1));
@@ -162,37 +147,22 @@ void WifiClient::loadNewsConfig() {
 }
 
 void WifiClient::startWebServer() {
-  BootDiagnostics::write("[WIFI] startWebServer: entering");
 
-  BootDiagnostics::write("[WIFI] startWebServer: before route GET /");
   server_.on("/", HTTP_GET, [this]() { handleRoot(); });
-  BootDiagnostics::write("[WIFI] startWebServer: route GET / registered");
 
-  BootDiagnostics::write("[WIFI] startWebServer: before route POST /wifi/save");
   server_.on("/wifi/save", HTTP_POST, [this]() { handleSave(); });
-  BootDiagnostics::write("[WIFI] startWebServer: route POST /wifi/save registered");
 
-  BootDiagnostics::write("[WIFI] startWebServer: before route GET /wifi/status");
   server_.on("/wifi/status", HTTP_GET, [this]() { handleStatus(); });
-  BootDiagnostics::write("[WIFI] startWebServer: route GET /wifi/status registered");
 
-  BootDiagnostics::write("[WIFI] startWebServer: before route POST /news/save");
   server_.on("/news/save", HTTP_POST, [this]() { handleNewsSave(); });
-  BootDiagnostics::write("[WIFI] startWebServer: route POST /news/save registered");
 
   server_.on("/weather/save", HTTP_POST, [this]() { handleWeatherSave(); });
-  BootDiagnostics::write("[WIFI] startWebServer: route POST /weather/save registered");
 
-  BootDiagnostics::write("[WIFI] startWebServer: before onNotFound");
   server_.onNotFound([this]() { server_.send(404, "text/plain", "Not found"); });
-  BootDiagnostics::write("[WIFI] startWebServer: onNotFound registered");
 
-  BootDiagnostics::write("[WIFI] startWebServer: before server.begin port=80");
   server_.begin();
-  BootDiagnostics::write("[WIFI] startWebServer: server.begin returned");
 
   serverStarted_ = true;
-  BootDiagnostics::write("[WIFI] startWebServer: serverStarted flag set");
 }
 String WifiClient::htmlEscape(const String& value) {
   String out;
@@ -391,6 +361,12 @@ void WifiClient::update() {
   const uint32_t now = millis();
   if (status != lastStatus_) {
     lastStatus_ = status;
+    if (status == WL_CONNECTED) {
+      BootDiagnostics::printf("[WIFI] connected ssid='%s' ip=%s rssi=%d",
+        WiFi.SSID().c_str(), WiFi.localIP().toString().c_str(), WiFi.RSSI());
+    } else {
+      BootDiagnostics::printf("[WIFI] connection state changed status=%d", static_cast<int>(status));
+    }
     if (status == WL_CONNECTED) {
       Serial.printf("[WIFI] connected; IP=%s RSSI=%d dBm\n",
                     WiFi.localIP().toString().c_str(), WiFi.RSSI());
