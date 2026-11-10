@@ -286,7 +286,7 @@ void loop() {
               Serial.printf("[MENU] volume=%u/63\\n", static_cast<unsigned>(radio.volume()));
             }
           } else {
-            const int16_t itemCount = menuPage == 0 ? 21 :
+            const int16_t itemCount = menuPage == 0 ? 22 : menuPage == 18 ? 2 :
               menuPage == 2 ? 4 : menuPage == 4 ? 6 : menuPage == 5 ? 11 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
               ((menuPage == 14) ? 4 : (menuPage == 15) ? 5 :
               menuPage == 10 ? 4 : menuPage == 11 ?
@@ -345,9 +345,9 @@ void loop() {
         } else if (menuPage == 0) {
             // ATS Mini Dev main-menu order and labels are preserved exactly.
             // Unsupported entries are marked with * in the renderer and stay inert.
-            static const uint8_t targetPages[21] = {
+            static const uint8_t targetPages[22] = {
               255, 16, 8, 1, 255, 255, 255, 255, 12, 9, 255,
-              255, 255, 255, 7, 11, 11, 11, 5, 255, 255
+              255, 255, 255, 7, 11, 11, 11, 5, 255, 255, 18
             };
             const uint8_t selectedMainItem = menuSelection;
             const uint8_t targetPage = targetPages[selectedMainItem];
@@ -366,6 +366,10 @@ void loop() {
               else menuSelection = 0;
               Serial.printf("[MENU] opened selection page %u\n", static_cast<unsigned>(menuPage));
             }
+        } else if (menuPage == 18) {
+          menuPage = 0;
+          menuSelection = 21;
+          Serial.println("[WEATHER] report closed");
         } else if (menuPage == 13 && menuSelection == 0) {
           menuPage = 0;
           menuSelection = 9;
@@ -630,6 +634,7 @@ void loop() {
   performance.setWaterfallActive(waterfallVisible);
   stationLogoClient.update(currentSnapshot, wifi.connected() && wifi.dataServicesAllowed());
   const NewsService::Snapshot currentNews = newsService.snapshot();
+  const WeatherService::Snapshot currentWeather = weatherService.snapshot();
   static String currentWifiName;
   static String currentWifiIp;
   static uint32_t lastWifiDisplayRefreshMs = 0;
@@ -639,7 +644,7 @@ void loop() {
     currentWifiIp = wifi.ipAddress();
     lastWifiDisplayRefreshMs = millis();
   }
-  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled());
+  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather);
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
     lastStatusMs=now; const RadioSnapshot& s=radio.snapshot();
