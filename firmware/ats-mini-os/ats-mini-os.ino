@@ -204,7 +204,11 @@ void setup() {
   wifi.setWeatherService(&weatherService);
   wifi.begin();
   newsService.begin();
-  weatherService.begin();
+  // TEMPORARY BOOT-SAFETY ISOLATION:
+  // Keep the WeatherService attached to the web UI, but do not start its
+  // background HTTPS worker until the postcode/TLS reset is diagnosed.
+  // This preserves saved weather settings and allows the setup page to load.
+  Serial.println("[WEATHER] background worker temporarily disabled for boot safety");
   Serial.printf("CPU profile: %s\n",performance.profileName());
 }
 void loop() {
