@@ -11,6 +11,7 @@
 #include "src/input/EncoderInput.h"
 #include "src/network/WifiClient.h"
 #include "src/news/NewsService.h"
+#include "src/weather/WeatherService.h"
 #include "src/logo/StationLogoClient.h"
 #include "src/system/PartitionDiagnostics.h"
 #include "src/storage/StorageDiscovery.h"
@@ -34,6 +35,7 @@ bool themeSavePending = false;
 EncoderInput encoder;
 WifiClient wifi;
 NewsService newsService;
+WeatherService weatherService;
 StationLogoClient stationLogoClient;
 uint32_t lastStatusMs = 0;
 uint32_t lastBootHeartbeatMs = 0;
@@ -225,12 +227,16 @@ void setup() {
   }
   BootDiagnostics::write("[BOOT] before wifi.setNewsService");
   wifi.setNewsService(&newsService);
+  wifi.setWeatherService(&weatherService);
   BootDiagnostics::write("[BOOT] before wifi.begin");
   wifi.begin();
   BootDiagnostics::write("[BOOT] wifi.begin returned");
   BootDiagnostics::write("[BOOT] before newsService.begin");
   newsService.begin();
   BootDiagnostics::write("[BOOT] newsService.begin returned");
+  BootDiagnostics::write("[BOOT] before weatherService.begin");
+  weatherService.begin();
+  BootDiagnostics::write("[BOOT] weatherService.begin returned");
   Serial.printf("CPU profile: %s\n",performance.profileName());
 }
 void loop() {
@@ -242,6 +248,7 @@ void loop() {
       static_cast<unsigned>(ESP.getFreeHeap()), wifi.connected() ? "yes" : "no");
   }
   newsService.update(wifi.connected() && wifi.dataServicesAllowed());
+  weatherService.update(wifi.connected() && wifi.dataServicesAllowed());
   systemClock.update(wifi.connected());
   struct tm utcNow{};
   const bool utcValid = systemClock.getUtc(utcNow);
