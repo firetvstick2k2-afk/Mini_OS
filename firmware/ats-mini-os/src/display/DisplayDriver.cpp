@@ -848,7 +848,9 @@ void drawTef6686FmNewsfeed(Canvas& c, const RadioSnapshot& s, bool wifiConnected
   c.setTextColor(GREEN_TEF,BG);
   c.setClipRect(clipX,clipY,clipW,clipH);
   const int width=c.textWidth(message);
-  const uint32_t travelMs=static_cast<uint32_t>(width+clipW+24)*35UL+1200UL;
+  // Slightly faster ticker: one pixel every 28 ms instead of 35 ms (~25% faster).
+  constexpr uint32_t TICKER_STEP_MS=28;
+  const uint32_t travelMs=static_cast<uint32_t>(width+clipW+24)*TICKER_STEP_MS+1200UL;
   if(!headlineStartedMs) headlineStartedMs=millis();
   uint32_t elapsed=millis()-headlineStartedMs;
   if(elapsed>=travelMs) {
@@ -856,7 +858,7 @@ void drawTef6686FmNewsfeed(Canvas& c, const RadioSnapshot& s, bool wifiConnected
     if(haveHeadlines) headlineIndex=static_cast<uint8_t>((headlineIndex+1)%newsSnapshot->count);
     elapsed=0;
   }
-  const int offset=static_cast<int>((elapsed/35UL)%static_cast<uint32_t>(width+clipW+24));
+  const int offset=static_cast<int>((elapsed/TICKER_STEP_MS)%static_cast<uint32_t>(width+clipW+24));
   c.drawString(message,textX+clipW-offset,ntY+2);
   c.clearClipRect();
 }
