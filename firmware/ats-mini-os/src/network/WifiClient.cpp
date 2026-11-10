@@ -29,6 +29,7 @@ bool WifiClient::accessPointEnabled() const {
 }
 
 void WifiClient::begin() {
+  BootDiagnostics::printf("[WIFI][BOOT] begin enter free_heap=%u max_block=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
   WiFi.persistent(false);
   WiFi.setAutoReconnect(true);
   preferencesReady_ = preferences_.begin(SETTINGS_NAMESPACE, false, "settings");
@@ -42,8 +43,11 @@ void WifiClient::begin() {
   if (newsService_) newsService_->setConfiguration(newsConfig_);
   // Bring up the selected WiFi interface before opening the HTTP listener.
   // WebServer::begin() must run after the network interface is configured.
+  BootDiagnostics::write("[WIFI][BOOT] applying configured WiFi mode");
   applyMode();
+  BootDiagnostics::printf("[WIFI][BOOT] WiFi mode applied ap_active=%s station_enabled=%s free_heap=%u", apActive_ ? "yes" : "no", stationEnabled() ? "yes" : "no", static_cast<unsigned>(ESP.getFreeHeap()));
   startWebServer();
+  BootDiagnostics::printf("[WIFI][BOOT] setup web server started=%s port=80 free_heap=%u max_block=%u", serverStarted_ ? "yes" : "no", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
 }
 
 void WifiClient::applyMode() {
@@ -147,6 +151,7 @@ void WifiClient::loadNewsConfig() {
 }
 
 void WifiClient::startWebServer() {
+  BootDiagnostics::printf("[WIFI][WEB] registering routes free_heap=%u", static_cast<unsigned>(ESP.getFreeHeap()));
 
   server_.on("/", HTTP_GET, [this]() { handleRoot(); });
 
@@ -160,9 +165,10 @@ void WifiClient::startWebServer() {
 
   server_.onNotFound([this]() { server_.send(404, "text/plain", "Not found"); });
 
+  BootDiagnostics::write("[WIFI][WEB] calling WebServer.begin");
   server_.begin();
-
   serverStarted_ = true;
+  BootDiagnostics::write("[WIFI][WEB] WebServer.begin returned");
 }
 String WifiClient::htmlEscape(const String& value) {
   String out;
