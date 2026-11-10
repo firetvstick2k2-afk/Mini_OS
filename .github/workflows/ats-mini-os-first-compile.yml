@@ -105,6 +105,9 @@ jobs:
           ARDUINO_LIBRARY_ENABLE_UNSAFE_INSTALL: "true"
         run: arduino-cli lib install --git-url https://github.com/lovyan03/LovyanGFX
 
+      - name: Install ArduinoJson
+        run: arduino-cli lib install "ArduinoJson"
+
       - name: Verify LovyanGFX installation
         run: |
           arduino-cli lib list
