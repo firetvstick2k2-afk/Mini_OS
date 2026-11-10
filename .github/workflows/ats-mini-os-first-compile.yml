@@ -106,7 +106,17 @@ jobs:
         run: arduino-cli lib install --git-url https://github.com/lovyan03/LovyanGFX
 
       - name: Install ArduinoJson
+        env:
+          ARDUINO_LIBRARY_ENABLE_UNSAFE_INSTALL: "true"
         run: arduino-cli lib install "ArduinoJson"
+
+      - name: Verify ArduinoJson installation
+        run: |
+          arduino-cli lib list
+          ARDUINOJSON_LIB="$HOME/Arduino/libraries/ArduinoJson"
+          test -f "$ARDUINOJSON_LIB/library.properties"
+          test -f "$ARDUINOJSON_LIB/src/ArduinoJson.h"
+          echo "Found ArduinoJson header at $ARDUINOJSON_LIB/src"
 
       - name: Verify LovyanGFX installation
         run: |
@@ -141,6 +151,10 @@ jobs:
           mkdir -p firmware/ats-mini-os/src/vendor/LovyanGFX
           cp -R "$HOME/Arduino/libraries/LovyanGFX/src/." firmware/ats-mini-os/src/vendor/LovyanGFX/
           cp "$HOME/Arduino/libraries/PU2CLR_SI4735/src/SI4735.cpp" firmware/ats-mini-os/src/vendor/SI4735Library.cpp
+          mkdir -p firmware/ats-mini-os/src/vendor/ArduinoJson
+          cp -R "$HOME/Arduino/libraries/ArduinoJson/src/." firmware/ats-mini-os/src/vendor/ArduinoJson/
+          test -f firmware/ats-mini-os/src/vendor/ArduinoJson/ArduinoJson.h
+
           # Upstream getRdsDateTime() ORs the MJD bitfield into an uninitialized
           # integer. Initialize date fields in this staged copy to remove UB and
           # the compiler warning without changing the installed upstream library.
@@ -170,7 +184,7 @@ jobs:
             --build-property "build.flash_freq=80m" \
             --warnings all \
             --libraries "$HOME/Arduino/libraries" \
-            --build-property "compiler.cpp.extra_flags=-Ifirmware/ats-mini-os/src/vendor/LovyanGFX -Ifirmware/ats-mini-os/src/vendor/LovyanGFX/lgfx -Ifirmware/ats-mini-os/src/vendor/LovyanGFX/lgfx/v1 -I$HOME/Arduino/libraries/PU2CLR_SI4735/src" \
+            --build-property "compiler.cpp.extra_flags=-Ifirmware/ats-mini-os/src/vendor/LovyanGFX -Ifirmware/ats-mini-os/src/vendor/LovyanGFX/lgfx -Ifirmware/ats-mini-os/src/vendor/LovyanGFX/lgfx/v1 -I$HOME/Arduino/libraries/PU2CLR_SI4735/src -Ifirmware/ats-mini-os/src/vendor/ArduinoJson" \
             firmware/ats-mini-os 2>&1 | tee "build/$PROFILE-COMPILE-LOG.txt"
           # Require the generated arguments from this clean build to agree with
           # the OSPI/QSPI profile, rather than merely printing the intended value.
