@@ -2414,3 +2414,11 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Anzeige des ausgewählten Menüeintrags wechselt zwischen `BOOT-LOG: EIN` und `BOOT-LOG: AUS`; Änderung wird sofort in NVS gespeichert und live angewendet.
 - Geänderte Dateien: `BootDiagnostics.h/.cpp`, `SettingsStore.h/.cpp`, `ats-mini-os.ino`, `DisplayDriver.h/.cpp`.
 - **Noch nicht kompiliert oder am Gerät getestet.** Kein Build/Workflow gestartet und kein Flash durchgeführt. Nutzer soll den nächsten Compile-only-Build selbst starten.
+
+### Newsfeed DNS / HTTPS diagnostics — 2026-11-10
+- User-provided boot log confirms WiFi becomes connected, NewsService worker runs, default CA bundle attaches and HTTPClient.begin succeeds, but GET returns -1 for configured feed 1 and feed 2 (Welt). This does not yet prove the exact underlying cause; collect error details.
+- Updated `NewsService.cpp` to log target hostname only (not full URL), WiFi status and RSSI, DNS lookup result / elapsed time / resolved IP, plus HTTPClient error text, GET elapsed time and WiFi status after GET.
+- DNS failure skips the HTTPS request and logs a specific diagnostic.
+- Commit: `f98c98fb068dc256193d8adf9f015a954f1e80ac`.
+- No feed URLs or credentials are logged. No changes to feed parsing, refresh cadence, radio, WLAN configuration or TLS verification.
+- No build/workflow started and no device flashed; await user-run build and new boot log.
