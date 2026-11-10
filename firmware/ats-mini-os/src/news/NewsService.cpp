@@ -12,7 +12,9 @@ namespace {
 class NewsFeedTlsClient : public WiFiClientSecure {
 public:
   void useDefaultCertificateBundle() {
-    attach_ssl_certificate_bundle(sslclient.get(), true);
+    // Use the public Arduino-ESP32 API so both the certificate bundle and
+    // the internal _use_ca_bundle flag are configured for the TLS handshake.
+    useBuiltinCACertBundle();
   }
 };
 
