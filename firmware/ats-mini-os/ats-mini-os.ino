@@ -141,10 +141,11 @@ void setup() {
   const bool storageReady = StorageDiscovery::begin();
   const bool settingsReady = settingsStore.begin();
   BootDiagnostics::begin(settingsStore.bootLogEnabled(true));
-  BootDiagnostics::printf("BOOT START reset_reason=%d free_heap=%u max_block=%u storage=%s partition=%s anchor=%s",
+  BootDiagnostics::printf("BOOT START reset_reason=%d free_heap=%u max_block=%u min_free=%u storage=%s partition=%s anchor=%s",
     static_cast<int>(esp_reset_reason()),
     static_cast<unsigned>(ESP.getFreeHeap()),
     static_cast<unsigned>(ESP.getMaxAllocHeap()),
+    static_cast<unsigned>(ESP.getMinFreeHeap()),
     storageReady ? "READY" : "UNAVAILABLE",
     StorageDiscovery::partitionLabel(),
     StorageDiscovery::anchorPath());
@@ -202,13 +203,17 @@ void setup() {
   }
   wifi.setNewsService(&newsService);
   wifi.setWeatherService(&weatherService);
+  BootDiagnostics::printf("[BOOT][STAGE] before wifi.begin free_heap=%u max_block=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
   wifi.begin();
+  BootDiagnostics::printf("[BOOT][STAGE] after wifi.begin free_heap=%u max_block=%u min_free=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
   newsService.begin();
+  BootDiagnostics::printf("[BOOT][STAGE] after newsService.begin free_heap=%u max_block=%u min_free=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
   // TEMPORARY BOOT-SAFETY ISOLATION:
   // Keep the WeatherService attached to the web UI, but do not start its
   // background HTTPS worker until the postcode/TLS reset is diagnosed.
   // This preserves saved weather settings and allows the setup page to load.
-  Serial.println("[WEATHER] background worker temporarily disabled for boot safety");
+  BootDiagnostics::write("[WEATHER] background worker temporarily disabled for boot safety; settings/service retained");
+  BootDiagnostics::printf("[BOOT][STAGE] setup complete free_heap=%u max_block=%u min_free=%u loop_stack_high_water=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()), static_cast<unsigned>(uxTaskGetStackHighWaterMark(nullptr)));
   Serial.printf("CPU profile: %s\n",performance.profileName());
 }
 void loop() {
@@ -615,6 +620,7 @@ void loop() {
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
     lastStatusMs=now; const RadioSnapshot& s=radio.snapshot();
+    BootDiagnostics::printf("[BOOT][HEARTBEAT] uptime_ms=%lu free_heap=%u max_block=%u min_free=%u loop_stack_high_water=%u wifi=%d", static_cast<unsigned long>(now), static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()), static_cast<unsigned>(uxTaskGetStackHighWaterMark(nullptr)), static_cast<int>(WiFi.status()));
     Serial.printf("[RADIO] ready=%s freq=%.1f MHz RSSI=%d SNR=%d stereo=%s cpu=%u MHz\n",
       radio.isReady()?"yes":"no",s.frequencyKHz/1000.0f,s.rssi,s.snr,
       s.stereo?"yes":"no",static_cast<unsigned>(getCpuFrequencyMhz()));
