@@ -17,6 +17,36 @@ Show a current weather report for a user-selected location, initially entered as
 - Avoid blocking the radio loop, tuning, audio, encoder, scanning or Dual RX during network requests.
 - Rate-limit requests and use bounded timeouts and bounded response buffers.
 
+## Display design (approved)
+
+The weather report uses two pages on the ATS Mini V4 320 x 170 display.
+
+### Page 1 — Today
+- Large current temperature and weather symbol.
+- Short weather description.
+- Four compact information fields along the bottom (humidity, wind, precipitation and pressure).
+- Location name and data freshness/status in the header.
+
+### Page 2 — Next days
+- Five compact day cards in one horizontal row.
+- Each card shows weekday, weather symbol, maximum and minimum temperature, and precipitation probability.
+
+### Visual rules
+- Screen background: pure black (RGB565 `0x0000`).
+- Outer rounded frame: exactly the same dark menu-frame color (RGB565 `0x0320`).
+- Inner panels: black; no blue-tinted fills.
+- High-contrast white text and locally rendered weather symbols.
+- Do not change existing radio layouts, TEF6686 layouts, or the Waterfall renderer.
+
+## Weather provider
+
+Initial provider: Open-Meteo Forecast API and Geocoding API.
+- Postal-code lookup defaults to Germany.
+- Fetch current conditions plus five daily forecast entries.
+- Display attribution: "Weather data by Open-Meteo.com".
+- Respect the provider's non-commercial-use terms and CC BY 4.0 attribution requirements.
+- Use HTTPS with certificate verification; never use insecure TLS mode.
+
 ## Image support
 
 Weather symbols should initially be local, optimized icons. Downloading a new image for every weather refresh is unnecessary and consumes bandwidth, RAM and flash. A later shared image service may support small remote weather maps or other images after supported formats and decoder/memory costs are verified.
