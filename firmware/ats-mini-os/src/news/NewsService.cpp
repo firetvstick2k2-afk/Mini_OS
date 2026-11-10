@@ -143,9 +143,10 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
   }
 
   NewsFeedTlsClient tls;
-  BootDiagnostics::write("[NEWS] before default CA bundle attach");
-  tls.useDefaultCertificateBundle();
-  BootDiagnostics::write("[NEWS] default CA bundle attached");
+  // TEMPORARY DIAGNOSTIC TEST: keep HTTPS encryption, but skip certificate
+  // verification to determine whether CA-bundle validation causes GET to fail.
+  BootDiagnostics::write("[NEWS] TEST MODE: TLS certificate verification disabled");
+  tls.setInsecure();
   HTTPClient http;
   http.setConnectTimeout(CONNECT_TIMEOUT_MS);
   http.setTimeout(READ_TIMEOUT_MS);
@@ -158,7 +159,7 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
   int code=http.GET();
   const String errorText = code < 0 ? HTTPClient::errorToString(code) : String("HTTP response");
   BootDiagnostics::printf("[NEWS] GET returned feed=%u http_code=%d error=%s elapsed_ms=%lu wifi_status=%d",
-    static_cast<unsigned>(source + 1), code, errorText,
+    static_cast<unsigned>(source + 1), code, errorText.c_str(),
     static_cast<unsigned long>(millis() - getStartMs),
     static_cast<int>(WiFi.status()));
   if(code!=HTTP_CODE_OK) { http.end(); return false; }
