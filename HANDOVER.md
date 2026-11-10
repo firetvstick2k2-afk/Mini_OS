@@ -2442,3 +2442,12 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - **Geänderte Datei:** `firmware/ats-mini-os/src/weather/WeatherService.cpp`.
 - **Commits:** `cc39e1a`, `d8ab985`, `26aed16`, `7105d97`, `07801aa`, `b347b0d`, `d09958d`.
 - **Status:** Änderungen committed und Quelltext erneut aus GitHub abgerufen. Noch nicht kompiliert und nicht am Gerät getestet. Kein GitHub-Actions-Workflow gestartet und kein Flash ausgeführt. Vor einem Build insbesondere OpenPLZ-Antwortschema, Bright-Sky-Feldnamen und ESP32-Datumsfunktionen im Compile-/Laufzeittest validieren.
+
+
+### Build-Fehlerbehebung nach Actions-Lauf 42881580859 — 2026-11-10
+- Der Compile-only-Job erreichte den Sketch-Compile. Dependency-Installation und Header-Prüfungen waren erfolgreich.
+- Compilerfehler in `WeatherService.cpp`: `timegm()` ist in der verwendeten ESP-IDF/Newlib-Toolchain nicht verfügbar; außerdem war `startDay` wegen seiner Deklaration innerhalb der Record-Schleife außerhalb des Scopes nicht sichtbar.
+- `timegm()` wurde durch eine kleine portable gregorianische Tagesnummer-Funktion ersetzt. Startdatum wird einmal vor der Record-Schleife berechnet; Tagesindex und Wochentagsberechnung nutzen diese Tagesnummer.
+- Entfernt wurde die dadurch nicht mehr benötigte Hilfsfunktion `weekdayFromDate`.
+- **Commits:** `8f259c1`, `0c50e4c`.
+- **Status:** Quelltext erneut aus GitHub abgerufen und betroffene Stellen kontrolliert. Noch kein neuer Compile-Lauf; Nutzer soll Compile-only-Workflow erneut starten. Kein Flash.
