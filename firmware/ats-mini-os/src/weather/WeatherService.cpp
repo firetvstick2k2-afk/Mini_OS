@@ -195,7 +195,7 @@ bool WeatherService::fetchJson(const String& url, String& body) {
     return false;
   }
   const int status = http.GET();
-  BootDiagnostics::printf("[WEATHER] HTTP response type=%s status=%d\n", geocoding ? "geocoding" : "forecast", status);
+  BootDiagnostics::printf("[WEATHER] HTTP response type=%s status=%d\n", requestType, status);
   if (status != HTTP_CODE_OK) {
     BootDiagnostics::printf("[WEATHER] HTTP status=%d error=%s\n", status, http.errorToString(status).c_str());
     http.end(); return false;
@@ -206,10 +206,10 @@ bool WeatherService::fetchJson(const String& url, String& body) {
   }
   body = http.getString(); http.end();
   BootDiagnostics::printf("[WEATHER] HTTP body type=%s bytes=%u\n",
-    geocoding ? "geocoding" : "forecast", static_cast<unsigned>(body.length()));
+    requestType, static_cast<unsigned>(body.length()));
   if (body.length() <= 16 || body.length() > kMaxJsonBytes) {
     BootDiagnostics::printf("[WEATHER] invalid body size type=%s bytes=%u\n",
-      geocoding ? "geocoding" : "forecast", static_cast<unsigned>(body.length()));
+      requestType, static_cast<unsigned>(body.length()));
     return false;
   }
   return true;
@@ -357,7 +357,11 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
     recordDate.tm_mon = month - 1;
     recordDate.tm_mday = day;
     const time_t recordDay = timegm(&recordDate);
-    struct tm firstParts = {};\n  sscanf(firstDate, "%4d-%2d-%2d", &firstParts.tm_year, &firstParts.tm_mon, &firstParts.tm_mday);\n  firstParts.tm_year -= 1900;\n  firstParts.tm_mon -= 1;\n  const time_t startDay = timegm(&firstParts);
+    struct tm firstParts = {};
+    sscanf(firstDate, "%4d-%2d-%2d", &firstParts.tm_year, &firstParts.tm_mon, &firstParts.tm_mday);
+    firstParts.tm_year -= 1900;
+    firstParts.tm_mon -= 1;
+    const time_t startDay = timegm(&firstParts);
     const int dayIndex = static_cast<int>((recordDay - startDay) / 86400);
     if (dayIndex < 0 || dayIndex >= FORECAST_DAYS) continue;
 
