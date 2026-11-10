@@ -2429,3 +2429,16 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Also corrected the GET diagnostic to pass `errorText.c_str()` to `BootDiagnostics::printf(..., "%s", ...)`, so the next log can show the actual HTTPClient error text.
 - Commit: `a1cd3d62ce3f7275ab0e0bbb947f8f135e9983d6`.
 - No workflow/build started and no device flashed. User runs compile-only build and APP1 test. If the feed starts working, certificate validation / CA-bundle handling is implicated; restore proper certificate verification after diagnosis. If it still fails, investigate the socket/connect path rather than assuming a certificate problem.
+
+
+## Wetterdienst-Wechsel auf Bright Sky / DWD – 2026-11-10
+
+- Wetterdatenquelle in `src/weather/WeatherService.cpp` von Open-Meteo Forecast auf **Bright Sky** umgestellt. Bright Sky stellt DWD-Daten über JSON-Endpunkte bereit; kein API-Key erforderlich.
+- Die Weboberfläche bleibt bewusst bei **einem einzigen PLZ-Feld**. Kein zusätzlicher Ortsname nötig, solange die automatische Zuordnung funktioniert.
+- Standortauflösung: deutsche PLZ wird zunächst über OpenPLZ `/de/Localities` in den zugehörigen Ort bzw. die Gemeinde aufgelöst. Anschließend wird Open-Meteo ausschließlich als Ortsnamen-Geocoder verwendet; die Wetterdaten selbst kommen von Bright Sky.
+- Bright Sky `/current_weather` liefert die aktuellen DWD-basierten Bedingungen; `/weather` liefert stündliche Werte/Prognosen, aus denen die fünf Tageskarten aggregiert werden.
+- TLS-Zertifikatsprüfung bleibt über das eingebaute ESP32-CA-Bundle aktiviert. HTTP-Antwortgrößenlimit auf 48 KB erhöht; Diagnoselogs unterscheiden PLZ-Auflösung, Geocoding, aktuelle Werte und Prognose.
+- Die bestehende Snapshot-Schnittstelle, 15-Minuten-Aktualisierung, 1-Minuten-Fehlerwiederholung, Web-PLZ-Speicherung und Wetteranzeige wurden nicht absichtlich geändert. Kein zusätzliches Eingabefeld und keine Layoutänderung.
+- **Geänderte Datei:** `firmware/ats-mini-os/src/weather/WeatherService.cpp`.
+- **Commits:** `cc39e1a`, `d8ab985`, `26aed16`, `7105d97`, `07801aa`, `b347b0d`, `d09958d`.
+- **Status:** Änderungen committed und Quelltext erneut aus GitHub abgerufen. Noch nicht kompiliert und nicht am Gerät getestet. Kein GitHub-Actions-Workflow gestartet und kein Flash ausgeführt. Vor einem Build insbesondere OpenPLZ-Antwortschema, Bright-Sky-Feldnamen und ESP32-Datumsfunktionen im Compile-/Laufzeittest validieren.
