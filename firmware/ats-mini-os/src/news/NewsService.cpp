@@ -153,10 +153,10 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
   }
 
   NewsFeedTlsClient tls;
-  // TEMPORARY DIAGNOSTIC TEST: keep HTTPS encryption, but skip certificate
-  // verification to determine whether CA-bundle validation causes GET to fail.
-  BootDiagnostics::write("[NEWS] TEST MODE: TLS certificate verification disabled");
-  tls.setInsecure();
+  // Verify the server certificate using the ESP32 built-in CA bundle.
+  // HTTPS remains encrypted and certificate validation is enabled.
+  tls.useDefaultCertificateBundle();
+  BootDiagnostics::write("[NEWS] TLS certificate verification enabled (default CA bundle)");
   HTTPClient http;
   http.setConnectTimeout(CONNECT_TIMEOUT_MS);
   http.setTimeout(READ_TIMEOUT_MS);
