@@ -262,7 +262,7 @@ void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8
   c.drawString(weather->location,12,8);
   c.setFont(&lgfx::fonts::Font0);
   c.setTextColor(MUTED_TEXT,PANEL);
-  c.drawRightString(weather->stale ? "LETZTE DATEN" : "AKTUELL",w-12,12);
+  c.drawRightString(weather->stale ? "LETZTE DATEN" : (page == 0 ? "AKTUELL 1/2" : "2/2"),w-12,12);
   c.drawFastHLine(10,27,w-20,FRAME);
 
   if (page == 0) {
@@ -299,7 +299,7 @@ void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8
       c.drawString(values[i],x+4,y+15);
     }
   } else {
-    const int left=7, gap=3, cardW=(w-14-4*gap)/5, top=32, cardH=126;
+    c.setFont(&lgfx::fonts::Font0); c.setTextColor(MUTED_TEXT,PANEL); c.drawString("NAECHSTE TAGE",12,25);\n    const int left=7, gap=3, cardW=(w-14-4*gap)/5, top=34, cardH=124;
     for(uint8_t i=0;i<WeatherService::FORECAST_DAYS;++i) {
       const int x=left+i*(cardW+gap);
       c.drawRoundRect(x,top,cardW,cardH,3,FRAME);
