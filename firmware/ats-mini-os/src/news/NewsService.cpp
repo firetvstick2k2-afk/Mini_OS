@@ -156,7 +156,7 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
   BootDiagnostics::printf("[NEWS] HTTP begin OK feed=%u; before GET", static_cast<unsigned>(source + 1));
   const uint32_t getStartMs = millis();
   int code=http.GET();
-  const char* errorText = code < 0 ? HTTPClient::errorToString(code).c_str() : "HTTP response";
+  const String errorText = code < 0 ? HTTPClient::errorToString(code) : String("HTTP response");
   BootDiagnostics::printf("[NEWS] GET returned feed=%u http_code=%d error=%s elapsed_ms=%lu wifi_status=%d",
     static_cast<unsigned>(source + 1), code, errorText,
     static_cast<unsigned long>(millis() - getStartMs),
