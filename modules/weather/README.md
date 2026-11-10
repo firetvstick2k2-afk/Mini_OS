@@ -33,7 +33,7 @@ The weather report uses two pages on the ATS Mini V4 320 x 170 display.
 
 ### Visual rules
 - Screen background: pure black (RGB565 `0x0000`).
-- Outer rounded frame: exactly the same dark menu-frame color (RGB565 `0x0320`).
+- Outer rounded frame: exactly the same same blue as the menu outer frame (RGB565 `0x001F`).
 - Inner panels: black; no blue-tinted fills.
 - High-contrast white text and locally rendered weather symbols.
 - Do not change existing radio layouts, TEF6686 layouts, or the Waterfall renderer.
