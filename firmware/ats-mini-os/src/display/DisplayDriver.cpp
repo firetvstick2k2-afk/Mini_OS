@@ -8,6 +8,7 @@
 #include "../menus/MenuSSB.h"
 #include "../weather/WeatherService.h"
 #include <LittleFS.h>
+#include <math.h>
 
 namespace {
 uint16_t BLACK=0x0000, WHITE=0xFFFF, GREEN=0x07E0, CYAN=0x07FF, DARK_GREEN=0x0320, YELLOW=0xFFE0, MUTED=0x7BEF, FREQ_COLOR=0x07E0, UNIT_COLOR=0x07E0, RDS_COLOR=0xFFFF;
