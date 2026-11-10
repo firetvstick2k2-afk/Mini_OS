@@ -118,6 +118,30 @@ void parseFeed(const String& xml,uint8_t source,NewsService::Snapshot& snap) {
 }
 bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
   BootDiagnostics::printf("[NEWS] fetch start feed=%u", static_cast<unsigned>(source + 1));
+
+  // Record only the host (never the full URL, which may contain private tokens).
+  const char* hostStart = strstr(url, "://");
+  hostStart = hostStart ? hostStart + 3 : url;
+  const char* hostEnd = strpbrk(hostStart, "/:?#");
+  const size_t hostLength = hostEnd ? static_cast<size_t>(hostEnd - hostStart) : strlen(hostStart);
+  char host[96] = {};
+  const size_t hostCopy = hostLength < sizeof(host) - 1 ? hostLength : sizeof(host) - 1;
+  memcpy(host, hostStart, hostCopy);
+  BootDiagnostics::printf("[NEWS] target host=%s wifi_status=%d rssi=%d",
+    host, static_cast<int>(WiFi.status()),
+    WiFi.status() == WL_CONNECTED ? WiFi.RSSI() : 0);
+
+  IPAddress resolvedAddress;
+  const uint32_t dnsStartMs = millis();
+  const int dnsResult = WiFi.hostByName(host, resolvedAddress);
+  BootDiagnostics::printf("[NEWS] DNS result=%d elapsed_ms=%lu ip=%s",
+    dnsResult, static_cast<unsigned long>(millis() - dnsStartMs),
+    dnsResult == 1 ? resolvedAddress.toString().c_str() : "unresolved");
+  if (dnsResult != 1) {
+    BootDiagnostics::write("[NEWS] DNS resolution failed; skipping HTTPS request");
+    return false;
+  }
+
   NewsFeedTlsClient tls;
   BootDiagnostics::write("[NEWS] before default CA bundle attach");
   tls.useDefaultCertificateBundle();
@@ -130,8 +154,13 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
   http.setUserAgent("ATS-Mini-OS-Newsfeed/1.0");
   if(!http.begin(tls,url)) { BootDiagnostics::printf("[NEWS] HTTP begin failed feed=%u", static_cast<unsigned>(source + 1)); return false; }
   BootDiagnostics::printf("[NEWS] HTTP begin OK feed=%u; before GET", static_cast<unsigned>(source + 1));
+  const uint32_t getStartMs = millis();
   int code=http.GET();
-  BootDiagnostics::printf("[NEWS] GET returned feed=%u http_code=%d", static_cast<unsigned>(source + 1), code);
+  const char* errorText = code < 0 ? HTTPClient::errorToString(code).c_str() : "HTTP response";
+  BootDiagnostics::printf("[NEWS] GET returned feed=%u http_code=%d error=%s elapsed_ms=%lu wifi_status=%d",
+    static_cast<unsigned>(source + 1), code, errorText,
+    static_cast<unsigned long>(millis() - getStartMs),
+    static_cast<int>(WiFi.status()));
   if(code!=HTTP_CODE_OK) { http.end(); return false; }
   int length=http.getSize();
   if(length>static_cast<int>(MAX_RESPONSE_BYTES)) { http.end(); return false; }
