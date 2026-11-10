@@ -15,6 +15,10 @@ void WifiClient::setNewsService(NewsService* service) {
   if (newsService_) newsService_->setConfiguration(newsConfig_);
 }
 
+void WifiClient::setWeatherService(WeatherService* service) {
+  weatherService_ = service;
+}
+
 bool WifiClient::stationEnabled() const {
   return mode_ == Mode::AP_CONNECT || mode_ == Mode::CONNECT || mode_ == Mode::SYNC_ONLY;
 }
@@ -175,6 +179,9 @@ void WifiClient::startWebServer() {
   server_.on("/news/save", HTTP_POST, [this]() { handleNewsSave(); });
   BootDiagnostics::write("[WIFI] startWebServer: route POST /news/save registered");
 
+  server_.on("/weather/save", HTTP_POST, [this]() { handleWeatherSave(); });
+  BootDiagnostics::write("[WIFI] startWebServer: route POST /weather/save registered");
+
   BootDiagnostics::write("[WIFI] startWebServer: before onNotFound");
   server_.onNotFound([this]() { server_.send(404, "text/plain", "Not found"); });
   BootDiagnostics::write("[WIFI] startWebServer: onNotFound registered");
@@ -243,6 +250,10 @@ void WifiClient::handleRoot() {
     page += F("'>");
   }
   page += F("<button type='submit'>News-Einstellungen speichern</button></form></section>");
+  page += F("<section><h2>Wetterbericht</h2><p>Standort über deutsche Postleitzahl einstellen. Wetterdaten werden automatisch alle 15 Minuten aktualisiert.</p>");
+  page += F("<form method='post' action='/weather/save'><label>Postleitzahl</label><input name='postal' inputmode='numeric' pattern='[0-9]{5}' minlength='5' maxlength='5' required value='");
+  page += weatherService_ ? htmlEscape(weatherService_->postalCode()) : String("48143");
+  page += F("'><button type='submit'>Wetter-Standort speichern</button></form></section>");
   page += F("<form id='wifi' method='post' action='/wifi/save'><button type='submit'>Speichern und verbinden</button></form>"
             "<section><h3>Verbindungsstatus</h3><p id='status'>Wird geladen ...</p>"
             "<small>Einrichtungs-WLAN: ATS-Mini-OS-Setup · Adresse: 10.1.1.1</small></section>"
@@ -326,6 +337,20 @@ void WifiClient::handleNewsSave() {
   if (newsService_) newsService_->setConfiguration(newsConfig_);
   server_.send(200, "text/html; charset=utf-8",
     "<meta charset='utf-8'><meta http-equiv='refresh' content='2;url=/'><p>News-Einstellungen gespeichert.</p>");
+}
+
+void WifiClient::handleWeatherSave() {
+  if (!weatherService_) {
+    server_.send(503, "text/plain; charset=utf-8", "Wetterdienst nicht verfügbar.");
+    return;
+  }
+  const String postal = server_.arg("postal");
+  if (!weatherService_->setPostalCode(postal.c_str())) {
+    server_.send(400, "text/plain; charset=utf-8", "Bitte eine gültige fünfstellige deutsche Postleitzahl eingeben.");
+    return;
+  }
+  server_.send(200, "text/html; charset=utf-8",
+    "<meta charset='utf-8'><meta http-equiv='refresh' content='2;url=/'><p>Wetter-Standort gespeichert. Die Wetterdaten werden neu geladen.</p>");
 }
 
 void WifiClient::handleStatus() {
