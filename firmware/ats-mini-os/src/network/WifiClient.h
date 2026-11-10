@@ -5,6 +5,7 @@
 #include <WebServer.h>
 #include <Preferences.h>
 #include "../news/NewsService.h"
+#include "../weather/WeatherService.h"
 
 class WifiClient {
 public:
@@ -17,6 +18,7 @@ public:
   String networkName() const;
   String ipAddress() const;
   void setNewsService(NewsService* service);
+  void setWeatherService(WeatherService* service);
   void update();
   bool connected() const;
   bool setupAccessPointActive() const { return apActive_; }
@@ -30,6 +32,7 @@ private:
   char password_[NETWORK_COUNT][65] = {};
   NewsService::Configuration newsConfig_;
   NewsService* newsService_ = nullptr;
+  WeatherService* weatherService_ = nullptr;
   uint8_t activeNetwork_ = 0;
   wl_status_t lastStatus_ = WL_IDLE_STATUS;
   uint32_t lastLogMs_ = 0;
@@ -51,6 +54,7 @@ private:
   void handleSave();
   void handleStatus();
   void handleNewsSave();
+  void handleWeatherSave();
   void loadNewsConfig();
   static String htmlEscape(const String& value);
 };
