@@ -38,7 +38,6 @@ NewsService newsService;
 WeatherService weatherService;
 StationLogoClient stationLogoClient;
 uint32_t lastStatusMs = 0;
-uint32_t lastBootHeartbeatMs = 0;
 uint32_t lastObservedFmFrequencyKHz = DEFAULT_FM_FREQUENCY_KHZ;
 uint32_t fmFrequencyChangedAtMs = 0;
 bool fmFrequencySavePending = false;
@@ -138,19 +137,7 @@ void fmChoose(uint8_t visual){ if(visual==0){ if(fmMode==3)return; fmParent(); r
 
 void setup() {
   Serial.begin(SERIAL_BAUD); delay(250); performance.begin();
-  // Capture the previous ESP32 reset cause. The SI4735 can keep playing
-  // independently while the ESP32 restarts, so audio alone cannot identify
-  // whether a band-menu event caused a brownout, watchdog or software panic.
-  Serial.printf("[BOOT] ESP reset reason=%d, free heap=%u, largest block=%u\\n",
-    static_cast<int>(esp_reset_reason()),
-    static_cast<unsigned>(ESP.getFreeHeap()),
-    static_cast<unsigned>(ESP.getMaxAllocHeap()));
   systemClock.begin();
-  Serial.println("[BOOT] clock service initialized");
-  Serial.println(); Serial.println("ATS Mini OS - UKW/RDS hardware test");
-  Serial.println("First milestone: display, SI4735 audio, RDS. No memories/EiBi storage.");
-  PartitionDiagnostics::printToSerial();
-  Serial.println("[BOOT] partition inventory complete");
   const bool storageReady = StorageDiscovery::begin();
   const bool settingsReady = settingsStore.begin();
   BootDiagnostics::begin(settingsStore.bootLogEnabled(true));
