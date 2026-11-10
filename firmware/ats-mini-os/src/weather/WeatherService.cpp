@@ -56,7 +56,7 @@ bool WeatherService::begin() {
 void WeatherService::loadSettings() {
   Preferences preferences;
   if (preferences.begin(kWeatherNamespace, true, "settings")) {
-    String saved = preferences.getString("postal", "48143");
+    String saved = preferences.getString("postal", "");
     saved.trim();
     if (saved.length() == 5) saved.toCharArray(postalCode_, sizeof(postalCode_));
     preferences.end();
@@ -92,7 +92,7 @@ void WeatherService::taskLoop() {
   for (;;) {
     const uint32_t now = millis();
     const bool due = refreshRequested_ || !lastAttemptMs_ || now - lastAttemptMs_ >= kRefreshIntervalMs;
-    if (wifiConnected_ && due) {
+    if (wifiConnected_ && due && strlen(postalCode_) == 5) {
       refreshRequested_ = false; lastAttemptMs_ = now;
       Snapshot current = snapshot(); current.fetching = true; publish(current);
       Snapshot fresh;
