@@ -5,13 +5,15 @@
 #include <Preferences.h>
 #include <ArduinoJson.h>
 #include <math.h>
+#include <time.h>
+#include <string.h>
 #include "../system/BootDiagnostics.h"
 
 namespace {
 constexpr char kWeatherNamespace[] = "weather";
 constexpr uint32_t kRefreshIntervalMs = 15UL * 60UL * 1000UL;
 constexpr uint32_t kRetryIntervalMs = 60UL * 1000UL;
-constexpr size_t kMaxJsonBytes = 18000;
+constexpr size_t kMaxJsonBytes = 48000;
 
 int16_t roundedTemperature(JsonVariantConst value) {
   return value.isNull() ? 0 : static_cast<int16_t>(lroundf(value.as<float>()));
