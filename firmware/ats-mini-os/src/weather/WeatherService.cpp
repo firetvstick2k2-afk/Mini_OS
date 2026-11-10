@@ -22,6 +22,23 @@ uint8_t boundedPercent(JsonVariantConst value) {
   if (value.isNull()) return 0;
   return static_cast<uint8_t>(constrain(value.as<int>(), 0, 100));
 }
+String urlEncode(const String& input) {
+  static const char hex[] = "0123456789ABCDEF";
+  String encoded;
+  encoded.reserve(input.length() * 3);
+  for (size_t i = 0; i < input.length(); ++i) {
+    const uint8_t c = static_cast<uint8_t>(input[i]);
+    if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+        (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == '~') {
+      encoded += static_cast<char>(c);
+    } else {
+      encoded += '%';
+      encoded += hex[c >> 4];
+      encoded += hex[c & 0x0F];
+    }
+  }
+  return encoded;
+}
 const char* weatherDescription(uint8_t code) {
   if (code == 0) return "Klar";
   if (code <= 3) return "Teilweise bewoelkt";
@@ -168,7 +185,7 @@ void WeatherService::taskLoop() {
 }
 bool WeatherService::fetchJson(const String& url, String& body) {
   const bool geocoding = url.indexOf("geocoding-api.open-meteo.com") >= 0;
-  BootDiagnostics::printf("[WEATHER] HTTP request start type=%s\n", geocoding ? "geocoding" : "forecast");
+  BootDiagnostics::printf("[WEATHER] HTTP request start type=%s\n", requestType);
   WiFiClientSecure client; client.setTimeout(8000); client.useBuiltinCACertBundle();
   HTTPClient http; http.setTimeout(8000); http.setReuse(false);
   if (!http.begin(client, url)) {
@@ -232,7 +249,7 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
   // comes from Bright Sky / DWD.
   String geoBody;
   const String geoUrl = String("https://geocoding-api.open-meteo.com/v1/search?name=") +
-    searchName + "&count=5&language=de&countryCode=DE&format=json";
+    urlEncode(searchName) + "&count=5&language=de&countryCode=DE&format=json";
   if (!fetchJson(geoUrl, geoBody)) return false;
   JsonDocument geo;
   if (deserializeJson(geo, geoBody)) {
@@ -339,7 +356,7 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
     recordDate.tm_mon = month - 1;
     recordDate.tm_mday = day;
     const time_t recordDay = timegm(&recordDate);
-    const time_t startDay = (now / 86400) * 86400;
+    struct tm firstParts = {};\n  sscanf(firstDate, "%4d-%2d-%2d", &firstParts.tm_year, &firstParts.tm_mon, &firstParts.tm_mday);\n  firstParts.tm_year -= 1900;\n  firstParts.tm_mon -= 1;\n  const time_t startDay = timegm(&firstParts);
     const int dayIndex = static_cast<int>((recordDay - startDay) / 86400);
     if (dayIndex < 0 || dayIndex >= FORECAST_DAYS) continue;
 
@@ -371,7 +388,7 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
     result.days[i].minimumC = lows[i];
     result.days[i].precipitationChance = rain[i];
     result.days[i].weatherCode = codes[i];
-    time_t dayTime = (now / 86400) * 86400 + static_cast<time_t>(i) * 86400;
+    time_t dayTime = startDay + static_cast<time_t>(i) * 86400;
     struct tm weekdayParts;
     gmtime_r(&dayTime, &weekdayParts);
     if (i == 0) strlcpy(result.weekdays[i], "Heute", sizeof(result.weekdays[i]));
