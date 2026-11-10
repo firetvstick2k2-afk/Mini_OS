@@ -223,10 +223,6 @@ void setup() {
 void loop() {
   performance.update();
   wifi.update();
-  if (millis() - lastBootHeartbeatMs >= 5000) {
-    lastBootHeartbeatMs = millis();
-      static_cast<unsigned>(ESP.getFreeHeap()), wifi.connected() ? "yes" : "no");
-  }
   newsService.update(wifi.connected() && wifi.dataServicesAllowed());
   weatherService.update(wifi.connected() && wifi.dataServicesAllowed());
   systemClock.update(wifi.connected());
