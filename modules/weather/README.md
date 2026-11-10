@@ -44,7 +44,7 @@ Initial provider: Open-Meteo Forecast API and Geocoding API.
 - Postal-code lookup defaults to Germany.
 - Fetch current conditions plus five daily forecast entries.
 - Display attribution: "Weather data by Open-Meteo.com".
-- Respect the provider's non-commercial-use terms and CC BY 4.0 attribution requirements.
+- Respect the provider's non-commercial-use terms and CC BY-NC 4.0 attribution requirements.
 - Use HTTPS with certificate verification; never use insecure TLS mode.
 
 ## Image support
