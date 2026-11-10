@@ -17,6 +17,7 @@ void WifiClient::setNewsService(NewsService* service) {
 
 void WifiClient::setWeatherService(WeatherService* service) {
   weatherService_ = service;
+  BootDiagnostics::printf("[WEATHER] service attached=%s", weatherService_ ? "yes" : "no");
 }
 
 bool WifiClient::stationEnabled() const {
@@ -340,13 +341,19 @@ void WifiClient::handleNewsSave() {
 }
 
 void WifiClient::handleWeatherSave() {
+  BootDiagnostics::write("[WEATHER] POST /weather/save received");
   if (!weatherService_) {
+    BootDiagnostics::write("[WEATHER] ERROR: service pointer is null");
     server_.send(503, "text/plain; charset=utf-8", "Wetterdienst nicht verfügbar.");
     return;
   }
   const String postal = server_.arg("postal");
-  if (!weatherService_->setPostalCode(postal.c_str())) {
-    server_.send(400, "text/plain; charset=utf-8", "Bitte eine gültige fünfstellige deutsche Postleitzahl eingeben.");
+  BootDiagnostics::printf("[WEATHER] POST postal='%s' length=%u",
+    postal.c_str(), static_cast<unsigned>(postal.length()));
+  const bool saved = weatherService_->setPostalCode(postal.c_str());
+  BootDiagnostics::printf("[WEATHER] POST save result=%s", saved ? "success" : "FAILED");
+  if (!saved) {
+    server_.send(400, "text/plain; charset=utf-8", "Bitte eine gültige fünfstellige deutsche Postleitzahl eingeben oder Speichern prüfen.");
     return;
   }
   server_.send(200, "text/html; charset=utf-8",
