@@ -127,7 +127,7 @@ bool WeatherService::fetchJson(const String& url, String& body) {
 }
 bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
   String geoBody;
-  const String geoUrl = String("https://geocoding-api.open-meteo.com/v1/search?name=") + postalCode + "&count=1&language=de&format=json";
+  const String geoUrl = String("https://geocoding-api.open-meteo.com/v1/search?name=") + postalCode + "&count=1&language=de&countryCode=DE&format=json";
   if (!fetchJson(geoUrl, geoBody)) return false;
   JsonDocument geo;
   if (deserializeJson(geo, geoBody)) { Serial.println("[WEATHER] geocoding JSON parse failed"); return false; }
@@ -163,7 +163,7 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
   JsonArrayConst highs = daily["temperature_2m_max"].as<JsonArrayConst>();
   JsonArrayConst lows = daily["temperature_2m_min"].as<JsonArrayConst>();
   JsonArrayConst rain = daily["precipitation_probability_max"].as<JsonArrayConst>();
-  if (dates.size() < FORECAST_DAYS || highs.size() < FORECAST_DAYS || lows.size() < FORECAST_DAYS) return false;
+  if (dates.size() < FORECAST_DAYS || codes.size() < FORECAST_DAYS || highs.size() < FORECAST_DAYS || lows.size() < FORECAST_DAYS || rain.size() < FORECAST_DAYS) return false;
   result.precipitation = rain.size() ? boundedPercent(rain[0]) : 0;
   for (uint8_t i=0; i<FORECAST_DAYS; ++i) {
     result.days[i].weatherCode = static_cast<uint8_t>(codes[i] | 0);
