@@ -46,34 +46,61 @@ void weekdayFromDate(const char* date, char* output, size_t capacity, uint8_t in
 }
 
 bool WeatherService::begin() {
+  Serial.println("[WEATHER] begin entered");
   loadSettings();
   Snapshot initial;
   publish(initial);
   const BaseType_t created = xTaskCreatePinnedToCore(taskEntry, "WeatherWorker", 12288, this, 1, &taskHandle_, 0);
-  Serial.printf("[WEATHER] worker task %s; postal_code=%s\n", created == pdPASS ? "created" : "creation failed", postalCode_);
+  Serial.printf("[WEATHER] worker task %s; postal_code='%s'\n",
+    created == pdPASS ? "created" : "creation failed", postalCode_);
   return created == pdPASS;
 }
 void WeatherService::loadSettings() {
   Preferences preferences;
-  if (preferences.begin(kWeatherNamespace, true, "settings")) {
-    String saved = preferences.getString("postal", "");
-    saved.trim();
-    if (saved.length() == 5) saved.toCharArray(postalCode_, sizeof(postalCode_));
-    preferences.end();
-  }
+  const bool opened = preferences.begin(kWeatherNamespace, true, "settings");
+  Serial.printf("[WEATHER] load settings namespace='%s' opened=%s\n",
+    kWeatherNamespace, opened ? "yes" : "no");
+  if (!opened) return;
+  String saved = preferences.getString("postal", "");
+  saved.trim();
+  if (saved.length() == 5) saved.toCharArray(postalCode_, sizeof(postalCode_));
+  Serial.printf("[WEATHER] stored postal='%s' length=%u valid=%s\n",
+    saved.c_str(), static_cast<unsigned>(saved.length()),
+    strlen(postalCode_) == 5 ? "yes" : "no");
+  preferences.end();
 }
 bool WeatherService::setPostalCode(const char* value) {
+  Serial.printf("[WEATHER] setPostalCode called value='%s'\n", value ? value : "(null)");
   if (!value) return false;
   String code(value); code.trim();
-  if (code.length() != 5) return false;
-  for (size_t i=0; i<code.length(); ++i) if (code[i] < '0' || code[i] > '9') return false;
+  if (code.length() != 5) {
+    Serial.printf("[WEATHER] rejected postal: length=%u (expected 5)\n", static_cast<unsigned>(code.length()));
+    return false;
+  }
+  for (size_t i=0; i<code.length(); ++i) {
+    if (code[i] < '0' || code[i] > '9') {
+      Serial.printf("[WEATHER] rejected postal: non-digit at index=%u\n", static_cast<unsigned>(i));
+      return false;
+    }
+  }
   Preferences preferences;
-  if (!preferences.begin(kWeatherNamespace, false, "settings")) return false;
-  const bool saved = preferences.putString("postal", code) > 0;
+  if (!preferences.begin(kWeatherNamespace, false, "settings")) {
+    Serial.println("[WEATHER] ERROR: Preferences.begin for write failed");
+    return false;
+  }
+  const size_t written = preferences.putString("postal", code);
+  const String readBack = preferences.getString("postal", "");
   preferences.end();
-  if (!saved) return false;
+  Serial.printf("[WEATHER] save postal='%s' bytes_written=%u read_back='%s'\n",
+    code.c_str(), static_cast<unsigned>(written), readBack.c_str());
+  if (written == 0 || readBack != code) {
+    Serial.println("[WEATHER] ERROR: postal persistence verification failed");
+    return false;
+  }
   code.toCharArray(postalCode_, sizeof(postalCode_));
   requestRefresh();
+  Serial.printf("[WEATHER] postal accepted; refresh requested; wifi_connected=%s\n",
+    wifiConnected_ ? "yes" : "no");
   return true;
 }
 String WeatherService::postalCode() const { return String(postalCode_); }
@@ -86,13 +113,40 @@ void WeatherService::publish(const Snapshot& value) {
   portENTER_CRITICAL(&snapshotMux_); snapshot_ = value; portEXIT_CRITICAL(&snapshotMux_);
 }
 void WeatherService::requestRefresh() { refreshRequested_ = true; }
-void WeatherService::update(bool wifiConnected) { wifiConnected_ = wifiConnected; }
+void WeatherService::update(bool wifiConnected) {
+  static bool lastReported = false;
+  static bool reportedOnce = false;
+  wifiConnected_ = wifiConnected;
+  if (!reportedOnce || wifiConnected != lastReported) {
+    reportedOnce = true;
+    lastReported = wifiConnected;
+    Serial.printf("[WEATHER] data-service WiFi=%s postal_configured=%s\n",
+      wifiConnected ? "connected" : "disconnected",
+      strlen(postalCode_) == 5 ? "yes" : "no");
+  }
+}
 void WeatherService::taskEntry(void* context) { static_cast<WeatherService*>(context)->taskLoop(); }
 void WeatherService::taskLoop() {
+  Serial.println("[WEATHER] worker task entered");
+  bool waitingLogged = false;
   for (;;) {
     const uint32_t now = millis();
     const bool due = refreshRequested_ || !lastAttemptMs_ || now - lastAttemptMs_ >= kRefreshIntervalMs;
+    if (strlen(postalCode_) != 5 && !waitingLogged) {
+      Serial.println("[WEATHER] waiting: no valid postal code configured");
+      waitingLogged = true;
+    }
+    if (strlen(postalCode_) == 5) waitingLogged = false;
+    if (!wifiConnected_ && strlen(postalCode_) == 5 && due) {
+      static bool wifiWaitLogged = false;
+      if (!wifiWaitLogged) {
+        Serial.println("[WEATHER] waiting: data-service WiFi is not connected");
+        wifiWaitLogged = true;
+      }
+    }
     if (wifiConnected_ && due && strlen(postalCode_) == 5) {
+      Serial.printf("[WEATHER] refresh starting postal='%s' requested=%s\n",
+        postalCode_, refreshRequested_ ? "yes" : "no");
       refreshRequested_ = false; lastAttemptMs_ = now;
       Snapshot current = snapshot(); current.fetching = true; publish(current);
       Snapshot fresh;
@@ -110,10 +164,16 @@ void WeatherService::taskLoop() {
   }
 }
 bool WeatherService::fetchJson(const String& url, String& body) {
+  const bool geocoding = url.indexOf("geocoding-api.open-meteo.com") >= 0;
+  Serial.printf("[WEATHER] HTTP request start type=%s\n", geocoding ? "geocoding" : "forecast");
   WiFiClientSecure client; client.setTimeout(8000); client.useBuiltinCACertBundle();
   HTTPClient http; http.setTimeout(8000); http.setReuse(false);
-  if (!http.begin(client, url)) return false;
+  if (!http.begin(client, url)) {
+    Serial.printf("[WEATHER] HTTP begin failed type=%s\n", geocoding ? "geocoding" : "forecast");
+    return false;
+  }
   const int status = http.GET();
+  Serial.printf("[WEATHER] HTTP response type=%s status=%d\n", geocoding ? "geocoding" : "forecast", status);
   if (status != HTTP_CODE_OK) {
     Serial.printf("[WEATHER] HTTP status=%d error=%s\n", status, http.errorToString(status).c_str());
     http.end(); return false;
@@ -123,7 +183,14 @@ bool WeatherService::fetchJson(const String& url, String& body) {
     Serial.printf("[WEATHER] JSON too large: %d bytes\n", length); http.end(); return false;
   }
   body = http.getString(); http.end();
-  return body.length() > 16 && body.length() <= kMaxJsonBytes;
+  Serial.printf("[WEATHER] HTTP body type=%s bytes=%u\n",
+    geocoding ? "geocoding" : "forecast", static_cast<unsigned>(body.length()));
+  if (body.length() <= 16 || body.length() > kMaxJsonBytes) {
+    Serial.printf("[WEATHER] invalid body size type=%s bytes=%u\n",
+      geocoding ? "geocoding" : "forecast", static_cast<unsigned>(body.length()));
+    return false;
+  }
+  return true;
 }
 bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
   String geoBody;
@@ -136,7 +203,12 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
   JsonObjectConst place = matches[0];
   const double latitude = place["latitude"] | 0.0;
   const double longitude = place["longitude"] | 0.0;
-  if (latitude == 0.0 && longitude == 0.0) return false;
+  if (latitude == 0.0 && longitude == 0.0) {
+    Serial.println("[WEATHER] geocoding returned invalid coordinates");
+    return false;
+  }
+  Serial.printf("[WEATHER] geocoding matched location='%s' lat=%.4f lon=%.4f\n",
+    place["name"] | "Standort", latitude, longitude);
   strlcpy(result.location, place["name"] | "Standort", sizeof(result.location));
   strlcpy(result.country, place["country"] | "Deutschland", sizeof(result.country));
 
