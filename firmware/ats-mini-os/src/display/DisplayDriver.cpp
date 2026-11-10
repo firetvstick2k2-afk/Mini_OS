@@ -299,7 +299,8 @@ void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8
       c.drawString(values[i],x+4,y+15);
     }
   } else {
-    c.setFont(&lgfx::fonts::Font0); c.setTextColor(MUTED_TEXT,PANEL); c.drawString("NAECHSTE TAGE",12,25);\n    const int left=7, gap=3, cardW=(w-14-4*gap)/5, top=34, cardH=124;
+    c.setFont(&lgfx::fonts::Font0); c.setTextColor(MUTED_TEXT,PANEL); c.drawString("NAECHSTE TAGE",12,25);
+    const int left=7, gap=3, cardW=(w-14-4*gap)/5, top=34, cardH=124;
     for(uint8_t i=0;i<WeatherService::FORECAST_DAYS;++i) {
       const int x=left+i*(cardW+gap);
       c.drawRoundRect(x,top,cardW,cardH,3,FRAME);
