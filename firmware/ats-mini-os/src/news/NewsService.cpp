@@ -16,7 +16,7 @@ public:
   }
 };
 
-constexpr size_t MAX_RESPONSE_BYTES = 24576;
+constexpr size_t MAX_RESPONSE_BYTES = 98304;
 constexpr uint32_t CONNECT_TIMEOUT_MS = 5000;
 constexpr uint32_t READ_TIMEOUT_MS = 5000;
 constexpr uint32_t TASK_STACK_WORDS = 8192;
@@ -185,18 +185,16 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
       static_cast<unsigned>(source + 1), length, static_cast<unsigned>(MAX_RESPONSE_BYTES));
     http.end(); return false;
   }
-  WiFiClient* stream=http.getStreamPtr();
-  String body; body.reserve(length>0?length:4096);
-  uint32_t lastData=millis();
-  while(http.connected() && (length>0 ? (int)body.length()<length : millis()-lastData<READ_TIMEOUT_MS)) {
-    size_t available=stream->available();
-    if(available) {
-      while(available-- && body.length()<MAX_RESPONSE_BYTES) body+=(char)stream->read();
-      lastData=millis();
-      if(body.length()>=MAX_RESPONSE_BYTES) break;
-    } else vTaskDelay(pdMS_TO_TICKS(10));
-  }
+  // HTTPClient::getString() decodes Transfer-Encoding: chunked correctly.
+  // Reading getStreamPtr() directly would expose the raw chunk framing (e.g. "6000\\r\\n")
+  // and make the XML parser see invalid data.
+  const uint32_t bodyStartMs = millis();
+  String body = http.getString();
+  const uint32_t bodyElapsedMs = millis() - bodyStartMs;
   http.end();
+  BootDiagnostics::printf("[NEWS] HTTPClient body read feed=%u bytes=%u elapsed_ms=%lu",
+    static_cast<unsigned>(source + 1), static_cast<unsigned>(body.length()),
+    static_cast<unsigned long>(bodyElapsedMs));
   BootDiagnostics::printf("[NEWS] body received feed=%u bytes=%u declared=%d",
     static_cast<unsigned>(source + 1), static_cast<unsigned>(body.length()), length);
   if(body.length()) {
