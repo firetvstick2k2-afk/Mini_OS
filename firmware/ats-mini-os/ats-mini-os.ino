@@ -9,6 +9,7 @@
 #include "src/eibi/EiBiService.h"
 #include "src/display/DisplayDriver.h"
 #include "src/input/EncoderInput.h"
+#include "src/input/FrequencyKeypad.h"
 #include "src/network/WifiClient.h"
 #include "src/news/NewsService.h"
 #include "src/weather/WeatherService.h"
@@ -33,6 +34,7 @@ SettingsStore settingsStore;
 bool brightnessSavePending = false;
 bool themeSavePending = false;
 EncoderInput encoder;
+FrequencyKeypad frequencyKeypad;
 WifiClient wifi;
 NewsService newsService;
 WeatherService weatherService;
@@ -269,7 +271,8 @@ void loop() {
         const int16_t rotationDelta = (menuOpen || bfoAdjustmentActive)
           ? (inputEvent.delta > 0 ? 1 : -1) : inputEvent.delta;
         if (menuOpen) {
-          if(menuPage==6){ if(fmMode==1){int v=(int)fmActionSelection+rotationDelta;v%=6;if(v<0)v+=6;fmActionSelection=(uint8_t)v;} else if(fmMode==2)fmActionSelection=fmActionSelection?0:1; else if(fmMode==4){const char* chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-.";size_t n=strlen(chars);char ch=fmEditName[fmEditCursor];const char* q=strchr(chars,ch?ch:65);int pos=q?(int)(q-chars):0;pos=(pos+rotationDelta)%(int)n;if(pos<0)pos+=(int)n;fmEditName[fmEditCursor]=chars[pos];fmEditName[fmEditCursor+1]=0;} else {uint8_t n=fmCount+(fmMode==3?1:3);int v=(int)fmSelection+rotationDelta;v%=n;if(v<0)v+=n;fmSelection=(uint8_t)v;} }
+          if(menuPage==19){ frequencyKeypad.rotate(rotationDelta); }
+          else if(menuPage==6){ if(fmMode==1){int v=(int)fmActionSelection+rotationDelta;v%=6;if(v<0)v+=6;fmActionSelection=(uint8_t)v;} else if(fmMode==2)fmActionSelection=fmActionSelection?0:1; else if(fmMode==4){const char* chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-.";size_t n=strlen(chars);char ch=fmEditName[fmEditCursor];const char* q=strchr(chars,ch?ch:65);int pos=q?(int)(q-chars):0;pos=(pos+rotationDelta)%(int)n;if(pos<0)pos+=(int)n;fmEditName[fmEditCursor]=chars[pos];fmEditName[fmEditCursor+1]=0;} else {uint8_t n=fmCount+(fmMode==3?1:3);int v=(int)fmSelection+rotationDelta;v%=n;if(v<0)v+=n;fmSelection=(uint8_t)v;} }
           else if (sliderAdjustmentActive && ((menuPage == 2 && menuSelection == 1))) {
             const int16_t requested = static_cast<int16_t>(display.brightness()) + rotationDelta * 5;
             const uint8_t nextBrightness = static_cast<uint8_t>(constrain(requested, 10, 255));
@@ -333,6 +336,8 @@ void loop() {
           menuPage = 0;
           menuSelection = 0;
           Serial.println("[MENU] opened");
+        } else if (menuPage == 19) {
+          if (!frequencyKeypad.press(radio)) closeMenuToRadio("frequency keypad finished");
         } else if(menuPage==6){ if(fmMode==1){ if(fmActionSelection==0)fmMode=0; else if(fmActionSelection==1||fmActionSelection==2){fmPendingAction=fmActionSelection;fmMode=3;fmSelection=0;} else if(fmActionSelection==4){fmMode=2;fmActionSelection=0;} else {fmPendingAction=fmActionSelection==5?5:3; if(fmPendingAction==5)fmEditName[0]=0;else strncpy(fmEditName,fmSelectedName,sizeof(fmEditName)-1);fmEditName[sizeof(fmEditName)-1]=0;fmEditCursor=0;fmMode=4;} } else if(fmMode==2){if(fmActionSelection==1){bool ok=FileManager::removeFile(fmSelectedPath);fmMessageSet(ok?"Datei geloescht":"Loeschen fehlgeschlagen");fmRefresh();}fmMode=0;} else if(fmMode==4){if(fmEditCursor<sizeof(fmEditName)-2){++fmEditCursor;if(fmEditCursor>=strlen(fmEditName)){fmEditName[fmEditCursor]=65;fmEditName[fmEditCursor+1]=0;}}} else if(fmMode==3){if(fmSelection==0){const char* b=strrchr(fmSelectedPath,47);b=b?b+1:fmSelectedPath;char dest[96];snprintf(dest,sizeof(dest),"%s%s%s",fmPath,strcmp(fmPath,"/")==0?"":"/",b);bool ok=fmPendingAction==1?FileManager::copyFile(fmSelectedPath,dest):FileManager::moveFile(fmSelectedPath,dest);fmMessageSet(ok?"Erledigt":"Aktion fehlgeschlagen");fmMode=0;fmRefresh();}else {uint8_t idx=fmSelection-1;if(idx<fmCount&&fmEntries[idx].directory){strncpy(fmPath,fmEntries[idx].path,sizeof(fmPath)-1);fmPath[sizeof(fmPath)-1]=0;fmSelection=0;fmRefresh();}}}else fmChoose(fmSelection);
         } else if ((menuPage == 1 && menuSelection == 1) || (menuPage == 2 && menuSelection == 1)) {
           if (!sliderAdjustmentActive) {
@@ -347,7 +352,7 @@ void loop() {
             // ATS Mini Dev main-menu order and labels are preserved exactly.
             // Unsupported entries are marked with * in the renderer and stay inert.
             static const uint8_t targetPages[22] = {
-              255, 16, 8, 1, 255, 255, 255, 255, 12, 9, 255,
+              255, 16, 8, 1, 19, 255, 255, 255, 12, 9, 255,
               255, 255, 255, 7, 11, 11, 11, 5, 255, 255, 18
             };
             const uint8_t selectedMainItem = menuSelection;
@@ -645,7 +650,7 @@ void loop() {
     currentWifiIp = wifi.ipAddress();
     lastWifiDisplayRefreshMs = millis();
   }
-  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather);
+  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr);
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
     lastStatusMs=now; const RadioSnapshot& s=radio.snapshot();
