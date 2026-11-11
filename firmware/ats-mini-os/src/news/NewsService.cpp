@@ -140,17 +140,17 @@ uint8_t parseFeedStream(Stream& input,size_t maxBytes,uint8_t source,NewsService
         if(next=='>') break;
         if(tagLen+1<sizeof(tag)) tag[tagLen++]=static_cast<char>(next);
       }
-      tag[tagLen]='\\0';
+      tag[tagLen]='\0';
       if(tag[0]=='!' || tag[0]=='?') continue;
       const bool closing=tag[0]=='/';
       const char* name=tag+(closing?1:0);
-      while(*name==' ' || *name=='\\t') ++name;
+      while(*name==' ' || *name=='\t') ++name;
       if(!closing && (!strncmp(name,"item",4) || !strncmp(name,"entry",5))) {
         insideItem=true; insideTitle=false; title=""; ++blocks;
       } else if(closing && (!strncmp(name,"item",4) || !strncmp(name,"entry",5))) {
         insideItem=false; insideTitle=false;
       } else if(insideItem && !closing && !strncmp(name,"title",5) &&
-                (name[5]=='\\0' || name[5]==' ' || name[5]=='/')) {
+                (name[5]=='\0' || name[5]==' ' || name[5]=='/')) {
         insideTitle=true; title="";
       } else if(insideTitle && closing && !strncmp(name,"title",5)) {
         ++titleTags; addTitle(snap,title,source); insideTitle=false;
@@ -199,7 +199,7 @@ bool loadCachedFeed(uint8_t source,NewsService::Snapshot& snap) {
   if(!cache || cache.isDirectory()) { if(cache) cache.close(); return false; }
   const uint8_t before=snap.count;
   while(cache.available() && snap.count<NewsService::MAX_HEADLINES) {
-    String title=cache.readStringUntil('\\n');
+    String title=cache.readStringUntil('\n');
     title.trim();
     if(title.length()>=4) addTitle(snap,title,source);
   }
