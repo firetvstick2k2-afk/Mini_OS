@@ -10,6 +10,7 @@
 #include "../news/NewsService.h"
 #include "../weather/WeatherService.h"
 #include "../storage/FileManager.h"
+#include "../input/FrequencyKeypad.h"
 
 #if !defined(LILYGO_SI473X)
 #include <esp_rom_gpio.h>
@@ -239,7 +240,7 @@ public:
 class DisplayDriver {
 public:
   bool begin(uint8_t initialBrightness = 180);
-  void render(const RadioSnapshot& state, bool radioReady, bool wifiConnected, const char* lastInputEvent, uint32_t inputEventCount, StationLogoClient* logoClient = nullptr, bool menuOpen = false, uint8_t menuPage = 0, uint8_t menuSelection = 0, uint8_t volume = 25, const char* filePath = "/", FileManager::Entry* fileEntries = nullptr, uint8_t fileCount = 0, uint8_t fileSelection = 0, uint8_t fileMode = 0, uint8_t fileActionSelection = 0, const char* fileSelectedName = "", const char* fileMessage = "", bool sliderAdjustmentActive = false, const char* eibiStation = "", const char* eibiStatus = "", bool eibiAvailable = false, bool eibiDownloading = false, const NewsService::Snapshot* newsSnapshot = nullptr, uint8_t wifiMode = 2, const char* wifiSsid = "", const char* wifiIp = "", bool bootLogEnabled = true, const WeatherService::Snapshot* weatherSnapshot = nullptr);
+  void render(const RadioSnapshot& state, bool radioReady, bool wifiConnected, const char* lastInputEvent, uint32_t inputEventCount, StationLogoClient* logoClient = nullptr, bool menuOpen = false, uint8_t menuPage = 0, uint8_t menuSelection = 0, uint8_t volume = 25, const char* filePath = "/", FileManager::Entry* fileEntries = nullptr, uint8_t fileCount = 0, uint8_t fileSelection = 0, uint8_t fileMode = 0, uint8_t fileActionSelection = 0, const char* fileSelectedName = "", const char* fileMessage = "", bool sliderAdjustmentActive = false, const char* eibiStation = "", const char* eibiStatus = "", bool eibiAvailable = false, bool eibiDownloading = false, const NewsService::Snapshot* newsSnapshot = nullptr, uint8_t wifiMode = 2, const char* wifiSsid = "", const char* wifiIp = "", bool bootLogEnabled = true, const WeatherService::Snapshot* weatherSnapshot = nullptr, const FrequencyKeypad::View* keypadView = nullptr);
   bool isReady() const { return ready_; }
   uint8_t fmLayout() const { return fmLayout_; }
   void setFmLayout(uint8_t mode);
