@@ -2,10 +2,12 @@
 #include <esp_system.h>
 #include <LovyanGFX.hpp>
 #include <LittleFS.h>
+#include <time.h>
 #include "src/radio/RadioCore.h"
 #include "src/system/PerformanceManager.h"
 #include "src/system/BootDiagnostics.h"
 #include "src/system/ClockService.h"
+#include "src/system/MoonCalendar.h"
 #include "src/eibi/EiBiService.h"
 #include "src/display/DisplayDriver.h"
 #include "src/input/EncoderInput.h"
@@ -290,7 +292,7 @@ void loop() {
               Serial.printf("[MENU] volume=%u/63\\n", static_cast<unsigned>(radio.volume()));
             }
           } else {
-            const int16_t itemCount = menuPage == 0 ? 22 : menuPage == 18 ? 2 :
+            const int16_t itemCount = menuPage == 0 ? 23 : menuPage == 18 ? 2 : menuPage == 20 ? 1 :
               menuPage == 2 ? 4 : menuPage == 4 ? 6 : menuPage == 5 ? 11 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
               ((menuPage == 14) ? 4 : (menuPage == 15) ? 5 :
               menuPage == 10 ? 4 : menuPage == 11 ?
@@ -377,7 +379,7 @@ void loop() {
           menuPage = 0;
           menuSelection = 21;
           Serial.println("[WEATHER] report closed");
-        } else if (menuPage == 13 && menuSelection == 0) {
+        } else if (menuPage == 20) {\n          menuPage = 0;\n          menuSelection = 22;\n          Serial.println("[MOON] calendar closed");\n        } else if (menuPage == 13 && menuSelection == 0) {
           menuPage = 0;
           menuSelection = 9;
         } else if (menuPage == 13 && menuSelection == 1) {
@@ -651,7 +653,7 @@ void loop() {
     currentWifiIp = wifi.ipAddress();
     lastWifiDisplayRefreshMs = millis();
   }
-  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr);
+  const MoonCalendar::Snapshot currentMoon = MoonCalendar::calculate(time(nullptr));\n  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon);
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
     lastStatusMs=now; const RadioSnapshot& s=radio.snapshot();
