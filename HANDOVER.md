@@ -2502,3 +2502,13 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Weather-only operation was stable, so the News background worker is re-enabled after `wifi.begin()` using `newsService.begin()`. A start-result diagnostic is logged. Weather worker startup remains unchanged.
 - No TLS verification changes, feed parser changes, layout changes, or Waterfall/CPU changes.
 - **Next user build: Build #55 (Compile-only).** After successful compilation, flash/test both Weather and Newsfeed and inspect boot log for `[NEWS] background worker start result=success`, followed by HTTP/GET diagnostics. This combined-service test must confirm stability; no success is assumed yet.
+
+
+### Build #55 – Display-Terminator und gemeinsamer News-/Wetterbetrieb — 2026-11-11
+- Build #54 am Gerät zeigte eine sichtbare `0` am Ende des Wetter-Ortsnamens und des Newsticker-Ladehinweises.
+- Der Display-Helper `germanAscii()` verwendet nun explizit `output[out]=0;` als Stringterminator. Das ist funktional das C-Nullzeichen und vermeidet eine missverständliche Escape-Schreibweise.
+- News-Hintergrunddienst ist im aktuellen Sketch bereits wieder zum Start vorgesehen. Dabei wurde ein API-Widerspruch gefunden: `ats-mini-os.ino` erwartet ein boolesches Ergebnis von `newsService.begin()`, während Header und Implementierung bisher `void` deklarierten. Header und Implementierung geben jetzt `true` bei erfolgreichem/ bereits laufendem Task und `false` bei Task-Erstellungsfehler zurück.
+- Feed-Abruf erfolgt weiterhin nur, wenn News in der gespeicherten Konfiguration aktiviert und mindestens eine Feed-URL konfiguriert ist. TLS-Zertifikatsprüfung und Parser bleiben unverändert.
+- Commits: `d5afada` (Display-Terminator), `0c56438` (NewsService.h), `f291d61` (NewsService.cpp).
+- Nächster Test: **Build #55 – Compile-only**. Nach erfolgreichem Compile flashen und im Boot-Log `[NEWS] background worker start result=success` sowie anschließend `[NEWS] refresh triggered`, DNS-/HTTP-Status und `cache published headlines=` prüfen.
+- Noch kein Build gestartet und kein Gerät geflasht.
