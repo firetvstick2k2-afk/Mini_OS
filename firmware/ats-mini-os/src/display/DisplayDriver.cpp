@@ -375,8 +375,9 @@ void drawMoonScreen(Canvas& c, const MoonCalendar::Snapshot* moon) {
   if (phase < 0.03f || phase > 0.97f) {
     c.fillCircle(cx,cy,radius,0x2104);
   } else if (!(phase > 0.47f && phase < 0.53f)) {
-    const int offset=static_cast<int>(radius*(1.0f-2.0f*(phase < 0.5f ? phase : phase-0.5f)));
-    c.fillCircle(cx+(phase < 0.5f ? -offset : offset),cy,radius,0x2104);
+    const int offset=static_cast<int>(4.0f*radius*
+      (phase < 0.5f ? -phase : (1.0f-phase)));
+    c.fillCircle(cx+offset,cy,radius,0x2104);
   }
   c.drawCircle(cx,cy,radius,MOON_GOLD);
 
