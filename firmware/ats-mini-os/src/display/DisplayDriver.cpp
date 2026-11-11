@@ -14,6 +14,32 @@ namespace {
 uint16_t BLACK=0x0000, WHITE=0xFFFF, GREEN=0x07E0, CYAN=0x07FF, DARK_GREEN=0x0320, YELLOW=0xFFE0, MUTED=0x7BEF, FREQ_COLOR=0x07E0, UNIT_COLOR=0x07E0, RDS_COLOR=0xFFFF;
 void applyThemePalette(uint8_t index) { const ThemePalette& p=ThemeManager::at(index); BLACK=p.background; WHITE=p.text; GREEN=p.accent; CYAN=p.secondary; DARK_GREEN=p.divider; YELLOW=p.warning; MUTED=p.muted; FREQ_COLOR=p.frequency; UNIT_COLOR=p.frequencyUnit; RDS_COLOR=p.radioText; }
 
+void germanAscii(const char* input, char* output, size_t capacity) {
+  if (!output || !capacity) return;
+  size_t out=0;
+  if (!input) input="";
+  while (*input && out+1<capacity) {
+    const uint8_t first=static_cast<uint8_t>(*input++);
+    const char* replacement=nullptr;
+    if (first==0xC3 && *input) {
+      switch(static_cast<uint8_t>(*input)) {
+        case 0x84: replacement="AE"; break;
+        case 0x96: replacement="OE"; break;
+        case 0x9C: replacement="UE"; break;
+        case 0xA4: replacement="ae"; break;
+        case 0xB6: replacement="oe"; break;
+        case 0xBC: replacement="ue"; break;
+        case 0x9F: replacement="ss"; break;
+        default: break;
+      }
+      if (replacement) ++input;
+      else output[out++]=static_cast<char>(first);
+    } else output[out++]=static_cast<char>(first);
+    if (replacement) while (*replacement && out+1<capacity) output[out++]=*replacement++;
+  }
+  output[out]='\\0';
+}
+
 template <typename Canvas>
 void text(Canvas& d,const char* s,int x,int y,uint16_t c,const lgfx::IFont* f) {
   d.setTextColor(c,BLACK);
@@ -258,8 +284,8 @@ void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8
     c.drawString("PLZ in der WLAN-Webseite einstellen",12,91);
     return;
   }
-  // The selected display font does not contain German umlaut glyphs.
-  const char* displayLocation = strcmp(weather->location, "Münster") == 0 ? "Muenster" : weather->location;
+  char displayLocation[sizeof(weather->location)*2+1];
+  germanAscii(weather->location,displayLocation,sizeof(displayLocation));
   c.drawString(displayLocation,12,8);
   c.setFont(&lgfx::fonts::Font0);
   c.setTextColor(MUTED_TEXT,PANEL);
@@ -958,8 +984,11 @@ void drawTef6686FmNewsfeed(Canvas& c, const RadioSnapshot& s, bool wifiConnected
   const bool haveHeadlines=newsSnapshot && newsSnapshot->hasData && newsSnapshot->count;
   if(haveHeadlines) headlineIndex%=newsSnapshot->count;
   else headlineIndex=0;
-  const char* message=haveHeadlines?newsSnapshot->items[headlineIndex].title:
+  const char* rawMessage=haveHeadlines?newsSnapshot->items[headlineIndex].title:
     (wifiConnected?"NEWSFEED - WARTE AUF MELDUNGEN":"NEWSFEED - WLAN OFFLINE");
+  char displayMessage[NewsService::MAX_HEADLINE_BYTES*2+1];
+  germanAscii(rawMessage,displayMessage,sizeof(displayMessage));
+  const char* message=displayMessage;
   const int textX=ntX+40;
   const int clipX=textX, clipY=ntY+1, clipW=ntW-45, clipH=ntH-2;
   c.setTextColor(GREEN_TEF,BG);
