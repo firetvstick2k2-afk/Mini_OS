@@ -2470,3 +2470,11 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - News-Worker bleibt für diesen isolierten Test deaktiviert; News-Service/Web-UI bleiben eingebunden. Weather-Worker ist aktiviert.
 - Commit: `5b63f06c50b2a8118623ec5627736392989a07ee`.
 - Noch nicht kompiliert oder am Gerät getestet. Nächster Schritt: Compile-only-Workflow, dann flashen und prüfen, ob Geocoding Koordinaten liefert und Bright-Sky-Aufrufe für aktuelle Daten sowie Prognose durchlaufen.
+
+
+### Bright-Sky-Prognose: HTTP-Größenlimit und gefiltertes Parsing — 2026-11-11
+- Der Nutzer meldet, dass die Wetteranzeige weiterhin „Wird geladen …“ zeigt, obwohl die PLZ auf der Webseite eingegeben und gespeichert wurde.
+- Ursache im vorherigen Gerätelog: PLZ-Auflösung, Geocoding und aktuelle Wetterdaten waren erfolgreich. Die Prognoseantwort war 52.091 Bytes groß und wurde vom bisherigen 48.000-Byte-Limit abgewiesen. Da `fetchWeather()` erst nach erfolgreicher Prognose einen vollständigen Snapshot zurückgibt, blieb die Anzeige im Ladezustand.
+- In `WeatherService.cpp` wurde das maximale HTTP-JSON-Limit auf 65.536 Bytes erhöht. Beim ArduinoJson-Parsing der Bright-Sky-Prognose werden nur die benötigten Felder `timestamp`, `temperature`, `precipitation_probability` und `icon` übernommen, um unnötige Stations-/Metadaten aus dem Parse-Dokument herauszuhalten.
+- Commit: `d757a5fa56d3df903750cb5ce663fdaddab5003f`.
+- **Status:** Code committed und erneut aus GitHub verifiziert. Noch kein Compile-only-Build und kein Gerätetest mit diesem Fix. Nutzer startet den Build selbst. Danach prüfen, ob `forecast parsed` und `updated location=...` im Log erscheinen und die Anzeige den Ladezustand verlässt. News-Worker bleibt für den Weather-only-Test deaktiviert.
