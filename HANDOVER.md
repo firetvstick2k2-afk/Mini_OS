@@ -2478,3 +2478,11 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - In `WeatherService.cpp` wurde das maximale HTTP-JSON-Limit auf 65.536 Bytes erhöht. Beim ArduinoJson-Parsing der Bright-Sky-Prognose werden nur die benötigten Felder `timestamp`, `temperature`, `precipitation_probability` und `icon` übernommen, um unnötige Stations-/Metadaten aus dem Parse-Dokument herauszuhalten.
 - Commit: `d757a5fa56d3df903750cb5ce663fdaddab5003f`.
 - **Status:** Code committed und erneut aus GitHub verifiziert. Noch kein Compile-only-Build und kein Gerätetest mit diesem Fix. Nutzer startet den Build selbst. Danach prüfen, ob `forecast parsed` und `updated location=...` im Log erscheinen und die Anzeige den Ladezustand verlässt. News-Worker bleibt für den Weather-only-Test deaktiviert.
+
+
+### Wetteranzeige: Quellen-Footer und Seitenüberschrift entfernt — 2026-11-11
+- Nutzer bestätigt stabilen Betrieb ohne weiteren Reboot und bittet um Entfernen des Textes „Weather data by Open-Meteo.com“ sowie der Überschrift „NAECHSTE TAGE“.
+- In `DisplayDriver.cpp` wurden der Quellenhinweis auf der Wetterseite 1 und 2 sowie die Überschrift auf Seite 2 entfernt. Auch der veraltete Datenquellenhinweis im Lade-/Fehlerzustand wurde entfernt.
+- Wetterdaten, Karten, Layoutpositionen, Seitenumschaltung und Wetterdienst bleiben unverändert.
+- Commit: `dbdbc3995d74489dc6c9198809e5416e6b810640`.
+- Noch nicht kompiliert oder auf dem Gerät getestet. Nutzer startet Compile-only-Build selbst.
