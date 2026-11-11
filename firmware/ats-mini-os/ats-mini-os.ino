@@ -141,6 +141,19 @@ void setup() {
   const bool storageReady = StorageDiscovery::begin();
   const bool settingsReady = settingsStore.begin();
   BootDiagnostics::begin(settingsStore.bootLogEnabled(true));
+
+  // Prepare the News cache folders immediately after LittleFS is mounted,
+  // just like the station-logo folders. This is idempotent and never formats
+  // or removes existing user data.
+  if (storageReady) {
+    bool extraReady = LittleFS.exists("/Extra") || LittleFS.mkdir("/Extra");
+    bool newsReady = extraReady &&
+      (LittleFS.exists("/Extra/News") || LittleFS.mkdir("/Extra/News"));
+    BootDiagnostics::printf("[NEWS] cache directories %s",
+      newsReady ? "ready (/Extra/News)" : "creation failed");
+  } else {
+    BootDiagnostics::write("[NEWS] cache directories skipped: LittleFS unavailable");
+  }
   BootDiagnostics::printf("BOOT START reset_reason=%d free_heap=%u max_block=%u min_free=%u storage=%s partition=%s anchor=%s",
     static_cast<int>(esp_reset_reason()),
     static_cast<unsigned>(ESP.getFreeHeap()),
