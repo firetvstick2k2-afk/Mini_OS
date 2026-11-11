@@ -7,6 +7,7 @@
 #include "../radio/BandManager.h"
 #include "../menus/MenuSSB.h"
 #include "../weather/WeatherService.h"
+#include "../system/MoonCalendar.h"
 #include <LittleFS.h>
 #include <math.h>
 
@@ -412,14 +413,14 @@ template <typename Canvas>
 void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot) {
   const int w = canvas.width();
   const int h = canvas.height();
-  if (page == 18) { drawWeatherScreen(canvas, weatherSnapshot, selection); return; }
+  if (page == 18) { drawWeatherScreen(canvas, weatherSnapshot, selection); return; }\n  if (page == 20) { drawMoonScreen(canvas, moonSnapshot); return; }
   // Main-menu labels intentionally match ATS Mini Dev verbatim.
   // A trailing * marks entries that are not implemented in ATS Mini OS yet.
   static const char* const mainItems[] = {
     "Zurück", "Modulation", "Bänder", "Lautstärke", "Keypad", "DUAL RX*", "VFO A/B*",
     "Frequenz*", "BFO", "STEP", "Suche*", "Scannen*", "Speicher*", "Rauschsperre*",
     "Bandbreite", "AGC/Dämpfung", "Auto-Lautstärke", "Soft-Mute", "Einstellungen",
-    "VHF Spektrum*", "ALL-Band Spektrum*", "Wetterbericht"
+    "VHF Spektrum*", "ALL-Band Spektrum*", "Wetterbericht", "Mondkalender"
   };
   static const char* const volumeItems[] = {
     "Zurück", "Lautstärke", "Stumm (später)"
@@ -699,7 +700,7 @@ void DisplayDriver::setAmLayout(uint8_t mode) {
 void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConnected,
                            const char* lastInputEvent,uint32_t inputEventCount,
                            StationLogoClient* logoClient, bool menuOpen,
-                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading, const NewsService::Snapshot* newsSnapshot, uint8_t wifiMode, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const FrequencyKeypad::View* keypadView) {
+                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading, const NewsService::Snapshot* newsSnapshot, uint8_t wifiMode, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const FrequencyKeypad::View* keypadView, const MoonCalendar::Snapshot* moonSnapshot) {
   if(!ready_)return;
   const uint32_t now=millis();
   const bool returningToRadio = !menuOpen && lastMenuOpen_;
@@ -728,7 +729,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
     if(menuPage==6){if(useSprite_){sprite_.fillSprite(BLACK);drawFileMenu(sprite_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFileMenu(device_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);}return;}
     if (useSprite_) {
       sprite_.fillSprite(BLACK);
-      drawMenu(sprite_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled, weatherSnapshot);
+      drawMenu(sprite_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled, weatherSnapshot, moonSnapshot);
       sprite_.pushSprite(0,0);
     } else {
       device_.fillScreen(BLACK);
