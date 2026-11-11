@@ -2494,3 +2494,11 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Der Helper wird auf den Wetter-Ortsnamen und die Newsticker-Schlagzeile angewendet. Quelldaten/Snapshots bleiben unverändert; nur die für das Display erzeugten Textkopien werden transliteriert. Damit gilt es für beliebige Ortsnamen und Headlines, nicht nur Münster.
 - Commit: `3bc95e50c698148b55857b1ff11870e2a24686ed`.
 - Noch nicht kompiliert oder auf dem Gerät getestet; Nutzer startet Compile-only-Build selbst.
+
+
+### Display terminator correction and News worker reactivation — 2026-11-11
+- Build #54 device test showed a literal trailing `0` after display strings (for example `Muenster0` and `Meldungen werden geladen0`).
+- Root cause: `germanAscii()` wrote the two-character escape `'\\\\0'` instead of the C++ NUL terminator `'\\0'`. Corrected to `output[out]='\\0';`; this affects both weather location and Newsticker text.
+- Weather-only operation was stable, so the News background worker is re-enabled after `wifi.begin()` using `newsService.begin()`. A start-result diagnostic is logged. Weather worker startup remains unchanged.
+- No TLS verification changes, feed parser changes, layout changes, or Waterfall/CPU changes.
+- **Next user build: Build #55 (Compile-only).** After successful compilation, flash/test both Weather and Newsfeed and inspect boot log for `[NEWS] background worker start result=success`, followed by HTTP/GET diagnostics. This combined-service test must confirm stability; no success is assumed yet.
