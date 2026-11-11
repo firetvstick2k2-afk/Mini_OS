@@ -978,12 +978,24 @@ void drawTef6686FmNewsfeed(Canvas& c, const RadioSnapshot& s, bool wifiConnected
   c.setTextDatum(TL_DATUM);
   c.setTextColor(CYAN,BG);
   c.drawString("NT:",ntX+5,ntY+2);
-  // Show each headline for one complete scroll cycle, then advance to the next.
-  static uint8_t headlineIndex=0;
+  // Present headlines in small batches of three. Each headline gets one
+  // complete ticker pass; after three passes the next batch is selected.
+  // Once the final batch is finished, the ticker starts again at headline 1.
+  constexpr uint8_t HEADLINES_PER_BATCH=3;
+  static uint8_t batchStart=0;
+  static uint8_t headlineInBatch=0;
   static uint32_t headlineStartedMs=0;
   const bool haveHeadlines=newsSnapshot && newsSnapshot->hasData && newsSnapshot->count;
-  if(haveHeadlines) headlineIndex%=newsSnapshot->count;
-  else headlineIndex=0;
+  if(haveHeadlines) {
+    const uint8_t count=newsSnapshot->count;
+    if(batchStart>=count) batchStart=0;
+    const uint8_t batchCount=min(HEADLINES_PER_BATCH,static_cast<uint8_t>(count-batchStart));
+    if(headlineInBatch>=batchCount) headlineInBatch=0;
+  } else {
+    batchStart=0;
+    headlineInBatch=0;
+  }
+  const uint8_t headlineIndex=haveHeadlines?static_cast<uint8_t>(batchStart+headlineInBatch):0;
   const char* rawMessage=haveHeadlines?newsSnapshot->items[headlineIndex].title:
     (wifiConnected?"NEWSFEED - WARTE AUF MELDUNGEN":"NEWSFEED - WLAN OFFLINE");
   char displayMessage[NewsService::MAX_HEADLINE_BYTES*2+1];
@@ -1001,7 +1013,16 @@ void drawTef6686FmNewsfeed(Canvas& c, const RadioSnapshot& s, bool wifiConnected
   uint32_t elapsed=millis()-headlineStartedMs;
   if(elapsed>=travelMs) {
     headlineStartedMs=millis();
-    if(haveHeadlines) headlineIndex=static_cast<uint8_t>((headlineIndex+1)%newsSnapshot->count);
+    if(haveHeadlines) {
+      const uint8_t count=newsSnapshot->count;
+      const uint8_t batchCount=min(HEADLINES_PER_BATCH,static_cast<uint8_t>(count-batchStart));
+      ++headlineInBatch;
+      if(headlineInBatch>=batchCount) {
+        headlineInBatch=0;
+        batchStart=static_cast<uint8_t>(batchStart+batchCount);
+        if(batchStart>=count) batchStart=0;
+      }
+    }
     elapsed=0;
   }
   const int offset=static_cast<int>((elapsed/TICKER_STEP_MS)%static_cast<uint32_t>(width+clipW+24));
