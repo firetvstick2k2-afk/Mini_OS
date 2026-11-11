@@ -256,7 +256,6 @@ void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8
     c.setTextColor(MUTED_TEXT,PANEL);
     c.drawString(weather && weather->fetching ? "Wetterdaten werden geladen..." : "Keine Wetterdaten vorhanden",12,66);
     c.drawString("PLZ in der WLAN-Webseite einstellen",12,91);
-    c.drawString("Datenquelle: Open-Meteo.com",12,136);
     return;
   }
   c.drawString(weather->location,12,8);
@@ -299,7 +298,6 @@ void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8
       c.drawString(values[i],x+4,y+15);
     }
   } else {
-    c.setFont(&lgfx::fonts::Font0); c.setTextColor(MUTED_TEXT,PANEL); c.drawString("NAECHSTE TAGE",12,25);
     const int left=7, gap=3, cardW=(w-14-4*gap)/5, top=34, cardH=124;
     for(uint8_t i=0;i<WeatherService::FORECAST_DAYS;++i) {
       const int x=left+i*(cardW+gap);
@@ -319,10 +317,6 @@ void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8
       c.drawFastHLine(x+5,top+122,cardW-10,0x5DDF);
     }
   }
-  c.setTextDatum(TL_DATUM);
-  c.setFont(&lgfx::fonts::Font0);
-  c.setTextColor(MUTED_TEXT,PANEL);
-  c.drawString("Weather data by Open-Meteo.com",10,h-12);
 }
 
 template <typename Canvas>
