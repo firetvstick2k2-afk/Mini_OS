@@ -2512,3 +2512,12 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Commits: `d5afada` (Display-Terminator), `0c56438` (NewsService.h), `f291d61` (NewsService.cpp).
 - Nächster Test: **Build #55 – Compile-only**. Nach erfolgreichem Compile flashen und im Boot-Log `[NEWS] background worker start result=success` sowie anschließend `[NEWS] refresh triggered`, DNS-/HTTP-Status und `cache published headlines=` prüfen.
 - Noch kein Build gestartet und kein Gerät geflasht.
+
+
+### Build #56 – News-/Wetter-HTTPS-Isolation nach wiederholtem Reset — 2026-11-11
+- Build #55 Laufzeitlog: News-Worker startet, n-tv.de liefert HTTP 200, RSS-Parser liest 12 Headlines und veröffentlicht den Cache. Gleichzeitig startet der Weather-Worker seine HTTPS-Abrufkette.
+- Während der parallelen Requests sinkt der freie Heap deutlich; der Log endet nach dem erfolgreichen News-Abruf bei ca. 9,3 s und der ESP32 startet erneut. Die genaue Reset-Ursache ist aus dem abgeschnittenen Log noch nicht bewiesen; parallele HTTPS-/Heap-Last ist der stärkste aktuelle Verdacht.
+- Zur sofortigen Stabilisierung wird der News-Hintergrundtask wieder pausiert. NewsService und Web-UI-Konfiguration bleiben erhalten. Wetterdienst bleibt aktiv. Die NewsService-Startstatus-API bleibt bestehen.
+- **Nächster Nutzer-Build: Build #56 – Compile-only.** Danach flashen und prüfen, ob Wetter allein wieder stabil durchläuft. Newsticker-Hintergrundabrufe bleiben bis zu einer serialisierten Netzwerk-/Speicherlösung pausiert.
+- Keine TLS-Abschwächung, keine Änderungen an Parser, Layout, Waterfall oder CPU-Taktung.
+- Commit: `cec4a10`.
