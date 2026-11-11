@@ -7,11 +7,9 @@ constexpr uint8_t kFm = 0;
 constexpr uint8_t kLsb = 1;
 constexpr uint8_t kUsb = 2;
 constexpr uint8_t kAm = 3;
-constexpr char* const kKeys[16] = {
-  const_cast<char*>("1"), const_cast<char*>("2"), const_cast<char*>("3"), const_cast<char*>("BS"),
-  const_cast<char*>("4"), const_cast<char*>("5"), const_cast<char*>("6"), const_cast<char*>("0"),
-  const_cast<char*>("7"), const_cast<char*>("8"), const_cast<char*>("9"), const_cast<char*>("."),
-  const_cast<char*>("OK"), const_cast<char*>("UNIT"), const_cast<char*>(""), const_cast<char*>("CLOSE")
+constexpr const char* kKeys[16] = {
+  "1", "2", "3", "BS", "4", "5", "6", "0",
+  "7", "8", "9", ".", "OK", "UNIT", "", "CLOSE"
 };
 
 RadioModulation toRadioMode(uint8_t mode) {
