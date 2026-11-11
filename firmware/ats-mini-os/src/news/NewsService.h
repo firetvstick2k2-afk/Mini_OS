@@ -17,7 +17,7 @@ public:
   void setConfiguration(const Configuration& config);
   void publish(const Snapshot& updated);
   void markStale();
-  void begin();
+  bool begin();
   void update(bool wifiConnected);
   static bool validFeedUrl(const char* url);
 private:
