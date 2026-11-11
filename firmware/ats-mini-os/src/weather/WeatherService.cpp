@@ -237,11 +237,19 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
   const char* localityName = locality["name"] | "";
   const char* municipalityName = locality["municipality"]["name"] | "";
   String searchName = municipalityName[0] ? String(municipalityName) : String(localityName);
+  searchName.trim();
+  // OpenPLZ may return administrative labels such as "Münster, Stadt".
+  // Open-Meteo expects the actual place name, so remove this suffix before
+  // geocoding. Keep the normalized name for the display snapshot as well.
+  if (searchName.endsWith(", Stadt")) {
+    searchName.remove(searchName.length() - 7);
+    searchName.trim();
+  }
   if (!searchName.length()) {
     BootDiagnostics::write("[WEATHER] OpenPLZ result has no locality name");
     return false;
   }
-  BootDiagnostics::printf("[WEATHER] postcode resolved locality='%s' municipality='%s'",
+  BootDiagnostics::printf("[WEATHER] postcode resolved geocoding_name='%s' municipality='%s'",
     searchName.c_str(), municipalityName);
 
   // Open-Meteo is used only as a place-name geocoder here; all weather data
