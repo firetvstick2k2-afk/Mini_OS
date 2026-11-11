@@ -2521,3 +2521,10 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - **Nächster Nutzer-Build: Build #56 – Compile-only.** Danach flashen und prüfen, ob Wetter allein wieder stabil durchläuft. Newsticker-Hintergrundabrufe bleiben bis zu einer serialisierten Netzwerk-/Speicherlösung pausiert.
 - Keine TLS-Abschwächung, keine Änderungen an Parser, Layout, Waterfall oder CPU-Taktung.
 - Commit: `cec4a10`.
+
+
+## News ticker batching / memory-safe reactivation plan
+- Build #57: the TEF6686 Newsfeed ticker now presents cached headlines in batches of three. Each headline scrolls through once; after three headlines it advances to the next batch, then wraps to the first batch after the final available headline.
+- The background News worker remains paused. Build #55 showed RSS and Weather HTTPS requests overlapping immediately before a device reset; the exact reset cause is not yet proven. Build #56 must first confirm Weather-only stability.
+- RSS currently reads the complete HTTP response into a String (the observed n-tv response was about 70 KB) and parsing creates temporary String copies. Merely limiting the displayed headline count does not bound that download allocation. Before re-enabling News, reduce peak memory by parsing incrementally or using a bounded response/parser strategy, and serialize News/Weather HTTPS work so their TLS handshakes and response buffers do not overlap.
+- Next compile-only workflow for the ticker change: Build #57. News background fetching remains intentionally disabled in this build; test the Weather-only firmware first.
