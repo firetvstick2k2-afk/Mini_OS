@@ -416,7 +416,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   // Main-menu labels intentionally match ATS Mini Dev verbatim.
   // A trailing * marks entries that are not implemented in ATS Mini OS yet.
   static const char* const mainItems[] = {
-    "Zurück", "Modulation", "Bänder", "Lautstärke", "Keypad*", "DUAL RX*", "VFO A/B*",
+    "Zurück", "Modulation", "Bänder", "Lautstärke", "Keypad", "DUAL RX*", "VFO A/B*",
     "Frequenz*", "BFO", "STEP", "Suche*", "Scannen*", "Speicher*", "Rauschsperre*",
     "Bandbreite", "AGC/Dämpfung", "Auto-Lautstärke", "Soft-Mute", "Einstellungen",
     "VHF Spektrum*", "ALL-Band Spektrum*", "Wetterbericht"
