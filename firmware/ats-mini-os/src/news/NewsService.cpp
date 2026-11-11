@@ -295,12 +295,13 @@ void NewsService::publish(const Snapshot& updated) {
 }
 void NewsService::markStale() { portENTER_CRITICAL(&snapshotMux); snapshot_.stale=true; portEXIT_CRITICAL(&snapshotMux); }
 NewsService::Snapshot NewsService::snapshot() const { Snapshot copy; portENTER_CRITICAL(&snapshotMux); copy=snapshot_; portEXIT_CRITICAL(&snapshotMux); return copy; }
-void NewsService::begin() {
+bool NewsService::begin() {
   BootDiagnostics::write("[NEWS] begin entered");
-  if(workerRunning) { BootDiagnostics::write("[NEWS] worker already running"); return; }
+  if(workerRunning) { BootDiagnostics::write("[NEWS] worker already running"); return true; }
   workerInstance=this;
-  if(xTaskCreatePinnedToCore(newsWorker,"NewsFeed",TASK_STACK_WORDS,nullptr,TASK_PRIORITY,nullptr,TASK_CORE)==pdPASS) { workerRunning=true; BootDiagnostics::write("[NEWS] worker task created"); }
-  else BootDiagnostics::write("[NEWS] ERROR: worker task creation failed");
+  if(xTaskCreatePinnedToCore(newsWorker,"NewsFeed",TASK_STACK_WORDS,nullptr,TASK_PRIORITY,nullptr,TASK_CORE)==pdPASS) { workerRunning=true; BootDiagnostics::write("[NEWS] worker task created"); return true; }
+  BootDiagnostics::write("[NEWS] ERROR: worker task creation failed");
+  return false;
 }
 void NewsService::update(bool wifiConnected) {
   portENTER_CRITICAL(&configMux); workerWifiConnected=wifiConnected; portEXIT_CRITICAL(&configMux);
