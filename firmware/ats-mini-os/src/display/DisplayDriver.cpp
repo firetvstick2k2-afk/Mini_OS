@@ -477,7 +477,8 @@ template <typename Canvas>
 void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const MoonCalendar::Snapshot* moonSnapshot) {
   const int w = canvas.width();
   const int h = canvas.height();
-  if (page == 18) { drawWeatherScreen(canvas, weatherSnapshot, selection); return; }\n  if (page == 20) { drawMoonScreen(canvas, moonSnapshot); return; }
+  if (page == 18) { drawWeatherScreen(canvas, weatherSnapshot, selection); return; }
+  if (page == 20) { drawMoonScreen(canvas, moonSnapshot); return; }
   // Main-menu labels intentionally match ATS Mini Dev verbatim.
   // A trailing * marks entries that are not implemented in ATS Mini OS yet.
   static const char* const mainItems[] = {
