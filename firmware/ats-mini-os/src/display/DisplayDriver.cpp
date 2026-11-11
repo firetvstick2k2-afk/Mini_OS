@@ -349,6 +349,70 @@ void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8
 }
 
 template <typename Canvas>
+void drawMoonScreen(Canvas& c, const MoonCalendar::Snapshot* moon) {
+  const int w=c.width();
+  constexpr uint16_t BLUE=0x001F, CYAN=0x07FF, GREEN=0x07E0;
+  constexpr uint16_t WHITE_TEXT=0xFFFF, MUTED_TEXT=0x8410, MOON_GOLD=0xFFE0;
+  c.fillScreen(BLACK);
+  c.drawRoundRect(3,3,w-6,164,6,BLUE);
+  c.setTextDatum(TL_DATUM);
+  c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  c.setTextColor(CYAN,BLACK);
+  c.drawString("MONDKALENDER",12,8);
+  c.drawFastHLine(10,28,w-20,BLUE);
+  if (!moon || !moon->valid) {
+    c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+    c.setTextColor(MUTED_TEXT,BLACK);
+    c.drawString("Warte auf gueltige Uhrzeit",18,65);
+    c.setFont(&lgfx::fonts::Font2);
+    c.drawString("WLAN-Zeitsynchronisation erforderlich",18,91);
+    return;
+  }
+
+  const int cx=66, cy=87, radius=34;
+  c.fillCircle(cx,cy,radius,MOON_GOLD);
+  const float phase=moon->phase;
+  if (phase < 0.03f || phase > 0.97f) {
+    c.fillCircle(cx,cy,radius,0x2104);
+  } else if (!(phase > 0.47f && phase < 0.53f)) {
+    const int offset=static_cast<int>(radius*(1.0f-2.0f*(phase < 0.5f ? phase : phase-0.5f)));
+    c.fillCircle(cx+(phase < 0.5f ? -offset : offset),cy,radius,0x2104);
+  }
+  c.drawCircle(cx,cy,radius,MOON_GOLD);
+
+  c.setTextColor(GREEN,BLACK);
+  c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  c.drawString(moon->phaseName,119,42);
+  char value[32];
+  snprintf(value,sizeof(value),"%u%% beleuchtet",moon->illuminationPercent);
+  c.setTextColor(WHITE_TEXT,BLACK);
+  c.setFont(&lgfx::fonts::FreeSans9pt7b);
+  c.drawString(value,119,66);
+  snprintf(value,sizeof(value),"Mondalter: %.1f Tage",moon->ageDays);
+  c.setFont(&lgfx::fonts::Font2);
+  c.setTextColor(MUTED_TEXT,BLACK);
+  c.drawString(value,119,88);
+
+  auto drawEvent = [&](const char* label, time_t epoch, int y) {
+    struct tm local{};
+    char dateText[28]="--";
+    if (epoch > 0 && localtime_r(&epoch,&local)) {
+      strftime(dateText,sizeof(dateText),"%d.%m. %H:%M", &local);
+    }
+    c.setFont(&lgfx::fonts::Font0);
+    c.setTextColor(CYAN,BLACK);
+    c.drawString(label,12,y);
+    c.setTextColor(WHITE_TEXT,BLACK);
+    c.drawRightString(dateText,w-12,y);
+  };
+  drawEvent("NAECHSTER VOLLMOND",moon->nextFullMoon,119);
+  drawEvent("NAECHSTER NEUMOND",moon->nextNewMoon,139);
+  c.setFont(&lgfx::fonts::Font0);
+  c.setTextColor(MUTED_TEXT,BLACK);
+  c.drawString("Zeiten: Lokalzeit",12,153);
+}
+
+template <typename Canvas>
 void drawFrequencyKeypad(Canvas& c, const FrequencyKeypad::View& view) {
   const int boxX=6, boxY=2, boxW=308, boxH=166;
   const uint16_t frameBlue=0x001F, brightBlue=0x07FF;
@@ -733,7 +797,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
       sprite_.pushSprite(0,0);
     } else {
       device_.fillScreen(BLACK);
-      drawMenu(device_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled, weatherSnapshot);
+      drawMenu(device_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled, weatherSnapshot, moonSnapshot);
     }
     return;
   }
