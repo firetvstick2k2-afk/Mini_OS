@@ -379,7 +379,11 @@ void loop() {
           menuPage = 0;
           menuSelection = 21;
           Serial.println("[WEATHER] report closed");
-        } else if (menuPage == 20) {\n          menuPage = 0;\n          menuSelection = 22;\n          Serial.println("[MOON] calendar closed");\n        } else if (menuPage == 13 && menuSelection == 0) {
+        } else if (menuPage == 20) {
+          menuPage = 0;
+          menuSelection = 22;
+          Serial.println("[MOON] calendar closed");
+        } else if (menuPage == 13 && menuSelection == 0) {
           menuPage = 0;
           menuSelection = 9;
         } else if (menuPage == 13 && menuSelection == 1) {
@@ -653,7 +657,8 @@ void loop() {
     currentWifiIp = wifi.ipAddress();
     lastWifiDisplayRefreshMs = millis();
   }
-  const MoonCalendar::Snapshot currentMoon = MoonCalendar::calculate(time(nullptr));\n  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon);
+  const MoonCalendar::Snapshot currentMoon = MoonCalendar::calculate(time(nullptr));
+  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon);
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
     lastStatusMs=now; const RadioSnapshot& s=radio.snapshot();
