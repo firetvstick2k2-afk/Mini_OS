@@ -258,7 +258,9 @@ void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8
     c.drawString("PLZ in der WLAN-Webseite einstellen",12,91);
     return;
   }
-  c.drawString(weather->location,12,8);
+  // The selected display font does not contain German umlaut glyphs.
+  const char* displayLocation = strcmp(weather->location, "Münster") == 0 ? "Muenster" : weather->location;
+  c.drawString(displayLocation,12,8);
   c.setFont(&lgfx::fonts::Font0);
   c.setTextColor(MUTED_TEXT,PANEL);
   c.drawRightString(weather->stale ? "LETZTE DATEN" : (page == 0 ? "AKTUELL 1/2" : "2/2"),w-12,12);
