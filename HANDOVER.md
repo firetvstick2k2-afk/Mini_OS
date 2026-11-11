@@ -2486,3 +2486,11 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Wetterdaten, Karten, Layoutpositionen, Seitenumschaltung und Wetterdienst bleiben unverändert.
 - Commit: `dbdbc3995d74489dc6c9198809e5416e6b810640`.
 - Noch nicht kompiliert oder auf dem Gerät getestet. Nutzer startet Compile-only-Build selbst.
+
+
+### Deutsche Umlaute in Wetter-Ortsname und News-Ticker — 2026-11-11
+- Nutzer weist darauf hin, dass nicht nur „Münster“ im Wetterkopf, sondern auch Umlaute im Newsticker nicht von den verwendeten Display-Fonts dargestellt werden.
+- In `DisplayDriver.cpp` wurde ein gemeinsamer UTF-8-zu-ASCII-Renderer-Helper ergänzt: Ä/ä → AE/ae, Ö/ö → OE/oe, Ü/ü → UE/ue, ß → ss.
+- Der Helper wird auf den Wetter-Ortsnamen und die Newsticker-Schlagzeile angewendet. Quelldaten/Snapshots bleiben unverändert; nur die für das Display erzeugten Textkopien werden transliteriert. Damit gilt es für beliebige Ortsnamen und Headlines, nicht nur Münster.
+- Commit: `3bc95e50c698148b55857b1ff11870e2a24686ed`.
+- Noch nicht kompiliert oder auf dem Gerät getestet; Nutzer startet Compile-only-Build selbst.
