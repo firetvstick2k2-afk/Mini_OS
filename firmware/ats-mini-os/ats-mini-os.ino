@@ -364,7 +364,8 @@ void loop() {
                 static_cast<unsigned>(selectedMainItem));
             } else {
               menuPage = targetPage;
-              if (menuPage == 8) menuSelection = static_cast<uint8_t>(radio.currentBandIndex() + 1);
+              if (menuPage == 19) frequencyKeypad.open(radio.snapshot());
+              else if (menuPage == 8) menuSelection = static_cast<uint8_t>(radio.currentBandIndex() + 1);
               else if (menuPage == 11 && selectedMainItem == 16) {
                 menuSelection = radio.snapshot().modulation == RadioModulation::FM ? 0 : 10;
               } else if (menuPage == 11 && selectedMainItem == 17) menuSelection = 6;
