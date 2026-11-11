@@ -353,9 +353,9 @@ void loop() {
         } else if (menuPage == 0) {
             // ATS Mini Dev main-menu order and labels are preserved exactly.
             // Unsupported entries are marked with * in the renderer and stay inert.
-            static const uint8_t targetPages[22] = {
+            static const uint8_t targetPages[23] = {
               255, 16, 8, 1, 19, 255, 255, 255, 12, 9, 255,
-              255, 255, 255, 7, 11, 11, 11, 5, 255, 255, 18
+              255, 255, 255, 7, 11, 11, 11, 5, 255, 255, 18, 20
             };
             const uint8_t selectedMainItem = menuSelection;
             const uint8_t targetPage = targetPages[selectedMainItem];
