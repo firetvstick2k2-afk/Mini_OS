@@ -5,6 +5,7 @@
 
 namespace {
 constexpr double kSynodicMonthDays = 29.530588853;
+constexpr double kPi = 3.14159265358979323846;
 constexpr double kKnownNewMoonUtc = 947182440.0; // 2000-01-06 18:14 UTC
 constexpr time_t kValidEpochFloor = 1700000000;
 
@@ -32,7 +33,7 @@ MoonCalendar::Snapshot MoonCalendar::calculate(time_t now) {
 
   result.ageDays = static_cast<float>(age);
   result.phase = static_cast<float>(age / kSynodicMonthDays);
-  const double illumination = (1.0 - cos(2.0 * M_PI * result.phase)) * 50.0;
+  const double illumination = (1.0 - cos(2.0 * kPi * result.phase)) * 50.0;
   result.illuminationPercent = static_cast<uint8_t>(
     constrain(static_cast<int>(lround(illumination)), 0, 100));
   strlcpy(result.phaseName, phaseName(result.phase), sizeof(result.phaseName));
