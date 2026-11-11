@@ -348,6 +348,67 @@ void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8
 }
 
 template <typename Canvas>
+void drawFrequencyKeypad(Canvas& c, const FrequencyKeypad::View& view) {
+  const int boxX=6, boxY=2, boxW=308, boxH=166;
+  const uint16_t frameBlue=0x001F, brightBlue=0x07FF;
+  c.fillRect(boxX,boxY,boxW,boxH,BLACK);
+  c.drawRoundRect(boxX,boxY,boxW,boxH,4,frameBlue);
+  c.drawRoundRect(boxX+1,boxY+1,boxW-2,boxH-2,3,frameBlue);
+
+  const int displayH=26;
+  c.fillRect(boxX+8,boxY+15,boxW-100,displayH,BLACK);
+  c.drawRoundRect(boxX+8,boxY+15,boxW-100,displayH,2,view.rangeError?0xF800:frameBlue);
+  c.setTextDatum(MC_DATUM);
+  c.setTextColor(view.rangeError?0xF800:brightBlue,BLACK);
+  char displayBuf[24];
+  snprintf(displayBuf,sizeof(displayBuf),"%s %s",
+    view.input[0]?view.input:"---",view.inputInMHz?"MHz":"kHz");
+  c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  c.drawString(displayBuf,boxX+8+(boxW-100)/2,boxY+15+displayH/2);
+
+  const int modeX=boxX+boxW-88, modeY=boxY+15, modeW=80, modeH=displayH;
+  const bool modeSelected=view.index==16;
+  if(modeSelected) {
+    c.fillRoundRect(modeX,modeY,modeW,modeH,2,brightBlue);
+    c.setTextColor(BLACK,brightBlue);
+  } else {
+    c.fillRoundRect(modeX,modeY,modeW,modeH,2,0x1084);
+    c.setTextColor(brightBlue,0x1084);
+  }
+  c.drawRoundRect(modeX,modeY,modeW,modeH,2,frameBlue);
+  static const char* const modes[]={"FM","LSB","USB","AM"};
+  c.setTextDatum(MC_DATUM);
+  c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  c.drawString(modes[view.mode&3],modeX+modeW/2,modeY+modeH/2);
+
+  static const char* const keys[16]={
+    "1","2","3","BS","4","5","6","0",
+    "7","8","9",".","OK","UNIT","","CLOSE"
+  };
+  const int startX=boxX+8,startY=boxY+45,btnW=68,btnH=27,gapX=5,gapY=2;
+  for(int i=0;i<16;++i) {
+    if(i==14) continue;
+    const int col=i%4,row=i/4;
+    const int x=startX+col*(btnW+gapX),y=startY+row*(btnH+gapY);
+    const bool selected=i==view.index;
+    if(selected) {
+      c.fillRoundRect(x,y,btnW,btnH,3,brightBlue);
+      c.drawRoundRect(x,y,btnW,btnH,3,0xFFFF);
+      c.setTextColor(BLACK,brightBlue);
+    } else {
+      c.fillRoundRect(x,y,btnW,btnH,3,0x0841);
+      c.drawRoundRect(x,y,btnW,btnH,3,frameBlue);
+      c.drawRoundRect(x+1,y+1,btnW-2,btnH-2,2,frameBlue);
+      c.setTextColor(brightBlue,0x0841);
+    }
+    c.setTextDatum(MC_DATUM);
+    c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+    const char* label=i==13?(view.inputInMHz?"MHz":"kHz"):keys[i];
+    c.drawString(label,x+btnW/2,y+btnH/2);
+  }
+}
+
+template <typename Canvas>
 void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot) {
   const int w = canvas.width();
   const int h = canvas.height();
@@ -649,7 +710,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   if (returningToRadio) lastGeneration_ = UINT32_MAX;
   // Redraw the file manager promptly while the encoder is moving; this also
   // keeps the selection frame visually attached to the active row.
-  const uint32_t redrawInterval = menuOpen ? ((menuPage==6) ? 20 : 500) : 40;
+  const uint32_t redrawInterval = menuOpen ? ((menuPage==6 || menuPage==19) ? 20 : 500) : 40;
   if(!returningToRadio && s.generation==lastGeneration_ && now-lastDrawMs_<redrawInterval && !menuStateChanged)return;
   lastGeneration_=s.generation;
   lastDrawMs_=now;
