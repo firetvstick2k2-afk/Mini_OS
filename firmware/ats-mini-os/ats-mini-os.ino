@@ -206,10 +206,10 @@ void setup() {
   BootDiagnostics::printf("[BOOT][STAGE] before wifi.begin free_heap=%u max_block=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
   wifi.begin();
   BootDiagnostics::printf("[BOOT][STAGE] after wifi.begin free_heap=%u max_block=%u min_free=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
-  // TEMPORARY ISOLATION TEST:
-  // Do not start the News HTTPS worker while testing Weather by itself.
-  // NewsService remains attached to the web UI; no News code/settings are removed.
-  BootDiagnostics::write("[NEWS] background worker temporarily disabled for Weather-only test");
+  // Weather-only testing is complete; start both background services.
+  const bool newsStarted = newsService.begin();
+  BootDiagnostics::printf("[NEWS] background worker start result=%s",
+    newsStarted ? "success" : "failed");
   // Start Weather normally so saved postcode settings are loaded and its
   // HTTPS request stages are captured by BootDiagnostics.
   const bool weatherStarted = weatherService.begin();
