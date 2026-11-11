@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+#include <LittleFS.h>
 #include <string.h>
 #include <esp_heap_caps.h>
 #include "../system/BootDiagnostics.h"
@@ -111,30 +112,62 @@ void addTitle(NewsService::Snapshot& snap,const String& raw,uint8_t source) {
   snap.items[snap.count].title[n]='\0';
   snap.items[snap.count].sourceIndex=source; ++snap.count;
 }
-void parseFeed(const String& xml,uint8_t source,NewsService::Snapshot& snap) {
-  int pos=0,next=0; String block,title;
-  uint16_t blocks=0, titleTags=0;
+const char* cachePath(uint8_t source) {
+  static char path[40];
+  snprintf(path,sizeof(path),"/Extra/News/feed%u.xml",static_cast<unsigned>(source+1));
+  return path;
+}
+
+// Parse RSS/Atom directly from LittleFS; only one bounded title buffer is in RAM.
+uint8_t parseFeedFile(const char* path,uint8_t source,NewsService::Snapshot& snap) {
+  File file=LittleFS.open(path,FILE_READ);
+  if(!file || file.isDirectory()) { if(file) file.close(); return 0; }
+  char tag[32]={}; size_t tagLen=0;
+  String title; title.reserve(256);
+  bool insideItem=false, insideTitle=false;
   const uint8_t before=snap.count;
-  // RSS 2.0 <item>, RSS 1.0 <item>, and Atom <entry> are supported.
-  while(snap.count<NewsService::MAX_HEADLINES) {
-    int item=xml.indexOf("<item",pos), entry=xml.indexOf("<entry",pos);
-    if(item<0 && entry<0) break;
-    bool atom=(entry>=0 && (item<0 || entry<item));
-    int start=atom?entry:item;
-    int end=xml.indexOf(atom?"</entry>":"</item>",start);
-    if(end<0) break;
-    block=xml.substring(start,end+ (atom?8:7));
-    ++blocks;
-    if(extractTag(block,0,"title",title,next)) {
-      ++titleTags;
-      addTitle(snap,title,source);
+  uint16_t blocks=0,titleTags=0;
+  while(file.available() && snap.count<NewsService::MAX_HEADLINES) {
+    const int value=file.read(); if(value<0) break;
+    const char ch=static_cast<char>(value);
+    if(ch=='<') {
+      tagLen=0;
+      while(file.available()) {
+        const int next=file.read();
+        if(next<0 || next=='>') break;
+        if(tagLen+1<sizeof(tag)) tag[tagLen++]=static_cast<char>(next);
+      }
+      tag[tagLen]='\\0';
+      if(tag[0]=='!' || tag[0]=='?') continue;
+      const bool closing=tag[0]=='/';
+      const char* name=tag+(closing?1:0);
+      while(*name==' ' || *name=='\\t') ++name;
+      if(!closing && (!strncmp(name,"item",4) || !strncmp(name,"entry",5))) {
+        insideItem=true; insideTitle=false; title=""; ++blocks;
+      } else if(closing && (!strncmp(name,"item",4) || !strncmp(name,"entry",5))) {
+        insideItem=false; insideTitle=false;
+      } else if(insideItem && !closing && !strncmp(name,"title",5) &&
+                (name[5]=='\\0' || name[5]==' ' || name[5]=='/')) {
+        insideTitle=true; title="";
+      } else if(insideTitle && closing && !strncmp(name,"title",5)) {
+        ++titleTags; addTitle(snap,title,source); insideTitle=false;
+      }
+      continue;
     }
-    pos=end+(atom?8:7);
+    if(insideItem && insideTitle && title.length()<512) title+=(char)ch;
   }
-  BootDiagnostics::printf("[NEWS] parser feed=%u format_blocks=%u title_tags=%u added=%u total=%u",
-    static_cast<unsigned>(source + 1), static_cast<unsigned>(blocks),
-    static_cast<unsigned>(titleTags), static_cast<unsigned>(snap.count - before),
+  file.close();
+  BootDiagnostics::printf("[NEWS] streaming parser feed=%u blocks=%u title_tags=%u added=%u total=%u",
+    static_cast<unsigned>(source+1),static_cast<unsigned>(blocks),
+    static_cast<unsigned>(titleTags),static_cast<unsigned>(snap.count-before),
     static_cast<unsigned>(snap.count));
+  return static_cast<uint8_t>(snap.count-before);
+}
+bool loadCachedFeed(uint8_t source,NewsService::Snapshot& snap) {
+  const uint8_t added=parseFeedFile(cachePath(source),source,snap);
+  if(added) BootDiagnostics::printf("[NEWS] using LittleFS cache feed=%u headlines=%u",
+    static_cast<unsigned>(source+1),static_cast<unsigned>(added));
+  return added>0;
 }
 bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
   BootDiagnostics::printf("[NEWS] fetch start feed=%u", static_cast<unsigned>(source + 1));
@@ -199,42 +232,52 @@ bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
       static_cast<unsigned>(source + 1), length, static_cast<unsigned>(MAX_RESPONSE_BYTES));
     http.end(); return false;
   }
-  // HTTPClient::getString() decodes Transfer-Encoding: chunked correctly.
-  // Reading getStreamPtr() directly would expose the raw chunk framing (e.g. "6000\\r\\n")
-  // and make the XML parser see invalid data.
-  const uint32_t bodyStartMs = millis();
-  logNewsResources("before_body_read");
-  String body = http.getString();
-  logNewsResources("after_body_read");
-  const uint32_t bodyElapsedMs = millis() - bodyStartMs;
-  http.end();
-  BootDiagnostics::printf("[NEWS] HTTPClient body read feed=%u bytes=%u elapsed_ms=%lu",
-    static_cast<unsigned>(source + 1), static_cast<unsigned>(body.length()),
-    static_cast<unsigned long>(bodyElapsedMs));
-  BootDiagnostics::printf("[NEWS] body received feed=%u bytes=%u declared=%d",
-    static_cast<unsigned>(source + 1), static_cast<unsigned>(body.length()), length);
-  if(body.length()) {
-    String preview=body.substring(0, body.length()<180 ? body.length() : 180);
-    preview.replace("\r"," "); preview.replace("\n"," ");
-    BootDiagnostics::printf("[NEWS] body preview feed=%u: %s",
-      static_cast<unsigned>(source + 1), preview.c_str());
+  // Store the response on flash instead of allocating the complete RSS XML in RAM.
+  // A known, bounded Content-Length prevents unbounded cache writes.
+  if(length<32 || length>static_cast<int>(MAX_RESPONSE_BYTES)) {
+    BootDiagnostics::printf("[NEWS] abort feed=%u reason=invalid_content_length bytes=%d",
+      static_cast<unsigned>(source+1),length);
+    http.end(); return false;
   }
-  if(body.length()<32) {
-    BootDiagnostics::printf("[NEWS] abort feed=%u reason=body_too_short bytes=%u",
-      static_cast<unsigned>(source + 1), static_cast<unsigned>(body.length()));
+  const String transfer=http.header("Transfer-Encoding");
+  const String encoding=http.header("Content-Encoding");
+  if((transfer.length() && !transfer.equalsIgnoreCase("identity")) ||
+     (encoding.length() && !encoding.equalsIgnoreCase("identity"))) {
+    BootDiagnostics::printf("[NEWS] abort feed=%u reason=unsupported_encoding",static_cast<unsigned>(source+1));
+    http.end(); return false;
+  }
+  if(!LittleFS.exists("/Extra")) LittleFS.mkdir("/Extra");
+  if(!LittleFS.exists("/Extra/News")) LittleFS.mkdir("/Extra/News");
+  char tempPath[48];
+  snprintf(tempPath,sizeof(tempPath),"/Extra/News/feed%u.tmp",static_cast<unsigned>(source+1));
+  File temp=LittleFS.open(tempPath,FILE_WRITE);
+  if(!temp) { http.end(); return false; }
+  const uint32_t bodyStartMs=millis();
+  logNewsResources("before_stream_to_littlefs");
+  const int written=http.writeToStream(&temp);
+  temp.flush(); temp.close();
+  const uint32_t bodyElapsedMs=millis()-bodyStartMs;
+  http.end();
+  logNewsResources("after_stream_to_littlefs");
+  BootDiagnostics::printf("[NEWS] RSS streamed to LittleFS feed=%u written=%d declared=%d elapsed_ms=%lu",
+    static_cast<unsigned>(source+1),written,length,static_cast<unsigned long>(bodyElapsedMs));
+  if(written!=length) {
+    LittleFS.remove(tempPath);
+    BootDiagnostics::printf("[NEWS] abort feed=%u reason=incomplete_cache_write",static_cast<unsigned>(source+1));
     return false;
   }
-  if(body.length()>=MAX_RESPONSE_BYTES) {
-    BootDiagnostics::printf("[NEWS] abort feed=%u reason=body_limit_reached bytes=%u",
-      static_cast<unsigned>(source + 1), static_cast<unsigned>(body.length()));
+  const char* finalPath=cachePath(source);
+  LittleFS.remove(finalPath);
+  if(!LittleFS.rename(tempPath,finalPath)) {
+    LittleFS.remove(tempPath);
+    BootDiagnostics::printf("[NEWS] abort feed=%u reason=cache_commit_failed",static_cast<unsigned>(source+1));
     return false;
   }
   const uint8_t before=snap.count;
-  parseFeed(body,source,snap);
+  parseFeedFile(finalPath,source,snap);
   const bool found=snap.count>before;
   BootDiagnostics::printf("[NEWS] fetch result feed=%u headlines_added=%u success=%s",
-    static_cast<unsigned>(source + 1), static_cast<unsigned>(snap.count-before),
-    found ? "yes" : "no");
+    static_cast<unsigned>(source+1),static_cast<unsigned>(snap.count-before),found?"yes":"no");
   return found;
 }
 void newsWorker(void*) {
@@ -255,7 +298,7 @@ void newsWorker(void*) {
         NewsService::Snapshot fresh;
         fresh.fetchedAtMs=millis();
         for(uint8_t i=0;i<NewsService::MAX_FEEDS && fresh.count<NewsService::MAX_HEADLINES;i++) {
-          if(cfg.urls[i][0]) fetchOne(cfg.urls[i],i,fresh);
+          if(cfg.urls[i][0]) { const uint8_t before=fresh.count; if(!fetchOne(cfg.urls[i],i,fresh) && fresh.count==before) loadCachedFeed(i,fresh); }
           vTaskDelay(pdMS_TO_TICKS(20));
         }
         if(fresh.count) {
