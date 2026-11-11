@@ -37,7 +37,7 @@ void germanAscii(const char* input, char* output, size_t capacity) {
     } else output[out++]=static_cast<char>(first);
     if (replacement) while (*replacement && out+1<capacity) output[out++]=*replacement++;
   }
-  output[out]='\\0';
+  output[out]='\0';
 }
 
 template <typename Canvas>
