@@ -13,7 +13,7 @@ namespace {
 constexpr char kWeatherNamespace[] = "weather";
 constexpr uint32_t kRefreshIntervalMs = 15UL * 60UL * 1000UL;
 constexpr uint32_t kRetryIntervalMs = 60UL * 1000UL;
-constexpr size_t kMaxJsonBytes = 48000;
+constexpr size_t kMaxJsonBytes = 65536;
 
 int32_t civilDayNumber(int year, unsigned month, unsigned day) {
   year -= month <= 2;
@@ -331,8 +331,16 @@ bool WeatherService::fetchWeather(const char* postalCode, Snapshot& result) {
     "&date=" + firstDate + "&last_date=" + lastDate;
   String forecastBody;
   if (!fetchJson(forecastUrl, forecastBody)) return false;
+  // Bright Sky returns additional station/metadata fields that are not
+  // needed for the five-day display. Filter the hourly records to keep the
+  // ArduinoJson document small even when the HTTP response is larger.
+  JsonDocument forecastFilter;
+  forecastFilter["weather"][0]["timestamp"] = true;
+  forecastFilter["weather"][0]["temperature"] = true;
+  forecastFilter["weather"][0]["precipitation_probability"] = true;
+  forecastFilter["weather"][0]["icon"] = true;
   JsonDocument forecast;
-  if (deserializeJson(forecast, forecastBody)) {
+  if (deserializeJson(forecast, forecastBody, DeserializationOption::Filter(forecastFilter))) {
     BootDiagnostics::write("[WEATHER] Bright Sky forecast JSON parse failed");
     return false;
   }
