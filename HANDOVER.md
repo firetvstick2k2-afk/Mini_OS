@@ -2556,4 +2556,12 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Frequenzeingabe wird in die OS-Einheit kHz konvertiert. Die automatische Bandauswahl sucht einen passenden Bereich und bevorzugt ein Band mit passender voreingestellter Modulation. Ungültige Frequenzen werden im roten Eingabefeld angezeigt und nicht abgestimmt.
 - `DisplayDriver` rendert die Keypad-Seite als eigene Vollbildseite (Menüseite 19); Hauptmenüpunkt „Keypad“ ist aktiviert. Kurz-Klick bestätigt, Encoder-Drehung navigiert, CLOSE bzw. OK beendet die Seite.
 - Keine Änderungen an TEF6686-, Waterfall-, CPU- oder News-/Wetterlogik.
-- Änderungen sind committed, aber noch nicht kompiliert. GitHub Actions zuletzt: Build #56 erfolgreich. Nächster manueller Compile-only-Lauf nach diesen Änderungen ist anhand Actions als **Build #57** zu prüfen. Workflow nicht automatisch starten; Nutzer startet den Build selbst.
+- Änderungen sind committed, aber noch nicht kompiliert. Build #56 bleibt der letzte erfolgreich abgeschlossene GitHub-Actions-Lauf. Es wurde kein neuer Workflow gestartet; Build-/Versionskennzeichnung bleibt unverändert. Der Nutzer entscheidet über den nächsten manuellen Compile-only-Lauf.
+
+
+### Mondkalender – Offline-Funktion
+- Neue Dateien: `src/system/MoonCalendar.h/.cpp`. Die Mondphase wird lokal aus der ESP32-Systemzeit berechnet; es gibt keinen zusätzlichen Netzwerkabruf, Worker, TLS-Aufruf oder LittleFS-Cache.
+- Berechnet werden Mondalter, beleuchteter Anteil, Phasenname sowie die voraussichtlichen Zeitpunkte des nächsten Vollmonds und Neumonds. Die Phasenzeitpunkte basieren auf dem mittleren synodischen Monat und sind Näherungswerte.
+- Neue Hauptmenüseite „Mondkalender“ (Menüseite 20), mit Mondgrafik, Beleuchtung, Mondalter und den nächsten Phasen in lokaler Gerätezeit.
+- Die Anzeige wartet auf eine gültige Systemzeit. Die vorhandene ClockService-/NTP-Zeitsynchronisation wird verwendet; keine Änderung an ClockService, Wetter, News, WLAN oder Boot-Ablauf.
+- Build #56 bleibt der letzte erfolgreiche Actions-Lauf. Mondkalender-Änderungen sind committed, aber noch nicht kompiliert oder auf dem Gerät getestet. Kein Workflow wurde gestartet.
