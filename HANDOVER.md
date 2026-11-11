@@ -2460,3 +2460,13 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Commit `34298a6`: WLAN-Bootdiagnostik ergänzt: Mode-Setup, AP/STA-Zustand, Registrierung der Web-Routen sowie Eintritt/Austritt von `WebServer.begin()` mit Heap-Werten.
 - Commit `be9f0f1`: Boot-Start protokolliert zusätzlich Minimum-Free-Heap; Setup-Meilensteine und 2-Sekunden-Heartbeat protokollieren Heap, größten Block, Minimum-Free-Heap, Loop-Stack-High-Water-Mark und WLAN-Status.
 - Nächster Schritt: Compile-only-Workflow ausführen, danach Firmware flashen. Prüfen, ob Webserver stabil erreichbar ist und Boot-Log die neuen `[WIFI][BOOT]`, `[NEWS][MEM]`, `[BOOT][STAGE]` und `[BOOT][HEARTBEAT]` Einträge enthält. Wetterworker bleibt bis zur Ursachenklärung deaktiviert.
+
+
+### Weather-only Laufzeittest und Geocoding-Korrektur — 2026-11-11
+- User-Log bestätigt: Weather-Worker läuft ohne News-Worker stabil; kein Reset über mindestens 83 Sekunden. WLAN/Webserver bleiben erreichbar.
+- OpenPLZ löst PLZ 48165 erfolgreich auf, HTTPS/TLS liefert HTTP 200. Ergebnisname war `Münster, Stadt`.
+- Open-Meteo Geocoding lieferte HTTP 200, aber keine `results` (Antwort nur 31/32 Bytes). Fehler ist damit die übergebene Ortsbezeichnung, nicht TLS oder WLAN.
+- In `WeatherService.cpp` wird der administrative Suffix `, Stadt` vor der Geocoding-Anfrage entfernt; Geocoder erhält `Münster`. Der normalisierte Name wird auch als Standortname verwendet.
+- News-Worker bleibt für diesen isolierten Test deaktiviert; News-Service/Web-UI bleiben eingebunden. Weather-Worker ist aktiviert.
+- Commit: `5b63f06c50b2a8118623ec5627736392989a07ee`.
+- Noch nicht kompiliert oder am Gerät getestet. Nächster Schritt: Compile-only-Workflow, dann flashen und prüfen, ob Geocoding Koordinaten liefert und Bright-Sky-Aufrufe für aktuelle Daten sowie Prognose durchlaufen.
