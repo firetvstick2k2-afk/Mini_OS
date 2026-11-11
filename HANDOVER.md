@@ -2528,3 +2528,12 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - The background News worker remains paused. Build #55 showed RSS and Weather HTTPS requests overlapping immediately before a device reset; the exact reset cause is not yet proven. Build #56 must first confirm Weather-only stability.
 - RSS currently reads the complete HTTP response into a String (the observed n-tv response was about 70 KB) and parsing creates temporary String copies. Merely limiting the displayed headline count does not bound that download allocation. Before re-enabling News, reduce peak memory by parsing incrementally or using a bounded response/parser strategy, and serialize News/Weather HTTPS work so their TLS handshakes and response buffers do not overlap.
 - Next compile-only workflow for the ticker change: Build #57. News background fetching remains intentionally disabled in this build; test the Weather-only firmware first.
+
+
+## News RSS RAM reduction and LittleFS headline cache
+- Build #58: News RSS parsing was changed from `HTTPClient::getString()` (which allocated the complete ~70 KB XML response) to bounded direct parsing from `HTTPClient::getStreamPtr()`. It accepts only a known Content-Length within 96 KB and identity transfer/content encoding; chunked or compressed responses are rejected rather than parsed incorrectly.
+- The parser keeps a bounded XML tag buffer and one title buffer (max 512 bytes); it does not retain the full RSS document in RAM or write the full XML to flash.
+- Successfully parsed headlines are cached as small text files under `/Extra/News/feedN.txt`. Cache replacement uses a temporary file and backup/rename sequence; failed network fetches can fall back to the last saved headlines. This keeps flash writes to headline text rather than repeatedly writing the full RSS XML.
+- Snapshot currently remains capped at 12 headlines (roughly 2.3 KB of fixed title storage); the display presents these in groups of three. A strict three-headline-only RAM window with cursor-based refetch is not yet implemented; the 12-title cap is deliberately retained as a small, predictable buffer for the current iteration.
+- News background worker remains paused in `ats-mini-os.ino` pending confirmation that Weather-only operation is stable. Do not enable News until a shared network/TLS serialization mechanism is in place.
+- Next compile-only workflow for these changes: Build #58. No build or device test has been run by the assistant.
