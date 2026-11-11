@@ -2544,5 +2544,6 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Die Erstellung ist idempotent: vorhandene Ordner und Dateien bleiben erhalten. Bei nicht verfügbarem LittleFS wird nichts angelegt; es erfolgt kein Formatieren.
 - BootDiagnostics protokolliert, ob `/Extra/News` bereit ist.
 - Die zusätzliche Absicherung beim späteren Cache-Schreiben bleibt bestehen.
-- News-Hintergrundworker bleibt pausiert; Wetterbetrieb, TLS-Prüfung, Logos und Layouts werden nicht verändert.
-- **Nächster Nutzer-Build: Build #59 – Compile-only.** Noch kein Build und kein Gerätetest durchgeführt.
+- News- und Wetter-Hintergrundworker werden für den nächsten Diagnoselauf wieder beide gestartet. Zusätzliche Heap-Messpunkte vor und nach `newsService.begin()` helfen, Task-Start und anschließende HTTPS-Aktivität im Boot-Log einzuordnen. Der frühere Reset bei parallelen HTTPS-Anfragen ist weiterhin ein offener Befund, keine bewiesene Ursache.
+- TLS-Zertifikatsprüfung bleibt aktiv. Der nächste Gerätetest soll ausdrücklich zeigen, ob der begrenzte RSS-Streamparser und der LittleFS-Headline-Cache das kombinierte Setup stabilisieren.
+- **Nächster Nutzer-Build: Build #59 – Compile-only, danach Gerätetest mit News und Wetter aktiv.** Noch kein Build und kein Gerätetest durchgeführt.
