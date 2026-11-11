@@ -206,10 +206,11 @@ void setup() {
   BootDiagnostics::printf("[BOOT][STAGE] before wifi.begin free_heap=%u max_block=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
   wifi.begin();
   BootDiagnostics::printf("[BOOT][STAGE] after wifi.begin free_heap=%u max_block=%u min_free=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
-  // Weather-only testing is complete; start both background services.
-  const bool newsStarted = newsService.begin();
-  BootDiagnostics::printf("[NEWS] background worker start result=%s",
-    newsStarted ? "success" : "failed");
+  // SAFETY ISOLATION: News RSS fetch succeeds, but running News and Weather
+  // HTTPS workers concurrently is followed by a device reset. Keep News
+  // attached to the web UI but pause its background worker until requests
+  // can be serialized through a shared network/memory guard.
+  BootDiagnostics::write("[NEWS] background worker paused: concurrent HTTPS isolation");
   // Start Weather normally so saved postcode settings are loaded and its
   // HTTPS request stages are captured by BootDiagnostics.
   const bool weatherStarted = weatherService.begin();
