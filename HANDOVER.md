@@ -2535,15 +2535,25 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - The parser keeps a bounded XML tag buffer and one title buffer (max 512 bytes); it does not retain the full RSS document in RAM or write the full XML to flash.
 - Successfully parsed headlines are cached as small text files under `/Extra/News/feedN.txt`. Cache replacement uses a temporary file and backup/rename sequence; failed network fetches can fall back to the last saved headlines. This keeps flash writes to headline text rather than repeatedly writing the full RSS XML.
 - Snapshot currently remains capped at 12 headlines (roughly 2.3 KB of fixed title storage); the display presents these in groups of three. A strict three-headline-only RAM window with cursor-based refetch is not yet implemented; the 12-title cap is deliberately retained as a small, predictable buffer for the current iteration.
-- News background worker remains paused in `ats-mini-os.ino` pending confirmation that Weather-only operation is stable. Do not enable News until a shared network/TLS serialization mechanism is in place.
-- Next compile-only workflow for these changes: Build #58. No build or device test has been run by the assistant.
+- News- und Wetter-Hintergrundworker sind für den kombinierten Diagnosetest beide aktiv. TLS-Zertifikatsprüfung bleibt eingeschaltet.
+- Build #56 enthält die News-/Wetter-Diagnoseänderungen und wurde erfolgreich kompiliert; der Nutzer hat den Gerätetest durchgeführt. Der nächste Compile-only-Lauf nach weiteren Codeänderungen muss anhand von GitHub Actions neu nummeriert werden.
 
 
-### Build #59 – News-Cache-Verzeichnisse direkt beim Boot anlegen
+### Build #56 – News-Cache-Verzeichnisse und kombinierter News-/Wetter-Diagnosetest
 - Direkt nach erfolgreicher LittleFS-Initialisierung durch `StorageDiscovery::begin()` werden nun `/Extra` und `/Extra/News` angelegt – unabhängig von WLAN-Verfügbarkeit oder aktiviertem Newsfeed.
 - Die Erstellung ist idempotent: vorhandene Ordner und Dateien bleiben erhalten. Bei nicht verfügbarem LittleFS wird nichts angelegt; es erfolgt kein Formatieren.
 - BootDiagnostics protokolliert, ob `/Extra/News` bereit ist.
 - Die zusätzliche Absicherung beim späteren Cache-Schreiben bleibt bestehen.
 - News- und Wetter-Hintergrundworker werden für den nächsten Diagnoselauf wieder beide gestartet. Zusätzliche Heap-Messpunkte vor und nach `newsService.begin()` helfen, Task-Start und anschließende HTTPS-Aktivität im Boot-Log einzuordnen. Der frühere Reset bei parallelen HTTPS-Anfragen ist weiterhin ein offener Befund, keine bewiesene Ursache.
 - TLS-Zertifikatsprüfung bleibt aktiv. Der nächste Gerätetest soll ausdrücklich zeigen, ob der begrenzte RSS-Streamparser und der LittleFS-Headline-Cache das kombinierte Setup stabilisieren.
-- **Nächster Nutzer-Build: Build #59 – Compile-only, danach Gerätetest mit News und Wetter aktiv.** Noch kein Build und kein Gerätetest durchgeführt.
+- Build #56 wurde erfolgreich kompiliert. Der Nutzer meldete zwischenzeitliche Resets, danach einen stabilen Lauf; weitere Neustarts werden bei Bedarf mit einer frischen Boot-Logdatei untersucht.
+
+
+### ATS Mini DEV Frequency Keypad – Port für ATS Mini OS
+- Originalquelle: `13HN2709/ats-mini-dev`, `ats-mini/FreqKeypad.cpp` und `ats-mini/FreqKeypad.h`.
+- Neue modulare OS-Dateien: `src/input/FrequencyKeypad.h/.cpp`. Die Eingabelogik ist vom alten globalen `Common.h`-/Command-System entkoppelt und verwendet die OS-Schnittstellen `RadioCore` und `BandManager`.
+- Das 4×4-Keypad übernimmt Anordnung, Farben, Maße, Auswahlrahmen, Startposition auf Taste 5, Encoder-Navigation, BS, OK, UNIT, CLOSE und Modus-Umschaltung in der Reihenfolge FM/LSB/USB/AM.
+- Frequenzeingabe wird in die OS-Einheit kHz konvertiert. Die automatische Bandauswahl sucht einen passenden Bereich und bevorzugt ein Band mit passender voreingestellter Modulation. Ungültige Frequenzen werden im roten Eingabefeld angezeigt und nicht abgestimmt.
+- `DisplayDriver` rendert die Keypad-Seite als eigene Vollbildseite (Menüseite 19); Hauptmenüpunkt „Keypad“ ist aktiviert. Kurz-Klick bestätigt, Encoder-Drehung navigiert, CLOSE bzw. OK beendet die Seite.
+- Keine Änderungen an TEF6686-, Waterfall-, CPU- oder News-/Wetterlogik.
+- Änderungen sind committed, aber noch nicht kompiliert. GitHub Actions zuletzt: Build #56 erfolgreich. Nächster manueller Compile-only-Lauf nach diesen Änderungen ist anhand Actions als **Build #57** zu prüfen. Workflow nicht automatisch starten; Nutzer startet den Build selbst.
