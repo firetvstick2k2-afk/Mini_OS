@@ -2537,3 +2537,12 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Snapshot currently remains capped at 12 headlines (roughly 2.3 KB of fixed title storage); the display presents these in groups of three. A strict three-headline-only RAM window with cursor-based refetch is not yet implemented; the 12-title cap is deliberately retained as a small, predictable buffer for the current iteration.
 - News background worker remains paused in `ats-mini-os.ino` pending confirmation that Weather-only operation is stable. Do not enable News until a shared network/TLS serialization mechanism is in place.
 - Next compile-only workflow for these changes: Build #58. No build or device test has been run by the assistant.
+
+
+### Build #59 – News-Cache-Verzeichnisse direkt beim Boot anlegen
+- Direkt nach erfolgreicher LittleFS-Initialisierung durch `StorageDiscovery::begin()` werden nun `/Extra` und `/Extra/News` angelegt – unabhängig von WLAN-Verfügbarkeit oder aktiviertem Newsfeed.
+- Die Erstellung ist idempotent: vorhandene Ordner und Dateien bleiben erhalten. Bei nicht verfügbarem LittleFS wird nichts angelegt; es erfolgt kein Formatieren.
+- BootDiagnostics protokolliert, ob `/Extra/News` bereit ist.
+- Die zusätzliche Absicherung beim späteren Cache-Schreiben bleibt bestehen.
+- News-Hintergrundworker bleibt pausiert; Wetterbetrieb, TLS-Prüfung, Logos und Layouts werden nicht verändert.
+- **Nächster Nutzer-Build: Build #59 – Compile-only.** Noch kein Build und kein Gerätetest durchgeführt.
