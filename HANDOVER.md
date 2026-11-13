@@ -2576,3 +2576,13 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Betroffene Dateien: `ats-mini-os.ino`, `DisplayDriver.h/.cpp`, neue `src/cw/CwDecoder.h`, `CwDecoderService.h/.cpp`.
 - Referenzquellen nur lesend: `13HN2709/ats-mini-dev` Branch `cw-decoder-development` und `ep3mhb/resonik-ats-mini` Branch `main`.
 - **Status:** Codeänderungen auf `dev/first-build-preparation` committed und erneut aus GitHub abgerufen. Noch nicht kompiliert und nicht am Gerät getestet. Kein GitHub-Actions-Workflow gestartet; Build #56 bleibt der letzte bestätigte Build. Nutzer startet den nächsten Compile-only-Build selbst.
+
+
+### Build #59 – CW-Decoder Compilefehler korrigiert (2026-11-13)
+- GitHub Actions Lauf #59 (`43502720168`) auf `dev/first-build-preparation`, Commit `63268c3`, ist im Schritt „Compile ATS Mini OS scaffold“ fehlgeschlagen. Alle vorherigen Setup-, Dependency- und Header-Prüfschritte waren erfolgreich.
+- Zwei Compilerfehler in `firmware/ats-mini-os/src/display/DisplayDriver.cpp` identifiziert:
+  1. Vor dem CW-Menüseiten-Zweig stand ein wörtliches `\n` im C++-Quelltext („stray '\\' in program“).
+  2. Die Definition von `DisplayDriver::render()` enthielt nicht die drei CW-Parameter, die in `DisplayDriver.h` deklariert und vom Sketch-Aufruf übergeben werden: `cwWifiBlocked`, `cwText`, `cwSignal`.
+- Beide Fehler gezielt in `DisplayDriver.cpp` behoben: echter Zeilenumbruch und übereinstimmende Render-Signatur. Der Sketch-Aufruf in `ats-mini-os.ino` übergibt die drei Werte bereits korrekt.
+- Fix-Commit: `0031381ffca65e4b509c25fd2a7a6b22c836819f` („Fix CW display render compile errors“).
+- **Status:** Fix committed auf dem aktiven Branch. Noch kein erneuter Compile-Lauf; Nutzer startet den nächsten Build selbst. Kein Workflow automatisch gestartet, kein Firmware-Upload und kein Flash.
