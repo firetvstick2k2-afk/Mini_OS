@@ -12,12 +12,12 @@ public:
     blockMs=1000.0f*blockLen/fs; setTone(toneHz); reset();
   }
   void setTone(float toneHz) {
-    tone=toneHz; coeff=2.0f*cosf(2.0f*(float)M_PI*tone/fs);
+    tone=toneHz; coeff=2.0f*cosf(2.0f*(float)3.14159265358979323846f*tone/fs);
     float lo=tone-350.0f,hi=tone+350.0f;
     if(lo<150.0f)lo=tone+700.0f;
     if(hi>fs/2-150.0f)hi=tone-700.0f;
-    coeffRef[0]=2.0f*cosf(2.0f*(float)M_PI*lo/fs);
-    coeffRef[1]=2.0f*cosf(2.0f*(float)M_PI*hi/fs);
+    coeffRef[0]=2.0f*cosf(2.0f*(float)3.14159265358979323846f*lo/fs);
+    coeffRef[1]=2.0f*cosf(2.0f*(float)3.14159265358979323846f*hi/fs);
   }
   void reset() {
     q1=q2=dc=0; r1[0]=r1[1]=r2[0]=r2[1]=0; n=0; peak=noise=0;
