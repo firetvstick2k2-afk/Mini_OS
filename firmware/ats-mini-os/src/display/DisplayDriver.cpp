@@ -476,7 +476,7 @@ void drawFrequencyKeypad(Canvas& c, const FrequencyKeypad::View& view) {
 }
 
 template <typename Canvas>
-void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const MoonCalendar::Snapshot* moonSnapshot, bool cwWifiBlocked, const char* cwText, bool cwSignal) {
+void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const MoonCalendar::Snapshot* moonSnapshot) {
   const int w = canvas.width();
   const int h = canvas.height();
   if (page == 18) { drawWeatherScreen(canvas, weatherSnapshot, selection); return; }
