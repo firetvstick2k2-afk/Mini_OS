@@ -40,7 +40,7 @@ void CwDecoderService::sampleTask(){
   int16_t samples[kBlock];uint8_t count=0;int64_t base=0,next=0;uint64_t index=0;
   float dc=2048,dev=0;uint32_t devCount=0;
   for(;;){
-    if(!active_){count=0;vTaskDelay(pdMS_TO_TICKS(25));continue;}
+    if(!active_){count=0;base=next=0;index=0;vTaskDelay(pdMS_TO_TICKS(25));continue;}
     if(!base){base=next=esp_timer_get_time();index=0;}
     while(active_&&esp_timer_get_time()<next)taskYIELD();
     if(!active_){base=0;continue;}
