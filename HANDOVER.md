@@ -2586,3 +2586,11 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Beide Fehler gezielt in `DisplayDriver.cpp` behoben: echter Zeilenumbruch und übereinstimmende Render-Signatur. Der Sketch-Aufruf in `ats-mini-os.ino` übergibt die drei Werte bereits korrekt.
 - Fix-Commit: `0031381ffca65e4b509c25fd2a7a6b22c836819f` („Fix CW display render compile errors“).
 - **Status:** Fix committed auf dem aktiven Branch. Noch kein erneuter Compile-Lauf; Nutzer startet den nächsten Build selbst. Kein Workflow automatisch gestartet, kein Firmware-Upload und kein Flash.
+
+
+### Build #60 – Zweiter CW-Display-Compilefehler korrigiert (2026-11-13)
+- GitHub Actions Lauf #60 (`43503766412`) auf `dev/first-build-preparation`, Commit `f6f2054`, hat die vorherigen beiden Fehler behoben und ist anschließend erneut im Compile-Schritt fehlgeschlagen.
+- Ursache: Die drei CW-Anzeigeparameter waren versehentlich zusätzlich an die interne `drawMenu()`-Hilfsfunktion angehängt worden. Die beiden regulären `drawMenu()`-Aufrufe übergaben weiterhin korrekt 17 Argumente; die Funktionsdefinition verlangte irrtümlich 20. Der CW-Vollbildschirm wird separat vor dem normalen Menü gerendert und benötigt diese Parameter in `drawMenu()` nicht.
+- Korrektur: ausschließlich die überflüssigen drei Parameter aus der `drawMenu()`-Definition in `firmware/ats-mini-os/src/display/DisplayDriver.cpp` entfernt. Die drei CW-Parameter der öffentlichen `DisplayDriver::render()`-Schnittstelle und der CW-Menüseiten-Zweig bleiben erhalten.
+- Fix-Commit: `c3cb1c472fcf254a71acaf6043ac642f2c62064e` („Fix drawMenu parameter mismatch after CW port“).
+- **Status:** Fix committed auf dem aktiven Branch. Noch kein erneuter Compile-Lauf; Nutzer startet den nächsten Compile-only-Build selbst. Kein Workflow automatisch gestartet, kein Firmware-Upload und kein Flash.
