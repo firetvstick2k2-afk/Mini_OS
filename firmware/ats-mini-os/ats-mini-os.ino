@@ -21,6 +21,7 @@
 #include "src/storage/FileManager.h"
 #include "src/settings/SettingsStore.h"
 #include "src/menus/MenuSSB.h"
+#include "src/cw/CwDecoderService.h"
 
 namespace {
 constexpr uint32_t SERIAL_BAUD = 115200;
@@ -37,6 +38,7 @@ bool brightnessSavePending = false;
 bool themeSavePending = false;
 EncoderInput encoder;
 FrequencyKeypad frequencyKeypad;
+CwDecoderService cwDecoder;
 WifiClient wifi;
 NewsService newsService;
 WeatherService weatherService;
@@ -141,6 +143,7 @@ void fmChoose(uint8_t visual){ if(visual==0){ if(fmMode==3)return; fmParent(); r
 
 void setup() {
   Serial.begin(SERIAL_BAUD); delay(250); performance.begin();
+  cwDecoder.begin();
   systemClock.begin();
   const bool storageReady = StorageDiscovery::begin();
   const bool settingsReady = settingsStore.begin();
@@ -273,7 +276,8 @@ void loop() {
         const int16_t rotationDelta = (menuOpen || bfoAdjustmentActive)
           ? (inputEvent.delta > 0 ? 1 : -1) : inputEvent.delta;
         if (menuOpen) {
-          if(menuPage==19){ frequencyKeypad.rotate(rotationDelta); }
+          if(menuPage==21){ if(radio.nextChannel(rotationDelta)) display.notifyTuning(); }
+          else if(menuPage==19){ frequencyKeypad.rotate(rotationDelta); }
           else if(menuPage==6){ if(fmMode==1){int v=(int)fmActionSelection+rotationDelta;v%=6;if(v<0)v+=6;fmActionSelection=(uint8_t)v;} else if(fmMode==2)fmActionSelection=fmActionSelection?0:1; else if(fmMode==4){const char* chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-.";size_t n=strlen(chars);char ch=fmEditName[fmEditCursor];const char* q=strchr(chars,ch?ch:65);int pos=q?(int)(q-chars):0;pos=(pos+rotationDelta)%(int)n;if(pos<0)pos+=(int)n;fmEditName[fmEditCursor]=chars[pos];fmEditName[fmEditCursor+1]=0;} else {uint8_t n=fmCount+(fmMode==3?1:3);int v=(int)fmSelection+rotationDelta;v%=n;if(v<0)v+=n;fmSelection=(uint8_t)v;} }
           else if (sliderAdjustmentActive && ((menuPage == 2 && menuSelection == 1))) {
             const int16_t requested = static_cast<int16_t>(display.brightness()) + rotationDelta * 5;
@@ -338,6 +342,9 @@ void loop() {
           menuPage = 0;
           menuSelection = 0;
           Serial.println("[MENU] opened");
+        } else if (menuPage == 21) {
+          cwDecoder.exit(); menuPage = 0; menuSelection = 23;
+          Serial.println("[CW] decoder page closed");
         } else if (menuPage == 19) {
           if (!frequencyKeypad.press(radio)) closeMenuToRadio("frequency keypad finished");
         } else if(menuPage==6){ if(fmMode==1){ if(fmActionSelection==0)fmMode=0; else if(fmActionSelection==1||fmActionSelection==2){fmPendingAction=fmActionSelection;fmMode=3;fmSelection=0;} else if(fmActionSelection==4){fmMode=2;fmActionSelection=0;} else {fmPendingAction=fmActionSelection==5?5:3; if(fmPendingAction==5)fmEditName[0]=0;else strncpy(fmEditName,fmSelectedName,sizeof(fmEditName)-1);fmEditName[sizeof(fmEditName)-1]=0;fmEditCursor=0;fmMode=4;} } else if(fmMode==2){if(fmActionSelection==1){bool ok=FileManager::removeFile(fmSelectedPath);fmMessageSet(ok?"Datei geloescht":"Loeschen fehlgeschlagen");fmRefresh();}fmMode=0;} else if(fmMode==4){if(fmEditCursor<sizeof(fmEditName)-2){++fmEditCursor;if(fmEditCursor>=strlen(fmEditName)){fmEditName[fmEditCursor]=65;fmEditName[fmEditCursor+1]=0;}}} else if(fmMode==3){if(fmSelection==0){const char* b=strrchr(fmSelectedPath,47);b=b?b+1:fmSelectedPath;char dest[96];snprintf(dest,sizeof(dest),"%s%s%s",fmPath,strcmp(fmPath,"/")==0?"":"/",b);bool ok=fmPendingAction==1?FileManager::copyFile(fmSelectedPath,dest):FileManager::moveFile(fmSelectedPath,dest);fmMessageSet(ok?"Erledigt":"Aktion fehlgeschlagen");fmMode=0;fmRefresh();}else {uint8_t idx=fmSelection-1;if(idx<fmCount&&fmEntries[idx].directory){strncpy(fmPath,fmEntries[idx].path,sizeof(fmPath)-1);fmPath[sizeof(fmPath)-1]=0;fmSelection=0;fmRefresh();}}}else fmChoose(fmSelection);
@@ -353,9 +360,9 @@ void loop() {
         } else if (menuPage == 0) {
             // ATS Mini Dev main-menu order and labels are preserved exactly.
             // Unsupported entries are marked with * in the renderer and stay inert.
-            static const uint8_t targetPages[23] = {
+            static const uint8_t targetPages[24] = {
               255, 16, 8, 1, 19, 255, 255, 255, 12, 9, 255,
-              255, 255, 255, 7, 11, 11, 11, 5, 255, 255, 18, 20
+              255, 255, 255, 7, 11, 11, 11, 5, 255, 255, 18, 20, 21
             };
             const uint8_t selectedMainItem = menuSelection;
             const uint8_t targetPage = targetPages[selectedMainItem];
@@ -367,6 +374,11 @@ void loop() {
             } else {
               menuPage = targetPage;
               if (menuPage == 19) frequencyKeypad.open(radio.snapshot());
+              else if (menuPage == 21) {
+                const bool entered = cwDecoder.enter(wifi.mode() == WifiClient::Mode::OFF);
+                if (!entered && !cwDecoder.wifiBlocked()) Serial.println("[CW] audio sampler unavailable");
+                else Serial.printf("[CW] decoder %s; Wi-Fi mode=%u\\n", entered ? "active" : "blocked (turn Wi-Fi OFF)", static_cast<unsigned>(wifi.mode()));
+              }
               else if (menuPage == 8) menuSelection = static_cast<uint8_t>(radio.currentBandIndex() + 1);
               else if (menuPage == 11 && selectedMainItem == 16) {
                 menuSelection = radio.snapshot().modulation == RadioModulation::FM ? 0 : 10;
@@ -601,7 +613,8 @@ void loop() {
           bfoSavePending = false;
           Serial.println("[BFO] adjustment finished with long press");
         } else if (menuOpen) {
-          if (sliderAdjustmentActive) {
+          if (menuPage == 21) { cwDecoder.exit(); menuPage=0; menuSelection=23; }
+          else if (sliderAdjustmentActive) {
             closeMenuToRadio("slider adjustment finished with long press");
           } else if (menuPage == 6 && fmMode == 4) {
             if (fmEditName[0]) {
@@ -642,6 +655,7 @@ void loop() {
   radio.update();
   updateLastFmFrequencyPersistence();
   updateVolumePersistence();
+  cwDecoder.update();
   const RadioSnapshot& currentSnapshot = radio.snapshot();
   const bool waterfallVisible = !menuOpen && currentSnapshot.modulation != RadioModulation::FM && display.amLayout() == 4;
   performance.setWaterfallActive(waterfallVisible);
@@ -658,7 +672,7 @@ void loop() {
     lastWifiDisplayRefreshMs = millis();
   }
   const MoonCalendar::Snapshot currentMoon = MoonCalendar::calculate(time(nullptr));
-  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon);
+  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, menuPage == 21, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal());
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
     lastStatusMs=now; const RadioSnapshot& s=radio.snapshot();
