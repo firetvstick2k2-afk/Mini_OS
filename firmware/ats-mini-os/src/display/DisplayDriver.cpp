@@ -8,6 +8,7 @@
 #include "../menus/MenuSSB.h"
 #include "../weather/WeatherService.h"
 #include "../system/MoonCalendar.h"
+#include "../cw/CwDecoderService.h"
 #include <LittleFS.h>
 #include <math.h>
 
@@ -475,7 +476,7 @@ void drawFrequencyKeypad(Canvas& c, const FrequencyKeypad::View& view) {
 }
 
 template <typename Canvas>
-void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const MoonCalendar::Snapshot* moonSnapshot) {
+void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const MoonCalendar::Snapshot* moonSnapshot, bool cwPage, bool cwWifiBlocked, const char* cwText, bool cwSignal) {
   const int w = canvas.width();
   const int h = canvas.height();
   if (page == 18) { drawWeatherScreen(canvas, weatherSnapshot, selection); return; }
@@ -696,6 +697,19 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
 
 }
 
+
+template <typename Canvas>
+void drawLegacyCWPage(Canvas& c,const RadioSnapshot& state,bool blocked,const char* decoded,bool signal) {
+  constexpr uint16_t navy=0x0008,blueA=0x0359,blueB=0x047D,frame=0xF800,green=0x07E0,red=0xF800;
+  c.fillScreen(navy);
+  if(blocked){c.drawRect(8,8,304,154,red);c.setTextDatum(MC_DATUM);c.setTextColor(red,navy);c.setFont(&lgfx::fonts::FreeSansBold9pt7b);c.drawString("PLEASE TURN WIFI/AP OFF",160,62);c.setTextColor(0xFFFF,navy);c.setFont(&lgfx::fonts::Font0);c.drawString("CW decoder needs Wi-Fi disabled",160,91);c.setTextColor(green,navy);c.drawString("CLICK ENCODER TO RETURN",160,125);return;}
+  c.fillRect(8,5,304,31,blueA);c.drawRect(8,5,304,31,frame);c.setTextDatum(ML_DATUM);c.setTextColor(0xFFFF,blueA);c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  char freq[40];if(state.modulation==RadioModulation::FM)snprintf(freq,sizeof(freq),"%.2f MHz  FM",state.frequencyKHz/1000.0f);else snprintf(freq,sizeof(freq),"%lu kHz  %s",static_cast<unsigned long>(state.frequencyKHz),state.modulation==RadioModulation::USB?"USB":state.modulation==RadioModulation::LSB?"LSB":"AM");c.drawString(freq,16,13);
+  const int panelY[4]={40,69,98,127};const size_t len=decoded?strlen(decoded):0;constexpr size_t charsPerLine=34;
+  for(int row=0;row<4;row++){const uint16_t panel=(row&1)?blueB:blueA;c.fillRect(8,panelY[row],304,25,panel);c.drawRect(8,panelY[row],304,25,0x04BF);size_t start=0,visibleLen=0;if(len>static_cast<size_t>(row*charsPerLine)){visibleLen=len-static_cast<size_t>(row*charsPerLine);if(visibleLen>charsPerLine)visibleLen=charsPerLine;if(len>=static_cast<size_t>((row+1)*charsPerLine))start=len-static_cast<size_t>((row+1)*charsPerLine);}if(visibleLen){char line[charsPerLine+1];memcpy(line,decoded+start,visibleLen);line[visibleLen]=0;c.setTextDatum(ML_DATUM);c.setTextColor(0xFFFF,panel);c.setFont(&lgfx::fonts::FreeSansBold9pt7b);c.drawString(line,14,panelY[row]+5);}}
+  const uint16_t led=signal?green:red;if((millis()/350)&1)c.fillCircle(296,20,5,led);else c.drawCircle(296,20,5,led);c.setTextDatum(MR_DATUM);c.setTextColor(signal?green:red,blueA);c.setFont(&lgfx::fonts::Font0);c.drawString(signal?"SIGNAL OK":"NO SIGNAL",284,20);c.setTextDatum(MC_DATUM);c.setTextColor(0xBDF7,navy);c.drawString("CLICK: EXIT  |  ROTATE: TUNE/BFO",160,163);
+}
+
 bool DisplayDriver::begin(uint8_t initialBrightness) {
 #if !defined(LILYGO_SI473X)
   // ATS Mini V4 has a separate backlight MOSFET on GPIO38; panel brightness
@@ -790,7 +804,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   lastMenuBrightness_=brightness_;
   lastMenuTheme_=themeIndex_;
   lastMenuBootLogEnabled_=bootLogEnabled;
-  if (menuOpen) {
+  if (menuOpen) {\n    if(menuPage==21){if(useSprite_){sprite_.fillSprite(BLACK);drawLegacyCWPage(sprite_,s,cwWifiBlocked,cwText,cwSignal);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawLegacyCWPage(device_,s,cwWifiBlocked,cwText,cwSignal);}return;}
     if(menuPage==19 && keypadView){if(useSprite_){sprite_.fillSprite(BLACK);drawFrequencyKeypad(sprite_,*keypadView);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFrequencyKeypad(device_,*keypadView);}return;}
     if(menuPage==6){if(useSprite_){sprite_.fillSprite(BLACK);drawFileMenu(sprite_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFileMenu(device_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);}return;}
     if (useSprite_) {
