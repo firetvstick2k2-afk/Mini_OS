@@ -476,7 +476,7 @@ void drawFrequencyKeypad(Canvas& c, const FrequencyKeypad::View& view) {
 }
 
 template <typename Canvas>
-void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const MoonCalendar::Snapshot* moonSnapshot, bool cwPage, bool cwWifiBlocked, const char* cwText, bool cwSignal) {
+void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const MoonCalendar::Snapshot* moonSnapshot, bool cwWifiBlocked, const char* cwText, bool cwSignal) {
   const int w = canvas.width();
   const int h = canvas.height();
   if (page == 18) { drawWeatherScreen(canvas, weatherSnapshot, selection); return; }
@@ -487,7 +487,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     "Zurück", "Modulation", "Bänder", "Lautstärke", "Keypad", "DUAL RX*", "VFO A/B*",
     "Frequenz*", "BFO", "STEP", "Suche*", "Scannen*", "Speicher*", "Rauschsperre*",
     "Bandbreite", "AGC/Dämpfung", "Auto-Lautstärke", "Soft-Mute", "Einstellungen",
-    "VHF Spektrum*", "ALL-Band Spektrum*", "Wetterbericht", "Mondkalender"
+    "VHF Spektrum*", "ALL-Band Spektrum*", "Wetterbericht", "Mondkalender", "CW DECODER"
   };
   static const char* const volumeItems[] = {
     "Zurück", "Lautstärke", "Stumm (später)"
@@ -791,7 +791,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   if (returningToRadio) lastGeneration_ = UINT32_MAX;
   // Redraw the file manager promptly while the encoder is moving; this also
   // keeps the selection frame visually attached to the active row.
-  const uint32_t redrawInterval = menuOpen ? ((menuPage==6 || menuPage==19) ? 20 : 500) : 40;
+  const uint32_t redrawInterval = menuOpen ? (menuPage==21 ? 100 : ((menuPage==6 || menuPage==19) ? 20 : 500)) : 40;
   if(!returningToRadio && s.generation==lastGeneration_ && now-lastDrawMs_<redrawInterval && !menuStateChanged)return;
   lastGeneration_=s.generation;
   lastDrawMs_=now;
