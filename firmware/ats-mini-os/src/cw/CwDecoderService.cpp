@@ -12,12 +12,16 @@ bool CwDecoderService::begin() {
   return true;
 }
 bool CwDecoderService::enter(bool wifiOff) {
+#if defined(LILYGO_SI473X)
+  (void)wifiOff; wifiBlocked_=true; active_=false; return false;
+#else
   if(!begin())return false;
   wifiBlocked_=!wifiOff;
   if(wifiBlocked_){active_=false;return false;}
   xSemaphoreTake(mutex_,portMAX_DELAY);decoder_.reset();shownText_[0]=0;wpm_=0;xSemaphoreGive(mutex_);
   audioLevel_=0;signal_=false;lastToneMs_=0;lastUiMs_=millis();
   pinMode(kPin,INPUT);active_=true;return true;
+#endif
 }
 void CwDecoderService::exit(){active_=false;wifiBlocked_=false;}
 void CwDecoderService::clearText(){if(!mutex_)return;xSemaphoreTake(mutex_,portMAX_DELAY);decoder_.clearText();shownText_[0]=0;xSemaphoreGive(mutex_);}
