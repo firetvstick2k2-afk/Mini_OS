@@ -2565,3 +2565,14 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Neue Hauptmenüseite „Mondkalender“ (Menüseite 20), mit Mondgrafik, Beleuchtung, Mondalter und den nächsten Phasen in lokaler Gerätezeit.
 - Die Anzeige wartet auf eine gültige Systemzeit. Die vorhandene ClockService-/NTP-Zeitsynchronisation wird verwendet; keine Änderung an ClockService, Wetter, News, WLAN oder Boot-Ablauf.
 - Build #56 bleibt der letzte erfolgreiche Actions-Lauf. Mondkalender-Änderungen sind committed, aber noch nicht kompiliert oder auf dem Gerät getestet. Kein Workflow wurde gestartet.
+
+
+### CW-Decoder – RESONIK-Kern und ATS Mini DEV-Vollbildlayout portiert (2026-11-13)
+- Neue modulare Dateien unter `firmware/ats-mini-os/src/cw/`: `CwDecoder.h` (adaptiver Goertzel-/Morse-Decoder nach RESONIK R3), `CwDecoderService.h/.cpp` (isolierter Audio-Sampler auf GPIO11 mit 4 kHz und FreeRTOS-Task).
+- Die Darstellung wurde als eigene Menüseite 21 in `DisplayDriver.cpp` portiert. Geometrie und Farben orientieren sich an `13HN2709/ats-mini-dev`, Branch `cw-decoder-development`, Datei `CWMode.cpp`: navy Hintergrund, blauer Frequenzkopf, vier abwechselnde Decoder-Zeilen, rot/grüne Signalanzeige und Bedienhinweis.
+- Hauptmenüpunkt `CW DECODER` wurde ergänzt. Drehung stimmt während der CW-Seite die Radiofrequenz weiter; kurzer oder langer Encoderdruck beendet die Seite.
+- **WLAN-/ADC2-Schutz:** Der Sampler wird nur aktiviert, wenn `WifiClient::Mode::OFF` ausgewählt ist. Es wird weder WLAN automatisch abgeschaltet noch werden Webserver, News- oder Wetterdienste pausiert. Bei aktivem WLAN erscheint der bekannte Hinweis „PLEASE TURN WIFI/AP OFF“. Der alternative `LILYGO_SI473X`-Displaypfad wird wegen GPIO11 als SPI-MOSI nicht für den CW-Audioeingang freigegeben.
+- GPIO11 ist gemäß RESONIK-Referenz der interne Lautsprecher-Audioeingang des ATS Mini V4B; der Sampler liest ihn nur während der CW-Seite. Decodertext wird über Mutex zwischen Sampling-Task und UI ausgetauscht. Timing wird beim Verlassen zurückgesetzt.
+- Betroffene Dateien: `ats-mini-os.ino`, `DisplayDriver.h/.cpp`, neue `src/cw/CwDecoder.h`, `CwDecoderService.h/.cpp`.
+- Referenzquellen nur lesend: `13HN2709/ats-mini-dev` Branch `cw-decoder-development` und `ep3mhb/resonik-ats-mini` Branch `main`.
+- **Status:** Codeänderungen auf `dev/first-build-preparation` committed und erneut aus GitHub abgerufen. Noch nicht kompiliert und nicht am Gerät getestet. Kein GitHub-Actions-Workflow gestartet; Build #56 bleibt der letzte bestätigte Build. Nutzer startet den nächsten Compile-only-Build selbst.
