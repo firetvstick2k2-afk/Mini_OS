@@ -2594,3 +2594,10 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Korrektur: ausschließlich die überflüssigen drei Parameter aus der `drawMenu()`-Definition in `firmware/ats-mini-os/src/display/DisplayDriver.cpp` entfernt. Die drei CW-Parameter der öffentlichen `DisplayDriver::render()`-Schnittstelle und der CW-Menüseiten-Zweig bleiben erhalten.
 - Fix-Commit: `c3cb1c472fcf254a71acaf6043ac642f2c62064e` („Fix drawMenu parameter mismatch after CW port“).
 - **Status:** Fix committed auf dem aktiven Branch. Noch kein erneuter Compile-Lauf; Nutzer startet den nächsten Compile-only-Build selbst. Kein Workflow automatisch gestartet, kein Firmware-Upload und kein Flash.
+
+
+### Build #61 – erster erfolgreicher Compile nach CW-Decoder-Integration (2026-11-13)
+- GitHub Actions Lauf #61 (`43505494446`) auf `dev/first-build-preparation`, Commit `121b26d`, erfolgreich abgeschlossen.
+- Alle Schritte erfolgreich, insbesondere „Compile ATS Mini OS scaffold“ und „Validate app image against DBFM slot limits (read-only)“.
+- Firmware-Binary wurde als Actions-Artefakt `ATS-Mini-OS-OSPI-DE-Firmware-BIN` bereitgestellt (ca. 996 kB; Artefakt-ID `14075798654`, gültig bis 2026-11-27).
+- **Status:** Build und DBFM-Slotgrößenprüfung erfolgreich. Das Artefakt wurde von Actions hochgeladen; dies ist kein Flashen des Geräts. CW-Decoder ist noch nicht am ATS Mini V4 getestet. Nächster Schritt: Firmware-Artefakt herunterladen/auf dem vorgesehenen Weg installieren und CW-Empfang, automatische WPM-Anpassung sowie Encoder-/WLAN-Verhalten am Gerät prüfen.
