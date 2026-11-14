@@ -697,6 +697,44 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
 
 }
 
+template <typename Canvas>
+void drawRadioUtilityPage(Canvas& c,uint8_t page,uint8_t selection,const RadioSnapshot& s,
+                          uint8_t memorySlot,uint8_t memoryCount,uint16_t scanCount,
+                          uint16_t scanCapacity,uint8_t scanState,uint8_t seekState) {
+  constexpr uint16_t navy=0x0008, blue=0x001F, cyan=0x07FF, green=0x07E0, yellow=0xFFE0, red=0xF800;
+  c.fillScreen(navy); c.drawRect(5,5,310,160,blue);
+  c.setTextDatum(MC_DATUM); c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  c.setTextColor(cyan,navy);
+  const char* title=page==22?"SENDERSPEICHER":(page==23?"SPECTRUM SCAN":"SEEK / SENDERSUCHE");
+  c.drawString(title,160,18);
+  c.setFont(&lgfx::fonts::FreeSans9pt7b); c.setTextColor(0xFFFF,navy);
+  char line[64];
+  if(page==22) {
+    snprintf(line,sizeof(line),"SLOT %02u / 99",static_cast<unsigned>(memorySlot+1)); c.drawString(line,160,54);
+    snprintf(line,sizeof(line),"BELEGT: %u",static_cast<unsigned>(memoryCount)); c.drawString(line,160,78);
+    snprintf(line,sizeof(line),"%s",s.stationName[0]?s.stationName:s.bandName); c.drawString(line,160,103);
+    if(s.modulation==RadioModulation::FM) snprintf(line,sizeof(line),"%.2f MHz",s.frequencyKHz/1000.0f);
+    else snprintf(line,sizeof(line),"%lu kHz",static_cast<unsigned long>(s.frequencyKHz));
+    c.drawString(line,160,123);
+    c.setTextColor(green,navy); c.drawString("KLICK: ABRUF / LEEREN SLOT SPEICHERN",160,150);
+    c.setTextColor(yellow,navy); c.drawString("LANG: AKTUELLEN SENDER SPEICHERN",160,162);
+  } else if(page==23) {
+    snprintf(line,sizeof(line),"MESSPUNKTE: %u / %u",scanCount,scanCapacity); c.drawString(line,160,62);
+    const char* status=scanState==1?"SCAN LAEUFT":scanState==2?"SCAN FERTIG":scanState==3?"ABGEBROCHEN":scanState==4?"FEHLER":"BEREIT";
+    c.setTextColor(scanState==4?red:(scanState==1?green:yellow),navy); c.drawString(status,160,91);
+    const int barW=280; c.drawRect(20,116,barW,12,blue);
+    if(scanCapacity) c.fillRect(22,118,(barW-4)*scanCount/scanCapacity,8,green);
+    c.setTextColor(cyan,navy); c.drawString("KLICK: START / STOP   LANG: ABBRUCH",160,151);
+  } else {
+    const char* status=seekState==1?"SUCHE LAEUFT":seekState==2?"SENDER GEFUNDEN":seekState==3?"KEIN SENDER GEFUNDEN":seekState==4?"ABGEBROCHEN":seekState==5?"FEHLER":"BEREIT";
+    c.setTextColor(seekState==1?green:(seekState==5?red:yellow),navy); c.drawString(status,160,68);
+    if(s.modulation==RadioModulation::FM) snprintf(line,sizeof(line),"%.2f MHz",s.frequencyKHz/1000.0f);
+    else snprintf(line,sizeof(line),"%lu kHz",static_cast<unsigned long>(s.frequencyKHz));
+    c.setTextColor(0xFFFF,navy); c.drawString(line,160,96);
+    c.setTextColor(cyan,navy); c.drawString("KLICK: SUCHLAUF STARTEN / STOPPEN",160,151);
+  }
+  c.setTextDatum(TL_DATUM); c.setFont(&lgfx::fonts::Font0);
+}
 
 template <typename Canvas>
 void drawLegacyCWPage(Canvas& c,const RadioSnapshot& state,bool blocked,const char* decoded,bool signal) {
@@ -780,7 +818,7 @@ void DisplayDriver::setAmLayout(uint8_t mode) {
 void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConnected,
                            const char* lastInputEvent,uint32_t inputEventCount,
                            StationLogoClient* logoClient, bool menuOpen,
-                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading, const NewsService::Snapshot* newsSnapshot, uint8_t wifiMode, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const FrequencyKeypad::View* keypadView, const MoonCalendar::Snapshot* moonSnapshot, bool cwWifiBlocked, const char* cwText, bool cwSignal) {
+                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading, const NewsService::Snapshot* newsSnapshot, uint8_t wifiMode, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const FrequencyKeypad::View* keypadView, const MoonCalendar::Snapshot* moonSnapshot, bool cwWifiBlocked, const char* cwText, bool cwSignal, uint8_t memorySlot, uint8_t memoryCount, uint16_t scanCount, uint16_t scanCapacity, uint8_t scanState, uint8_t seekState) {
   if(!ready_)return;
   const uint32_t now=millis();
   const bool returningToRadio = !menuOpen && lastMenuOpen_;
@@ -791,7 +829,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   if (returningToRadio) lastGeneration_ = UINT32_MAX;
   // Redraw the file manager promptly while the encoder is moving; this also
   // keeps the selection frame visually attached to the active row.
-  const uint32_t redrawInterval = menuOpen ? (menuPage==21 ? 100 : ((menuPage==6 || menuPage==19) ? 20 : 500)) : 40;
+  const uint32_t redrawInterval = menuOpen ? ((menuPage==21 || menuPage==23 || menuPage==24) ? 100 : ((menuPage==6 || menuPage==19 || menuPage==22) ? 20 : 500)) : 40;
   if(!returningToRadio && s.generation==lastGeneration_ && now-lastDrawMs_<redrawInterval && !menuStateChanged)return;
   lastGeneration_=s.generation;
   lastDrawMs_=now;
@@ -805,6 +843,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   lastMenuTheme_=themeIndex_;
   lastMenuBootLogEnabled_=bootLogEnabled;
   if (menuOpen) {
+    if(menuPage==22 || menuPage==23 || menuPage==24){if(useSprite_){sprite_.fillSprite(BLACK);drawRadioUtilityPage(sprite_,menuPage,menuSelection,s,memorySlot,memoryCount,scanCount,scanCapacity,scanState,seekState);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawRadioUtilityPage(device_,menuPage,menuSelection,s,memorySlot,memoryCount,scanCount,scanCapacity,scanState,seekState);}return;}
     if(menuPage==21){if(useSprite_){sprite_.fillSprite(BLACK);drawLegacyCWPage(sprite_,s,cwWifiBlocked,cwText,cwSignal);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawLegacyCWPage(device_,s,cwWifiBlocked,cwText,cwSignal);}return;}
     if(menuPage==19 && keypadView){if(useSprite_){sprite_.fillSprite(BLACK);drawFrequencyKeypad(sprite_,*keypadView);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFrequencyKeypad(device_,*keypadView);}return;}
     if(menuPage==6){if(useSprite_){sprite_.fillSprite(BLACK);drawFileMenu(sprite_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFileMenu(device_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);}return;}
