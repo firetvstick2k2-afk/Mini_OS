@@ -16,5 +16,5 @@ private:
   uint32_t minimumKHz_=0, maximumKHz_=0, stepKHz_=0, lastTuneMs_=0;
   int8_t direction_=1;
   uint8_t threshold_=12;
-  uint16_t attempts_=0;
+  uint32_t attempts_=0;
 };
