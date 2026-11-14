@@ -1,5 +1,6 @@
 #include "MemoryService.h"
 #include <string.h>
+#include <stdio.h>
 
 namespace { constexpr uint8_t kEntriesPerChunk=33; }
 bool MemoryService::begin() {
