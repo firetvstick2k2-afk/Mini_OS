@@ -72,6 +72,34 @@ void RadioCore::update() {
         snapshot_.rdsAfCount = rds.afCount;
         for (uint8_t af = 0; af < rds.afCount; ++af) snapshot_.rdsAfKHz[af] = rds.afKHz[af];
       }
+      if (rds.eonUpdated) {
+        snapshot_.rdsEonValid = rds.eon.valid;
+        snapshot_.rdsEonPi = rds.eon.pi;
+        snapshot_.rdsEonTp = rds.eon.tp;
+        snapshot_.rdsEonTa = rds.eon.ta;
+        snapshot_.rdsEonPty = rds.eon.pty;
+        snapshot_.rdsEonAfCount = rds.eon.afCount;
+        for (uint8_t af = 0; af < rds.eon.afCount; ++af)
+          snapshot_.rdsEonAfKHz[af] = rds.eon.afKHz[af];
+        copyField(snapshot_.rdsEonPs, sizeof(snapshot_.rdsEonPs), rds.eon.ps);
+      }
+      if (rds.odaUpdated) {
+        snapshot_.rdsOdaAid = rds.odaAid;
+        snapshot_.rdsOdaGroupType = rds.odaGroupType;
+        snapshot_.rdsOdaGroupVersion = rds.odaGroupVersion;
+      }
+      if (rds.rtPlusUpdated) {
+        snapshot_.rdsRtPlusItemToggle = rds.rtPlusItemToggle;
+        snapshot_.rdsRtPlusItemRunning = rds.rtPlusItemRunning;
+        for (uint8_t tag = 0; tag < 2; ++tag) {
+          snapshot_.rdsRtPlusValid[tag] = rds.rtPlus[tag].valid;
+          snapshot_.rdsRtPlusType[tag] = rds.rtPlus[tag].contentType;
+          snapshot_.rdsRtPlusStart[tag] = rds.rtPlus[tag].start;
+          snapshot_.rdsRtPlusLength[tag] = rds.rtPlus[tag].length;
+          copyField(snapshot_.rdsRtPlusText[tag], sizeof(snapshot_.rdsRtPlusText[tag]),
+                    rds.rtPlus[tag].text);
+        }
+      }
       if (rds.clockValid) {
         snapshot_.rdsClockHour = rds.clockHour;
         snapshot_.rdsClockMinute = rds.clockMinute;
