@@ -6,6 +6,9 @@ on:
       - dev/first-build-preparation
     paths:
       - "firmware/ats-mini-os/src/rds/**"
+      - "firmware/ats-mini-os/src/tuner/TunerDriver.*"
+      - "firmware/ats-mini-os/src/radio/RadioCore.*"
+      - "firmware/ats-mini-os/src/radio/RadioSnapshot.h"
       - "firmware/ats-mini-os/tests/**"
       - ".github/workflows/rds-host-tests.yml"
   workflow_dispatch:
