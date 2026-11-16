@@ -2670,3 +2670,12 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Betroffene Dateien: `ats-mini-os.ino`, `DisplayDriver.cpp`.
 - Frequenzcursor mit vollständiger ATS-Mini-DEV-Stellenwert-/Encoderlogik bleibt offen: Die Definitionen der Referenzfunktionen `getFreqInputStep()`, `getFreqInputPos()` und `doSelectDigit()` konnten in der verfügbaren Referenzdatei-Menge noch nicht verlässlich lokalisiert werden. Keine Ersatzlogik auf Verdacht eingebaut.
 - Statische Prüfungen und Build-Freigabe stehen noch aus. Kein Build, GitHub-Actions-Workflow oder Flash wurde gestartet.
+
+
+### Frequenzcursor – ATS Mini DEV Stellenwertbedienung (2026-11-16)
+- Encoder-Ereignisse transportieren jetzt zusätzlich den Zustand Taste beim Drehen gedrückt. Eine Push-and-Rotate-Bewegung unterdrückt den nachfolgenden normalen Short-Press, damit beim Loslassen nicht versehentlich das Menü geöffnet wird.
+- Push-and-Rotate wählt die Cursorstelle; danach verändert eine normale Encoder-Drehung genau den gewählten Stellenwert. Ein kurzer Klick richtet die Frequenz auf die gewählte Schrittweite aus und beendet den Cursor-Modus; ein normaler kurzer Klick ohne aktiven Cursor öffnet unverändert das Menü.
+- Schrittweiten-/Stellenwertberechnung orientiert sich an ATS Mini DEV. FM verwendet die FM-Schrittwahl; AM verwendet die AM-Schrittwahl; SSB führt die Stellenwertänderung über den BFO in Hz aus. Cursorgrenzen werden aus Modulation und Bandobergrenze abgeleitet.
+- Die Cursor-Markierung wird über den bestehenden LegacyFrequencyRenderer im HJB-Layout gezeichnet; Farben und Cursor-Geometrie bleiben unverändert. Andere Layouts behalten ihre bisherige Darstellung.
+- Betroffene Dateien: src/input/EncoderInput.h/.cpp, ats-mini-os.ino, src/display/DisplayDriver.h/.cpp, src/display/DisplayLayoutHJB.h.
+- Noch nicht kompiliert oder am Gerät getestet. Statische Prüfung und anschließende manuelle Build-Freigabe folgen. Kein GitHub-Actions-Workflow gestartet, kein Flash.
