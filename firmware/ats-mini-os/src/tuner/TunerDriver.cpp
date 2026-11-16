@@ -387,7 +387,11 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
       }
     }
     // Patch power-up can reset receiver properties; restore the selected AM
-    // bandwidth, AGC, soft mute and AVC after every patch transition.
+    // seek limits, bandwidth, AGC, soft mute and AVC after every transition.
+    radio_.setSeekAmLimits(static_cast<uint16_t>(band.minimumKHz),
+                           static_cast<uint16_t>(band.maximumKHz));
+    radio_.setSeekAmRssiThreshold(10);
+    radio_.setSeekAmSNRThreshold(3);
     radio_.setBandwidth(2, 1);
     radio_.setAutomaticGainControl(attenuationIndex_ ? 1 : (agcAutomatic_ ? 0 : 1), attenuationIndex_ ? attenuationIndex_ - 1 : agcGainIndex_);
     radio_.setAmSoftMuteMaxAttenuation(softMuteAttenuationDb_);
