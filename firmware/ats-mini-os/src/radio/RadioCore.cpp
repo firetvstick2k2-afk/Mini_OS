@@ -15,6 +15,8 @@ void clearRdsSnapshot(RadioSnapshot& s) {
   s.rdsPtyn[0] = '\0';
   s.rdsTpValid = s.rdsTaValid = s.rdsMusicSpeechValid = s.rdsDiValid = false;
   s.rdsTp = s.rdsTa = s.rdsMusicSpeech = s.rdsDi = false;
+  s.rdsLinkageActuatorValid = false;
+  s.rdsLinkageActuator = false;
   s.rdsEccValid = false;
   s.rdsEcc = 0;
   s.rdsAfCount = 0;
@@ -103,6 +105,10 @@ void RadioCore::update() {
       if (rds.ptynUpdated) copyField(snapshot_.rdsPtyn, sizeof(snapshot_.rdsPtyn), rds.ptyn);
       if (rds.tpValid) { snapshot_.rdsTpValid = true; snapshot_.rdsTp = rds.tp; }
       if (rds.taValid) { snapshot_.rdsTaValid = true; snapshot_.rdsTa = rds.ta; }
+      if (rds.linkageActuatorValid) {
+        snapshot_.rdsLinkageActuatorValid = true;
+        snapshot_.rdsLinkageActuator = rds.linkageActuator;
+      }
       if (rds.msValid) { snapshot_.rdsMusicSpeechValid = true; snapshot_.rdsMusicSpeech = rds.musicSpeech; }
       if (rds.diValid) { snapshot_.rdsDiValid = true; snapshot_.rdsDi = rds.decoderIdentification; }
       if (rds.eccValid) { snapshot_.rdsEccValid = true; snapshot_.rdsEcc = rds.eccCode; }
