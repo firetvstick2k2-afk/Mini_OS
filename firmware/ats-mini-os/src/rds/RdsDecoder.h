@@ -25,9 +25,11 @@ struct RdsDecodedFields {
   bool eccValid = false, afUpdated = false;
   bool eonUpdated = false, rtPlusUpdated = false;
   bool odaUpdated = false;
+  bool ptynUpdated = false;
   bool tp = false, ta = false, musicSpeech = false, decoderIdentification = false;
   bool rtPlusItemToggle = false, rtPlusItemRunning = false;
   uint8_t ecc = 0, pty = 0, afCount = 0;
+  char ptyn[9] = {};
   uint16_t odaAid = 0;
   uint8_t odaGroupType = 0, odaGroupVersion = 0;
   uint32_t afKHz[25] = {};
@@ -48,6 +50,9 @@ private:
   void processEon(uint8_t version, uint16_t blockB, uint16_t blockC,
                   uint16_t blockD, uint8_t blockCError,
                   uint8_t blockDError, RdsDecodedFields& out);
+  void processPtyn(uint16_t blockB, uint16_t blockC, uint16_t blockD,
+                  uint8_t blockCError, uint8_t blockDError,
+                  RdsDecodedFields& out);
   void processOda(uint16_t blockC, uint16_t blockD,
                   uint8_t blockDError, RdsDecodedFields& out);
   void processRtPlus(uint16_t blockB, uint16_t blockC, uint16_t blockD,
@@ -57,5 +62,8 @@ private:
   uint8_t afCount_ = 0, expectedAfCount_ = 0;
   uint8_t odaGroupType_ = 0xFF, odaGroupVersion_ = 0xFF;
   uint16_t rtPlusAid_ = 0;
+  char ptyn_[9] = {};
+  uint8_t ptynSegments_ = 0;
+  uint8_t ptynFlag_ = 0xFF;
   RdsEonNetwork eonNetworks_[8] = {};
 };
