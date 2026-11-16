@@ -1,6 +1,7 @@
 #include "TunerDriver.h"
 #include <Wire.h>
 #include <stdio.h>
+#include <string.h>
 #include "SsbPatchManager.h"
 
 namespace {
@@ -332,7 +333,6 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
   haveTextFlag_ = false;
   rawRadioText_[0] = '\0';
   rdsDecoder_.reset();
-  lastPiCode_ = 0;
 
   if (band.modulation == RadioModulation::FM) {
     static const uint16_t fmLow[] = {8750, 8790, 7600};
