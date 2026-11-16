@@ -28,6 +28,18 @@ struct RadioSnapshot {
   uint8_t rdsEcc = 0;
   uint8_t rdsAfCount = 0;
   uint32_t rdsAfKHz[25] = {};
+  bool rdsEonValid = false;
+  uint16_t rdsEonPi = 0;
+  bool rdsEonTp = false, rdsEonTa = false;
+  uint8_t rdsEonPty = 0, rdsEonAfCount = 0;
+  uint32_t rdsEonAfKHz[25] = {};
+  char rdsEonPs[9] = {};
+  uint16_t rdsOdaAid = 0;
+  uint8_t rdsOdaGroupType = 0xFF, rdsOdaGroupVersion = 0xFF;
+  bool rdsRtPlusValid[2] = {};
+  bool rdsRtPlusItemToggle = false, rdsRtPlusItemRunning = false;
+  uint8_t rdsRtPlusType[2] = {}, rdsRtPlusStart[2] = {}, rdsRtPlusLength[2] = {};
+  char rdsRtPlusText[2][33] = {};
   bool stereo = false;
   bool rdsAvailable = false;
   bool rdsClockValid = false;
