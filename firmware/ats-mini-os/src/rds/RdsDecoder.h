@@ -54,7 +54,15 @@ private:
                   uint8_t blockCError, uint8_t blockDError,
                   RdsDecodedFields& out);
   void processOda(uint16_t blockC, uint16_t blockD,
-                  uint8_t blockDError, RdsDecodedFields& out);
+                  uint8_t blockCError, uint8_t blockDError,
+                  RdsDecodedFields& out);
+  struct OdaAssignment {
+    bool valid = false;
+    uint16_t aid = 0;
+    uint8_t groupType = 0xFF;
+    uint8_t groupVersion = 0xFF;
+  };
+  OdaAssignment odaAssignments_[8] = {};
   void processRtPlus(uint16_t blockB, uint16_t blockC, uint16_t blockD,
                      const char* radioText, uint8_t blockCError,
                      uint8_t blockDError, RdsDecodedFields& out);
