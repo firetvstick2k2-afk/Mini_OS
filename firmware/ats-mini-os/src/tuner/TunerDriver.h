@@ -7,15 +7,29 @@
 // Thin adapter: PU2CLR keeps the individual RT buffer-clear helpers protected.
 class TunerSI4735 : public SI4735 {
 public:
-  // The upstream PU2CLR library exposes the low-level patch transfer but not
-  // ATS Mini Dev's AM convenience wrapper. AM patches must be downloaded
-  // without loadPatch(), because loadPatch() also configures the SSB DSP.
+  // AM patch transfer follows the working ATS Mini Dev SI4735-fixed sequence.
+  // Unlike loadPatch(), this does not configure the SSB DSP.
   bool loadAMPatch(const uint8_t* content, uint16_t size) {
-    if (!content || size < 24) return false;
-    queryLibraryId();
-    patchPowerUp();
-    delay(50);
-    return downloadPatch(content, size);
+    if (content) {
+      if (size < 24) return false;
+      queryLibraryId();
+      setPowerUp(ctsIntEnable, 0, 1, currentClockType, 1, currentAudioMode);
+      radioPowerUp();
+      delay(50);
+      const bool ok = downloadPatch(content, size);
+      delay(25);
+      if (!ok) return false;
+    } else {
+      powerDown();
+      setPowerUp(ctsIntEnable, 0, 0, currentClockType, 1, currentAudioMode);
+      radioPowerUp();
+    }
+    setAvcAmMaxGain(currentAvcAmMaxGain);
+    setVolume(volume);
+    currentSsbStatus = 0;
+    currentFrequencyParams.arg.USBLSB = 0;
+    lastMode = 1;
+    return true;
   }
 
   void clearRadioTextBuffers() {
