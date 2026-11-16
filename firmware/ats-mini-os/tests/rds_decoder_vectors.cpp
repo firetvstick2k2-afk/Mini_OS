@@ -97,7 +97,7 @@ static void testEon() {
   RdsDecoder decoder;
   RdsDecodedFields out;
 
-  // 14A: block C is PI(ON), block D is the information block.
+  // 14A: block C is the information block, block D is PI(ON).
   send(decoder, 14, 0, 0xE000, 0x4142, 0x1234, 0x1111, 95400, "", out);
   assert(out.eonUpdated && out.eonCount == 1);
   assert(out.eon.pi == 0x1234);
