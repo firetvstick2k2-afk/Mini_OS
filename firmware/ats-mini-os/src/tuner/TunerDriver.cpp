@@ -446,8 +446,14 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
     const uint8_t group = radio_.getRdsGroupType();
     RdsDecodedFields decoded;
     if (radio_.getRdsNewBlockB()) {
-      rdsDecoder_.process(group, radio_.getRdsVersionCode(), radio_.currentBlockB(),
-                          radio_.currentBlockC(), radio_.currentBlockCError(), decoded);
+      const uint8_t version = radio_.getRdsVersionCode();
+      const uint16_t blockB = radio_.currentBlockB();
+      const uint16_t blockC = radio_.currentBlockC();
+      const uint16_t blockD = radio_.currentBlockD();
+      const char* rawRt = version == 0 ? radio_.getRdsText2A() : radio_.getRdsText2B();
+      rdsDecoder_.process(group, version, blockB, blockC, blockD,
+                          radio_.currentPiCode(), radio_.currentBlockCError(),
+                          rawRt, decoded);
       out.tpValid = decoded.tpValid;
       out.tp = decoded.tp;
       out.ptyValid = true;
@@ -463,6 +469,20 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
         out.afUpdated = true;
         out.afCount = decoded.afCount;
         for (uint8_t af = 0; af < decoded.afCount; ++af) out.afKHz[af] = decoded.afKHz[af];
+      }
+      if (decoded.eonUpdated) { out.eonUpdated = true; out.eon = decoded.eon; }
+      if (decoded.odaUpdated) {
+        out.odaUpdated = true;
+        out.odaAid = decoded.odaAid;
+        out.odaGroupType = decoded.odaGroupType;
+        out.odaGroupVersion = decoded.odaGroupVersion;
+      }
+      if (decoded.rtPlusUpdated) {
+        out.rtPlusUpdated = true;
+        out.rtPlusItemToggle = decoded.rtPlusItemToggle;
+        out.rtPlusItemRunning = decoded.rtPlusItemRunning;
+        out.rtPlus[0] = decoded.rtPlus[0];
+        out.rtPlus[1] = decoded.rtPlus[1];
       }
     }
 
