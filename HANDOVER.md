@@ -2,11 +2,24 @@
 
 > **Zweck:** Zentrale Übergabe für neue Chat-Sitzungen. Vor jeder Fortsetzung zuerst dieses Dokument lesen und anschließend den tatsächlichen Repository-Stand prüfen.
 >
-> **Stand:** 2026-11-09  
+> **Stand:** 2026-11-16  
 > **Aktives Repository:** https://github.com/firetvstick2k2-afk/Mini_OS  
 > **Aktiver Branch:** `dev/first-build-preparation`  
 > **GitHub-Konto:** `firetvstick2k2-afk`  
 > **Status:** Aktives ATS Mini OS. Frühere Projektzuordnungen sind nicht mehr maßgeblich. Ältere Einträge weiter unten sind historische Notizen und werden nicht als aktueller Repository- oder Branch-Stand verstanden.
+
+## Aktueller Arbeitsstand – RX-Optionen (2026-11-16)
+
+Auf `dev/first-build-preparation` wurden die folgenden Funktionen vorbereitet und in die modulare ATS Mini OS-Struktur integriert:
+
+- **Rauschsperre:** RSSI- oder SNR-Schwellwert, AUS sowie Hysterese von 2 Messpunkten. Die Einstellung wird im NVS gespeichert.
+- **ATT:** getrennte Bedien- und Speicheroption. Die SI4735-Hardware setzt die manuelle Dämpfung technisch über den AGC/Gain-Index um; ATT Auto stellt die separat gespeicherte AGC-Voreinstellung wieder her. Es wird keine unabhängige analoge LNA-Stufe behauptet.
+- **FM Region:** EU (87,5–108 MHz / 100 kHz), USA (87,9–107,9 MHz / 200 kHz) und Japan (76–95 MHz / 100 kHz), einschließlich De-Emphasis und Frequenzgrenzen.
+- **FM Stereo:** Auto, Stereo-Priorität und Mono über die FM-Blend-Schwellen.
+- Die Einstellungen werden über den Menüpunkt **Rauschsperre** (RX / FM Optionen) bedient und im NVS gespeichert.
+- Der Nutzer startet den Compile-only-Build selbst. Es wurde kein GitHub-Actions-Workflow gestartet und keine Firmware geflasht.
+
+**Wichtiger Prüfstatus:** Die Änderungen sind als Quellcode-Änderungen vorbereitet. Ein erfolgreicher Build und ein Funktionstest am ATS Mini V4 sind erst nach dem vom Nutzer gestarteten Build bzw. Gerätetest bestätigt.
 
 ## 1. Aktueller Arbeitsstand und Regeln
 

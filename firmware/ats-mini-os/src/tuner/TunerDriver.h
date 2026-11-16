@@ -102,6 +102,15 @@ public:
   bool setVolume(uint8_t volume);
   bool setAgcAutomatic(bool automatic);
   bool setAgcManualGain(uint8_t index);
+  bool setAttenuationIndex(uint8_t index);
+  bool setSquelch(uint8_t threshold, bool useSnr);
+  bool setFmRegion(uint8_t region);
+  bool setFmStereoMode(uint8_t mode);
+  uint8_t attenuationIndex() const { return attenuationIndex_; }
+  uint8_t squelchThreshold() const { return squelchThreshold_; }
+  bool squelchUsesSnr() const { return squelchUseSnr_; }
+  uint8_t fmRegion() const { return fmRegion_; }
+  uint8_t fmStereoMode() const { return fmStereoMode_; }
   bool setSoftMuteEnabled(bool enabled);
   bool setSoftMuteAttenuation(uint8_t attenuationDb);
   bool setAvcGain(uint8_t gain);
@@ -140,6 +149,12 @@ private:
   uint8_t volume_ = 25;
   bool agcAutomatic_ = true;
   uint8_t agcGainIndex_ = 20;
+  uint8_t attenuationIndex_ = 0;
+  uint8_t squelchThreshold_ = 0;
+  bool squelchUseSnr_ = false;
+  bool squelchMuted_ = false;
+  uint8_t fmRegion_ = 0;
+  uint8_t fmStereoMode_ = 0;
   bool softMuteEnabled_ = true;
   uint8_t softMuteAttenuationDb_ = 8;
   uint8_t avcGain_ = 90;

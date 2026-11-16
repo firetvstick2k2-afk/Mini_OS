@@ -21,14 +21,14 @@ uint32_t SettingsStore::lastFmFrequencyKHz(uint32_t fallbackKHz) {
   const uint32_t saved = preferences_.getUInt(kFrequencyKey, fallbackKHz);
   // Validate persisted values; corrupted or stale values must never be sent
   // to the tuner. The current first milestone is FM-only.
-  if (saved < 87500 || saved > 108000 || (saved % 10) != 0) {
+  if (saved < 76000 || saved > 108000 || (saved % 10) != 0) {
     return fallbackKHz;
   }
   return saved;
 }
 
 bool SettingsStore::saveLastFmFrequencyKHz(uint32_t frequencyKHz) {
-  if (!ready_ || frequencyKHz < 87500 || frequencyKHz > 108000 ||
+  if (!ready_ || frequencyKHz < 76000 || frequencyKHz > 108000 ||
       (frequencyKHz % 10) != 0) {
     return false;
   }
@@ -124,6 +124,45 @@ bool SettingsStore::saveAvcGain(uint8_t gain) {
   return ready_ && gain >= 12 && gain <= 90 &&
          preferences_.putUChar(kAvcGainKey, gain) == sizeof(uint8_t);
 }
+uint8_t SettingsStore::attenuationIndex(uint8_t fallback) {
+  if (!ready_) return fallback;
+  const uint8_t value = preferences_.getUChar(kAttenuationKey, fallback);
+  return value <= 37 ? value : fallback;
+}
+bool SettingsStore::saveAttenuationIndex(uint8_t index) {
+  return ready_ && index <= 37 && preferences_.putUChar(kAttenuationKey, index) == sizeof(uint8_t);
+}
+uint8_t SettingsStore::squelchThreshold(uint8_t fallback) {
+  if (!ready_) return fallback;
+  const uint8_t value = preferences_.getUChar(kSquelchKey, fallback);
+  return value <= 100 ? value : fallback;
+}
+bool SettingsStore::saveSquelchThreshold(uint8_t threshold) {
+  return ready_ && threshold <= 100 && preferences_.putUChar(kSquelchKey, threshold) == sizeof(uint8_t);
+}
+bool SettingsStore::squelchUsesSnr(bool fallback) {
+  return ready_ ? preferences_.getBool(kSquelchSnrKey, fallback) : fallback;
+}
+bool SettingsStore::saveSquelchUsesSnr(bool enabled) {
+  return ready_ && preferences_.putBool(kSquelchSnrKey, enabled) == sizeof(bool);
+}
+uint8_t SettingsStore::fmRegion(uint8_t fallback) {
+  if (!ready_) return fallback;
+  const uint8_t value = preferences_.getUChar(kFmRegionKey, fallback);
+  return value <= 2 ? value : fallback;
+}
+bool SettingsStore::saveFmRegion(uint8_t region) {
+  return ready_ && region <= 2 && preferences_.putUChar(kFmRegionKey, region) == sizeof(uint8_t);
+}
+uint8_t SettingsStore::fmStereoMode(uint8_t fallback) {
+  if (!ready_) return fallback;
+  const uint8_t value = preferences_.getUChar(kFmStereoKey, fallback);
+  return value <= 2 ? value : fallback;
+}
+bool SettingsStore::saveFmStereoMode(uint8_t mode) {
+  return ready_ && mode <= 2 && preferences_.putUChar(kFmStereoKey, mode) == sizeof(uint8_t);
+}
+
 uint8_t SettingsStore::ssbBandwidthChoice(uint8_t fallback) {
   if (!ready_) return fallback;
   const uint8_t saved = preferences_.getUChar(kSsbBandwidthKey, fallback);

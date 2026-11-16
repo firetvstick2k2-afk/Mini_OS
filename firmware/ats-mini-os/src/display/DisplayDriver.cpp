@@ -485,7 +485,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   // A trailing * marks entries that are not implemented in ATS Mini OS yet.
   static const char* const mainItems[] = {
     "Zurück", "Modulation", "Bänder", "Lautstärke", "Keypad", "DUAL RX*", "VFO A/B*",
-    "Frequenz*", "BFO", "STEP", "Suche", "Scannen", "Speicher", "Rauschsperre*",
+    "Frequenz*", "BFO", "STEP", "Suche", "Scannen", "Speicher", "Rauschsperre",
     "Bandbreite", "AGC/Dämpfung", "Auto-Lautstärke", "Soft-Mute", "Einstellungen",
     "VHF Spektrum*", "ALL-Band Spektrum*", "Wetterbericht", "Mondkalender", "CW DECODER"
   };
@@ -509,6 +509,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   static const char* const amBandwidthItems[] = { "Zurück", "1.0 kHz", "1.8 kHz", "2.0 kHz", "2.5 kHz", "3.0 kHz", "4.0 kHz", "6.0 kHz" };
   static const char* const ssbBandwidthItems[] = { "Zurück", "0.5 kHz", "1.0 kHz", "1.2 kHz", "2.2 kHz", "3.0 kHz", "4.0 kHz" };
   static const char* const radioSettingsItems[] = { "Zurück", "AGC Auto", "AGC Manuell 0", "AGC Manuell 8", "AGC Manuell 16", "AGC Manuell 24", "Soft Mute 0 dB", "Soft Mute 4 dB", "Soft Mute 8 dB", "Soft Mute 12 dB", "AVC 12", "AVC 30", "AVC 60", "AVC 90" };
+  static const char* const receiverFeatureItems[] = { "Zurueck", "Squelch AUS", "RSSI 20", "RSSI 30", "RSSI 40", "SNR 10", "SNR 15", "SNR 20", "ATT Auto", "ATT 4", "ATT 8", "ATT 16", "ATT 24", "FM Region EU", "FM Region US", "FM Region Japan", "Stereo Auto", "Stereo Prioritaet", "Mono" };
   static const char* const themeItems[] = { "Zurück", "Classic", "TEF Blue", "Amber" };
   static const char* const fmStepItems[] = { "Zurück", "10 kHz (DX)", "50 kHz", "100 kHz", "200 kHz", "1 MHz" };
   static const char* const amStepItems[] = { "Zurück", "1 kHz", "5 kHz", "9 kHz", "10 kHz" };
@@ -540,7 +541,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
       else { items=ssbBandwidthItems; count=sizeof(ssbBandwidthItems)/sizeof(ssbBandwidthItems[0]); }
       title="BANDBREITE"; break;
     case 8: count=static_cast<uint8_t>(BandManager::count()+1); title="BAND WÄHLEN"; break;
-    case 11: items=radioSettingsItems; count=(modulation==RadioModulation::FM?10:14); title="EMPFANG"; break;
+    case 11: items=radioSettingsItems; count=(modulation==RadioModulation::FM?10:14); title="EMPFANG"; break;\n    case 25: items=receiverFeatureItems; count=sizeof(receiverFeatureItems)/sizeof(receiverFeatureItems[0]); title="RX / FM OPTIONEN"; break;
     case 12: items=bfoItems; count=sizeof(bfoItems)/sizeof(bfoItems[0]); title="SSB / BFO"; break;
     case 16:
       if (BandManager::current().type == RadioBandType::FM) { items=fmModulationItems; count=2; }

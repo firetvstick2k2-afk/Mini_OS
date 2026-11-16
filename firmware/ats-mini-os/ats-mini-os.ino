@@ -214,12 +214,21 @@ void setup() {
     const uint8_t agcIndex = settingsStore.agcGainIndex(20);
     const uint8_t softMuteDb = settingsStore.softMuteAttenuationDb(8);
     const uint8_t avcGain = settingsStore.avcGain(90);
+    const uint8_t attIndex = settingsStore.attenuationIndex(0);
+    const uint8_t squelch = settingsStore.squelchThreshold(0);
+    const bool squelchSnr = settingsStore.squelchUsesSnr(false);
+    const uint8_t fmRegion = settingsStore.fmRegion(0);
+    const uint8_t fmStereo = settingsStore.fmStereoMode(0);
     const uint8_t ssbBandwidth = settingsStore.ssbBandwidthChoice(4);
     const int16_t bfoOffset = settingsStore.bfoOffsetHz(0);
     if (agcAuto) radio.setAgcAutomatic(true);
     else radio.setAgcManualGain(agcIndex);
     radio.setSoftMuteAttenuation(softMuteDb);
     radio.setAvcGain(avcGain); // Remembered in FM, applied automatically in AM/SSB.
+    radio.setAttenuationIndex(attIndex);
+    radio.setSquelch(squelch, squelchSnr);
+    radio.setFmRegion(fmRegion);
+    radio.setFmStereoMode(fmStereo);
     radio.setSsbBandwidthChoice(ssbBandwidth);
     radio.setBfoOffsetHz(bfoOffset);
     Serial.printf("[SETTINGS] RX restored: AGC=%s/%u SoftMute=%u dB AVC=%u\n",
@@ -305,7 +314,7 @@ void loop() {
               Serial.printf("[MENU] volume=%u/63\\n", static_cast<unsigned>(radio.volume()));
             }
           } else {
-            const int16_t itemCount = menuPage == 0 ? 24 : menuPage == 22 ? MemoryService::kSlotCount : menuPage == 18 ? 2 : menuPage == 20 ? 1 :
+            const int16_t itemCount = menuPage == 0 ? 24 : menuPage == 25 ? 19 : menuPage == 22 ? MemoryService::kSlotCount : menuPage == 18 ? 2 : menuPage == 20 ? 1 :
               menuPage == 2 ? 4 : menuPage == 4 ? 6 : menuPage == 5 ? 11 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
               ((menuPage == 14) ? 4 : (menuPage == 15) ? 5 :
               menuPage == 10 ? 4 : menuPage == 11 ?
@@ -378,7 +387,7 @@ void loop() {
             // Unsupported entries are marked with * in the renderer and stay inert.
             static const uint8_t targetPages[24] = {
               255, 16, 8, 1, 19, 255, 255, 255, 12, 9, 24,
-              23, 22, 255, 7, 11, 11, 11, 5, 255, 255, 18, 20, 21
+              23, 22, 25, 7, 11, 11, 11, 5, 255, 255, 18, 20, 21
             };
             const uint8_t selectedMainItem = menuSelection;
             const uint8_t targetPage = targetPages[selectedMainItem];
@@ -529,6 +538,42 @@ void loop() {
         } else if (menuPage == 3 && menuSelection == 5) {
           menuPage = 11;
           menuSelection = 0;
+        } else if (menuPage == 25 && menuSelection == 0) {
+          menuPage = 0;
+          menuSelection = 13;
+        } else if (menuPage == 25 && menuSelection >= 1 && menuSelection <= 7) {
+          const uint8_t threshold = menuSelection == 1 ? 0 :
+            (menuSelection <= 4 ? static_cast<uint8_t>(menuSelection * 10) :
+             static_cast<uint8_t>((menuSelection - 3) * 5));
+          const bool useSnr = menuSelection >= 5;
+          if (radio.setSquelch(threshold, useSnr)) {
+            const bool a = settingsStore.saveSquelchThreshold(threshold);
+            const bool b = settingsStore.saveSquelchUsesSnr(useSnr);
+            Serial.printf("[SETTINGS] Squelch=%u %s %s\\n", threshold, useSnr ? "SNR" : "RSSI", a && b ? "saved" : "save failed");
+            closeMenuToRadio("squelch selected");
+          }
+        } else if (menuPage == 25 && menuSelection >= 8 && menuSelection <= 12) {
+          static const uint8_t attValues[] = {0, 5, 9, 17, 25};
+          const uint8_t value = attValues[menuSelection - 8];
+          if (radio.setAttenuationIndex(value)) {
+            const bool saved = settingsStore.saveAttenuationIndex(value);
+            Serial.printf("[SETTINGS] ATT index=%u %s\\n", value, saved ? "saved" : "save failed");
+            closeMenuToRadio("ATT selected");
+          }
+        } else if (menuPage == 25 && menuSelection >= 13 && menuSelection <= 15) {
+          const uint8_t region = menuSelection - 13;
+          if (radio.setFmRegion(region)) {
+            const bool saved = settingsStore.saveFmRegion(region);
+            Serial.printf("[SETTINGS] FM region=%u %s\\n", region, saved ? "saved" : "save failed");
+            closeMenuToRadio("FM region selected");
+          }
+        } else if (menuPage == 25 && menuSelection >= 16 && menuSelection <= 18) {
+          const uint8_t mode = menuSelection - 16;
+          if (radio.setFmStereoMode(mode)) {
+            const bool saved = settingsStore.saveFmStereoMode(mode);
+            Serial.printf("[SETTINGS] FM stereo=%u %s\\n", mode, saved ? "saved" : "save failed");
+            closeMenuToRadio("FM stereo selected");
+          }
         } else if (menuPage == 11 && menuSelection == 0) {
           menuPage = 0;
           menuSelection = 5;

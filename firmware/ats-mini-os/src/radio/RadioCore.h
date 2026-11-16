@@ -17,6 +17,15 @@ public:
   bool setVolume(uint8_t volume);
   bool setAgcAutomatic(bool automatic);
   bool setAgcManualGain(uint8_t index);
+  bool setAttenuationIndex(uint8_t index);
+  bool setSquelch(uint8_t threshold, bool useSnr);
+  bool setFmRegion(uint8_t region);
+  bool setFmStereoMode(uint8_t mode);
+  uint8_t attenuationIndex() const { return tuner_.attenuationIndex(); }
+  uint8_t squelchThreshold() const { return tuner_.squelchThreshold(); }
+  bool squelchUsesSnr() const { return tuner_.squelchUsesSnr(); }
+  uint8_t fmRegion() const { return tuner_.fmRegion(); }
+  uint8_t fmStereoMode() const { return tuner_.fmStereoMode(); }
   bool setSoftMuteEnabled(bool enabled);
   bool setSoftMuteAttenuation(uint8_t attenuationDb);
   bool setAvcGain(uint8_t gain);

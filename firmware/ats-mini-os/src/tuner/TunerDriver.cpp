@@ -108,7 +108,7 @@ bool TunerDriver::begin(uint32_t initialFrequencyKHz) {
   modulation_ = RadioModulation::FM;
   bandwidthChoice_ = 0;
   radio_.setFmBandwidth(0);
-  radio_.setAutomaticGainControl(agcAutomatic_ ? 0 : 1, agcGainIndex_);
+  radio_.setAutomaticGainControl(attenuationIndex_ ? 1 : (agcAutomatic_ ? 0 : 1), attenuationIndex_ ? attenuationIndex_ - 1 : agcGainIndex_);
   radio_.setFmSoftMuteMaxAttenuation(softMuteAttenuationDb_);
   ready_ = true;
   return true;
@@ -117,8 +117,9 @@ bool TunerDriver::begin(uint32_t initialFrequencyKHz) {
 bool TunerDriver::setAgcAutomatic(bool automatic) {
   if (!ready_) return false;
   agcAutomatic_ = automatic;
-  radio_.setAutomaticGainControl(automatic ? 0 : 1, agcGainIndex_);
-  Serial.printf("[TUNER] AGC %s (index=%u)\n", automatic ? "AUTO" : "MANUAL", static_cast<unsigned>(agcGainIndex_));
+  radio_.setAutomaticGainControl(attenuationIndex_ ? 1 : (automatic ? 0 : 1),
+                                 attenuationIndex_ ? attenuationIndex_ - 1 : agcGainIndex_);
+  Serial.printf("[TUNER] AGC %s (index=%u)\\n", automatic ? "AUTO" : "MANUAL", static_cast<unsigned>(agcGainIndex_));
   return true;
 }
 
@@ -126,8 +127,74 @@ bool TunerDriver::setAgcManualGain(uint8_t index) {
   if (!ready_ || index > 24 || (index % 8) != 0) return false;
   agcAutomatic_ = false;
   agcGainIndex_ = index;
-  radio_.setAutomaticGainControl(1, agcGainIndex_);
-  Serial.printf("[TUNER] AGC manual index=%u\n", static_cast<unsigned>(agcGainIndex_));
+  radio_.setAutomaticGainControl(1, attenuationIndex_ ? attenuationIndex_ - 1 : agcGainIndex_);
+  Serial.printf("[TUNER] AGC manual index=%u\\n", static_cast<unsigned>(agcGainIndex_));
+  return true;
+}
+
+
+bool TunerDriver::setAttenuationIndex(uint8_t index) {
+  const uint8_t maximum = modulation_ == RadioModulation::FM ? 27 : 37;
+  if (!ready_ || index > maximum) return false;
+  attenuationIndex_ = index;
+  const bool automatic = index == 0 && agcAutomatic_;
+  const uint8_t gain = index ? static_cast<uint8_t>(index - 1) : agcGainIndex_;
+  radio_.setAutomaticGainControl(automatic ? 0 : 1, gain);
+  return true;
+}
+bool TunerDriver::setSquelch(uint8_t threshold, bool useSnr) {
+  if (!ready_ || threshold > 100) return false;
+  squelchThreshold_ = threshold;
+  squelchUseSnr_ = useSnr;
+  if (!threshold && squelchMuted_) { radio_.setAudioMute(false); squelchMuted_ = false; }
+  return true;
+}
+bool TunerDriver::setFmRegion(uint8_t region) {
+  if (!ready_ || region > 2 || modulation_ != RadioModulation::FM) return false;
+  static const uint16_t low[] = {8750, 8790, 7600};
+  static const uint16_t high[] = {10800, 10790, 9500};
+  static const uint16_t spacing[] = {10, 20, 10};
+  uint16_t current = static_cast<uint16_t>(frequencyKHz() / 10UL);
+  if (current < low[region]) current = low[region];
+  if (current > high[region]) current = high[region];
+  fmRegion_ = region;
+  minimumFrequencyKHz_ = static_cast<uint32_t>(low[region]) * 10UL;
+  maximumFrequencyKHz_ = static_cast<uint32_t>(high[region]) * 10UL;
+  stepKHz_ = static_cast<uint16_t>(spacing[region] * 10U);
+  radio_.setFM(low[region], high[region], current, spacing[region]);
+  radio_.setSeekFmLimits(low[region], high[region]);
+  radio_.setFMDeEmphasis(region == 1 ? 1 : 2);
+  radio_.setFmBandwidth(0);
+  radio_.RdsInit();
+  radio_.setRdsConfig(1, 2, 2, 2, 2);
+  setFmStereoMode(fmStereoMode_);
+  return true;
+}
+bool TunerDriver::setFmStereoMode(uint8_t mode) {
+  if (!ready_ || mode > 2 || modulation_ != RadioModulation::FM) return false;
+  fmStereoMode_ = mode;
+  if (mode == 2) {
+    radio_.setFmBlendRssiStereoThreshold(127);
+    radio_.setFmBLendRssiMonoThreshold(127);
+    radio_.setFmBlendSnrStereoThreshold(127);
+    radio_.setFmBLendSnrMonoThreshold(127);
+    radio_.setFmBlendMultiPathStereoThreshold(0);
+    radio_.setFmBlendMultiPathMonoThreshold(0);
+  } else if (mode == 1) {
+    radio_.setFmBlendRssiStereoThreshold(0);
+    radio_.setFmBLendRssiMonoThreshold(0);
+    radio_.setFmBlendSnrStereoThreshold(0);
+    radio_.setFmBLendSnrMonoThreshold(0);
+    radio_.setFmBlendMultiPathStereoThreshold(127);
+    radio_.setFmBlendMultiPathMonoThreshold(127);
+  } else {
+    radio_.setFmBlendRssiStereoThreshold(49);
+    radio_.setFmBLendRssiMonoThreshold(30);
+    radio_.setFmBlendSnrStereoThreshold(27);
+    radio_.setFmBLendSnrMonoThreshold(14);
+    radio_.setFmBlendMultiPathStereoThreshold(20);
+    radio_.setFmBlendMultiPathMonoThreshold(60);
+  }
   return true;
 }
 
@@ -248,15 +315,23 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
   rdsDecoder_.reset();
 
   if (band.modulation == RadioModulation::FM) {
+    static const uint16_t fmLow[] = {8750, 8790, 7600};
+    static const uint16_t fmHigh[] = {10800, 10790, 9500};
+    static const uint16_t fmSpacing[] = {10, 20, 10};
+    const uint16_t low = fmLow[fmRegion_];
+    const uint16_t high = fmHigh[fmRegion_];
+    const uint16_t spacing = fmSpacing[fmRegion_];
+    const uint32_t fmTarget = constrain(target, static_cast<uint32_t>(low) * 10UL, static_cast<uint32_t>(high) * 10UL);
+    minimumFrequencyKHz_ = static_cast<uint32_t>(low) * 10UL;
+    maximumFrequencyKHz_ = static_cast<uint32_t>(high) * 10UL;
+    stepKHz_ = static_cast<uint16_t>(spacing * 10U);
     bandwidthChoice_ = 0;
     ssbPatchLoaded_ = false;
-    radio_.setFM(static_cast<uint16_t>(band.minimumKHz / 10UL),
-                 static_cast<uint16_t>(band.maximumKHz / 10UL),
-                 static_cast<uint16_t>(target / 10UL),
-                 static_cast<uint16_t>(stepKHz_ / 10UL));
+    radio_.setFM(low, high, static_cast<uint16_t>(fmTarget / 10UL), spacing);
     radio_.setTuneFrequencyAntennaCapacitor(1);
-    radio_.setSeekFmLimits(static_cast<uint16_t>(band.minimumKHz / 10UL),
-                           static_cast<uint16_t>(band.maximumKHz / 10UL));
+    radio_.setSeekFmLimits(low, high);
+    radio_.setFMDeEmphasis(fmRegion_ == 1 ? 1 : 2);
+    setFmStereoMode(fmStereoMode_);
     radio_.setSeekFmRssiThreshold(0);
     radio_.setSeekFmSNRThreshold(1);
     radio_.setFmBandwidth(0);
@@ -315,7 +390,7 @@ bool TunerDriver::setModulation(const RadioBandDefinition& band, RadioModulation
   return setBand(configured);
 }
 bool TunerDriver::tune(uint32_t frequencyKHz, const RadioBandDefinition& band) {
-  if (!ready_ || frequencyKHz < band.minimumKHz || frequencyKHz > band.maximumKHz) return false;
+  if (!ready_ || frequencyKHz < minimumFrequencyKHz_ || frequencyKHz > maximumFrequencyKHz_) return false;
   if (band.modulation == RadioModulation::FM)
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz / 10UL));
   else
@@ -343,7 +418,16 @@ uint32_t TunerDriver::frequencyKHz() const {
 }
 
 void TunerDriver::refreshSignalQuality() {
-  if (ready_) radio_.getCurrentReceivedSignalQuality();
+  if (!ready_) return;
+  radio_.getCurrentReceivedSignalQuality();
+  if (!squelchThreshold_) return;
+  const int16_t value = squelchUseSnr_ ? radio_.getCurrentSNR() : radio_.getCurrentRSSI();
+  const uint8_t threshold = squelchMuted_ ? squelchThreshold_ + 2 : squelchThreshold_;
+  const bool shouldMute = value >= 0 && value < threshold;
+  if (shouldMute != squelchMuted_) {
+    radio_.setAudioMute(shouldMute);
+    squelchMuted_ = shouldMute;
+  }
 }
 
 bool TunerDriver::pollRds(TunerRdsData& out) {

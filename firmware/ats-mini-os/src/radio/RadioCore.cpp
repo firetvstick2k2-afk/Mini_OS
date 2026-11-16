@@ -25,6 +25,12 @@ bool RadioCore::begin(uint32_t initialFrequencyKHz) {
   if (!ready_) return false;
   const auto& band = BandManager::current();
   publishBand(snapshot_, band);
+  if (band.modulation == RadioModulation::FM) {
+    const uint8_t region = tuner_.fmRegion();
+    snapshot_.bandMinimumKHz = region == 2 ? 76000 : (region == 1 ? 87900 : 87500);
+    snapshot_.bandMaximumKHz = region == 2 ? 95000 : (region == 1 ? 107900 : 108000);
+    snapshot_.tuningStepKHz = region == 1 ? 200 : 100;
+  }
   tuner_.refreshSignalQuality();
   snapshot_.frequencyKHz = tuner_.frequencyKHz();
   snapshot_.bfoOffsetHz = tuner_.bfoOffsetHz();
@@ -198,6 +204,18 @@ bool RadioCore::nextChannel(int16_t acceleratedDelta) {
 
 bool RadioCore::setAgcAutomatic(bool automatic) { return ready_ && tuner_.setAgcAutomatic(automatic); }
 bool RadioCore::setAgcManualGain(uint8_t index) { return ready_ && tuner_.setAgcManualGain(index); }
+bool RadioCore::setAttenuationIndex(uint8_t index) { return ready_ && tuner_.setAttenuationIndex(index); }
+bool RadioCore::setSquelch(uint8_t threshold, bool useSnr) { return ready_ && tuner_.setSquelch(threshold, useSnr); }
+bool RadioCore::setFmRegion(uint8_t region) {
+  if (!ready_ || !tuner_.setFmRegion(region)) return false;
+  snapshot_.frequencyKHz = tuner_.frequencyKHz();
+  snapshot_.bandMinimumKHz = region == 2 ? 76000 : (region == 1 ? 87900 : 87500);
+  snapshot_.bandMaximumKHz = region == 2 ? 95000 : (region == 1 ? 107900 : 108000);
+  snapshot_.tuningStepKHz = region == 1 ? 200 : 100;
+  snapshot_.generation = ++generation_;
+  return true;
+}
+bool RadioCore::setFmStereoMode(uint8_t mode) { return ready_ && tuner_.setFmStereoMode(mode); }
 bool RadioCore::setSoftMuteEnabled(bool enabled) { return ready_ && tuner_.setSoftMuteEnabled(enabled); }
 bool RadioCore::setSoftMuteAttenuation(uint8_t attenuationDb) { return ready_ && tuner_.setSoftMuteAttenuation(attenuationDb); }
 bool RadioCore::setAvcGain(uint8_t gain) { return ready_ && tuner_.setAvcGain(gain); }

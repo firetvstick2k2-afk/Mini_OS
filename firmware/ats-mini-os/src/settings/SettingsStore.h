@@ -32,6 +32,16 @@ public:
   bool saveSoftMuteAttenuationDb(uint8_t attenuationDb);
   uint8_t avcGain(uint8_t fallback = 90);
   bool saveAvcGain(uint8_t gain);
+  uint8_t attenuationIndex(uint8_t fallback = 0);
+  bool saveAttenuationIndex(uint8_t index);
+  uint8_t squelchThreshold(uint8_t fallback = 0);
+  bool saveSquelchThreshold(uint8_t threshold);
+  bool squelchUsesSnr(bool fallback = false);
+  bool saveSquelchUsesSnr(bool enabled);
+  uint8_t fmRegion(uint8_t fallback = 0);
+  bool saveFmRegion(uint8_t region);
+  uint8_t fmStereoMode(uint8_t fallback = 0);
+  bool saveFmStereoMode(uint8_t mode);
   uint8_t ssbBandwidthChoice(uint8_t fallback = 4);
   bool saveSsbBandwidthChoice(uint8_t choice);
   int16_t bfoOffsetHz(int16_t fallback = 0);
@@ -54,6 +64,11 @@ private:
   static constexpr char kAgcGainIndexKey[] = "rx_agc_idx";
   static constexpr char kSoftMuteKey[] = "rx_softmute";
   static constexpr char kAvcGainKey[] = "rx_avc";
+  static constexpr char kAttenuationKey[] = "rx_att";
+  static constexpr char kSquelchKey[] = "rx_sql";
+  static constexpr char kSquelchSnrKey[] = "rx_sql_snr";
+  static constexpr char kFmRegionKey[] = "fm_region";
+  static constexpr char kFmStereoKey[] = "fm_stereo";
   static constexpr char kSsbBandwidthKey[] = "ssb_bw";
   static constexpr char kBfoOffsetKey[] = "ssb_bfo";
   static constexpr char kCpuProfileKey[] = "cpu_prof";
