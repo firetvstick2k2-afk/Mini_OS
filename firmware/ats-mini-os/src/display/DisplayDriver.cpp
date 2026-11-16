@@ -719,7 +719,10 @@ void drawRadioUtilityPage(Canvas& c,uint8_t page,uint8_t selection,const RadioSn
       c.setTextColor(yellow,navy); c.drawString("NAME BEARBEITEN",160,88);
       c.setTextColor(0xFFFF,navy); c.drawString(memoryEditName,160,112);
       const int nameWidth=c.textWidth(memoryEditName);
-      const int cursorWidth=c.textWidth(String(memoryEditName).substring(0,memoryEditCursor).c_str());
+      char cursorPrefix[16] = {};
+      const size_t prefixLength=min(static_cast<size_t>(memoryEditCursor),sizeof(cursorPrefix)-1);
+      memcpy(cursorPrefix,memoryEditName,prefixLength);
+      const int cursorWidth=c.textWidth(cursorPrefix);
       c.drawFastHLine(160-nameWidth/2+cursorWidth,124,8,yellow);
       c.setTextColor(green,navy); c.drawString("DREHEN: ZEICHEN / KLICK: WEITER",160,148);
       c.setTextColor(yellow,navy); c.drawString("LANG: NAMEN SPEICHERN",160,162);
