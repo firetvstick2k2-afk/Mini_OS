@@ -2680,4 +2680,5 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Betroffene Dateien: src/input/EncoderInput.h/.cpp, ats-mini-os.ino, src/display/DisplayDriver.h/.cpp, src/display/DisplayLayoutHJB.h.
 - Noch nicht kompiliert oder am Gerät getestet. Statische Prüfung und anschließende manuelle Build-Freigabe folgen.
 - Nach der Cursor-Ausrichtung wird ein geänderter SSB-BFO-Wert über die bestehende SettingsStore-API gespeichert; die vorhandene BFO-Einstellung bleibt damit über Neustarts erhalten.
-- Die Cursor-Auswahl und die Stellenwertabstimmung verwenden jeweils unbeschleunigte Encoder-Detents; die bisherige Beschleunigung für normales Frequenz-Tuning bleibt unverändert. Kein GitHub-Actions-Workflow gestartet, kein Flash.
+- Die Cursor-Auswahl und die Stellenwertabstimmung verwenden jeweils unbeschleunigte Encoder-Detents; die bisherige Beschleunigung für normales Frequenz-Tuning bleibt unverändert.
+- Die Schrittwahl wird über die von TunerDriver tatsächlich gemeldete Step-Choice aufgelöst; die FM-/AM-Tabellenindizes werden begrenzt, damit ungültige Auswahlwerte nicht außerhalb der Tabellen lesen. Kein GitHub-Actions-Workflow gestartet, kein Flash.
