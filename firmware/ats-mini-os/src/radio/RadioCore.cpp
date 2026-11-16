@@ -19,12 +19,16 @@ void clearRdsSnapshot(RadioSnapshot& s) {
   s.rdsEcc = 0;
   s.rdsAfCount = 0;
   memset(s.rdsAfKHz, 0, sizeof(s.rdsAfKHz));
+  s.rdsAfMethodBCount = 0;
+  memset(s.rdsAfMethodBLists, 0, sizeof(s.rdsAfMethodBLists));
   s.rdsEonValid = false;
   s.rdsEonPi = 0;
   s.rdsEonTp = s.rdsEonTa = false;
   s.rdsEonPty = s.rdsEonAfCount = 0;
   memset(s.rdsEonAfKHz, 0, sizeof(s.rdsEonAfKHz));
   memset(s.rdsEonPs, 0, sizeof(s.rdsEonPs));
+  s.rdsEonCount = 0;
+  memset(s.rdsEonNetworks, 0, sizeof(s.rdsEonNetworks));
   s.rdsOdaAid = 0;
   s.rdsOdaGroupType = s.rdsOdaGroupVersion = 0xFF;
   s.rdsRtPlusItemToggle = s.rdsRtPlusItemRunning = false;
@@ -104,6 +108,11 @@ void RadioCore::update() {
         snapshot_.rdsAfCount = rds.afCount;
         for (uint8_t af = 0; af < rds.afCount; ++af) snapshot_.rdsAfKHz[af] = rds.afKHz[af];
       }
+      if (rds.afMethodBUpdated) {
+        snapshot_.rdsAfMethodBCount = rds.afMethodBCount;
+        memcpy(snapshot_.rdsAfMethodBLists, rds.afMethodBLists,
+               sizeof(snapshot_.rdsAfMethodBLists));
+      }
       if (rds.eonUpdated) {
         snapshot_.rdsEonValid = rds.eon.valid;
         snapshot_.rdsEonPi = rds.eon.pi;
@@ -114,6 +123,9 @@ void RadioCore::update() {
         for (uint8_t af = 0; af < rds.eon.afCount; ++af)
           snapshot_.rdsEonAfKHz[af] = rds.eon.afKHz[af];
         copyField(snapshot_.rdsEonPs, sizeof(snapshot_.rdsEonPs), rds.eon.ps);
+        snapshot_.rdsEonCount = rds.eonCount;
+        memcpy(snapshot_.rdsEonNetworks, rds.eonNetworks,
+               sizeof(snapshot_.rdsEonNetworks));
       }
       if (rds.odaUpdated) {
         snapshot_.rdsOdaAid = rds.odaAid;
