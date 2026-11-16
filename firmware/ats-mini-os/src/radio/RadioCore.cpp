@@ -260,6 +260,18 @@ bool RadioCore::setFmStereoMode(uint8_t mode) { return ready_ && tuner_.setFmSte
 bool RadioCore::setSoftMuteEnabled(bool enabled) { return ready_ && tuner_.setSoftMuteEnabled(enabled); }
 bool RadioCore::setSoftMuteAttenuation(uint8_t attenuationDb) { return ready_ && tuner_.setSoftMuteAttenuation(attenuationDb); }
 bool RadioCore::setAvcGain(uint8_t gain) { return ready_ && tuner_.setAvcGain(gain); }
+bool RadioCore::setPatchProfile(uint8_t profile) {
+  if (!ready_ || profile > 2 || !tuner_.setPatchProfile(profile)) return false;
+  RadioBandDefinition configured = BandManager::current();
+  configured.modulation = snapshot_.modulation;
+  configured.startKHz = snapshot_.frequencyKHz;
+  if (!tuner_.setBand(configured)) return false;
+  snapshot_.frequencyKHz = tuner_.frequencyKHz();
+  snapshot_.generation = ++generation_;
+  Serial.printf("[RADIO] DSP patch profile=%u\\n", static_cast<unsigned>(profile));
+  return true;
+}
+
 bool RadioCore::setBfoOffsetHz(int16_t offsetHz) {
   if (!ready_ || !tuner_.setBfoOffsetHz(offsetHz)) return false;
   snapshot_.bfoOffsetHz = tuner_.bfoOffsetHz();
