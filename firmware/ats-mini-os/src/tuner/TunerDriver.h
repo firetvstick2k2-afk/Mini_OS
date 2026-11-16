@@ -115,6 +115,10 @@ struct TunerRdsData {
   uint16_t odaAid = 0;
   uint8_t odaGroupType = 0, odaGroupVersion = 0;
   RdsEonNetwork eon;
+  uint8_t eonCount = 0;
+  RdsEonNetwork eonNetworks[RDS_MAX_EON_NETWORKS] = {};
+  uint8_t afMethodBCount = 0;
+  RdsAfMethodBList afMethodBLists[RDS_MAX_AF_METHOD_B_LISTS] = {};
   RdsRtPlusTag rtPlus[2];
   bool rtPlusItemToggle = false, rtPlusItemRunning = false;
   uint16_t piCode = 0;
@@ -122,6 +126,8 @@ struct TunerRdsData {
   uint8_t eccCode = 0;
   uint8_t afCount = 0;
   uint32_t afKHz[25] = {};
+  uint8_t afMethodBCount = 0;
+  RdsAfMethodBList afMethodBLists[RDS_MAX_AF_METHOD_B_LISTS] = {};
   bool clockValid = false;
   uint8_t clockHour = 0;
   uint8_t clockMinute = 0;
@@ -206,6 +212,7 @@ private:
   uint8_t bandwidthChoice_ = 0;
   bool haveTextFlag_ = false;
   uint8_t lastTextFlag_ = 0;
+  uint16_t lastPiCode_ = 0;
   char rawRadioText_[65] = {};
   RadioModulation modulation_ = RadioModulation::FM;
   uint32_t minimumFrequencyKHz_ = 87500;
