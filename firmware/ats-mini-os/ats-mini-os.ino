@@ -26,6 +26,7 @@
 #include "src/storage/FileManager.h"
 #include "src/settings/SettingsStore.h"
 #include "src/menus/MenuSSB.h"
+#include "src/tuner/SsbPatchManager.h"
 #include "src/cw/CwDecoderService.h"
 
 namespace {
@@ -676,6 +677,8 @@ void loop() {
           } else Serial.println("[MENU] BFO change rejected (limit +/-16000 Hz)");
         } else if (menuPage == 3 && menuSelection == 6) {
           menuPage = 12; menuSelection = 0;
+        } else if (menuPage == 3 && menuSelection == 7) {
+          menuPage = 27; menuSelection = static_cast<uint8_t>(radio.patchProfile() + 1);
         } else if (menuPage == 3 && menuSelection == 5) {
           menuPage = 11;
           menuSelection = 0;
