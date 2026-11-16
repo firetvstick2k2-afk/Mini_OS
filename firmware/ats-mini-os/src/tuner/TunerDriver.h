@@ -79,6 +79,14 @@ struct TunerRdsData {
   bool decoderIdentification = false;
   bool stationNameUpdated = false;
   bool radioTextUpdated = false;
+  bool eonUpdated = false;
+  bool odaUpdated = false;
+  bool rtPlusUpdated = false;
+  uint16_t odaAid = 0;
+  uint8_t odaGroupType = 0, odaGroupVersion = 0;
+  RdsEonNetwork eon;
+  RdsRtPlusTag rtPlus[2];
+  bool rtPlusItemToggle = false, rtPlusItemRunning = false;
   uint16_t piCode = 0;
   uint8_t pty = 0;
   uint8_t eccCode = 0;
