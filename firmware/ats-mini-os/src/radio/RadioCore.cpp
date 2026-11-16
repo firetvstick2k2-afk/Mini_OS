@@ -96,6 +96,8 @@ void RadioCore::update() {
     lastRdsPollMs_ = now;
     TunerRdsData rds;
     if (tuner_.pollRds(rds)) {
+      if (rds.piValid && snapshot_.piCode != 0 && snapshot_.piCode != rds.piCode)
+        clearRdsSnapshot(snapshot_);
       if (rds.piValid) snapshot_.piCode = rds.piCode;
       if (rds.ptyValid) snapshot_.pty = rds.pty;
       if (rds.ptynUpdated) copyField(snapshot_.rdsPtyn, sizeof(snapshot_.rdsPtyn), rds.ptyn);
