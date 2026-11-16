@@ -24,6 +24,10 @@ public:
     return currentRdsStatus.resp.BLEC;
   }
 
+  uint8_t currentBlockDError() const {
+    return currentRdsStatus.resp.BLED;
+  }
+
   uint16_t currentBlockC() const {
     return static_cast<uint16_t>(
       (static_cast<uint16_t>(currentRdsStatus.resp.BLOCKCH) << 8) |
