@@ -760,7 +760,7 @@ void drawDecoderFrequencyPage(Canvas& c,uint8_t selection) {
       preset.modulation==RadioModulation::USB?"USB":preset.modulation==RadioModulation::LSB?"LSB":"AM");
     c.drawString(line,160,88);
     const char* note=(selection>=33 && selection<=38)?"DWD PINNEBERG / RTTY F1B 50 BAUD":
-      (selection>=39?"CB-DATENKANAL":"Empfangsfrequenz / Betriebsart");
+      (selection>=39 && selection<=40?"CB-DATENKANAL":"Empfangsfrequenz / Betriebsart");
     c.setTextColor(yellow,navy); c.setFont(&lgfx::fonts::Font0); c.drawString(note,160,113);
   }
   snprintf(line,sizeof(line),"%02u / %02u",static_cast<unsigned>(selection+1),static_cast<unsigned>(total));
