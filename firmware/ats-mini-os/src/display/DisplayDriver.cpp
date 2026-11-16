@@ -741,17 +741,21 @@ void drawRadioUtilityPage(Canvas& c,uint8_t page,uint8_t selection,const RadioSn
           c.drawLine(x1,y1,x2,y2,green);
         }
       }
-      const int px=gx+2+static_cast<int>((static_cast<uint32_t>(peakIndex)*(gw-4))/(visible>1?visible-1:1));
-      const int py=gy+gh-3-static_cast<int>((static_cast<uint16_t>(peakRssi)*(gh-7))/100);
-      c.fillCircle(px,py,3,yellow);
-      snprintf(line,sizeof(line),"PEAK %lu kHz  RSSI %u",static_cast<unsigned long>(scanPoints[peakIndex].frequencyKHz),static_cast<unsigned>(peakRssi));
+      const uint16_t selected=selection<visible?selection:static_cast<uint16_t>(peakIndex);
+      const int px=gx+2+static_cast<int>((static_cast<uint32_t>(selected)*(gw-4))/(visible>1?visible-1:1));
+      const int py=gy+gh-3-static_cast<int>((static_cast<uint16_t>(scanPoints[selected].rssi)*(gh-7))/100);
+      const int peakX=gx+2+static_cast<int>((static_cast<uint32_t>(peakIndex)*(gw-4))/(visible>1?visible-1:1));
+      const int peakY=gy+gh-3-static_cast<int>((static_cast<uint16_t>(peakRssi)*(gh-7))/100);
+      c.fillCircle(peakX,peakY,2,green);
+      c.drawCircle(px,py,4,yellow);
+      snprintf(line,sizeof(line),"SEL %lu kHz  RSSI %u",static_cast<unsigned long>(scanPoints[selected].frequencyKHz),static_cast<unsigned>(scanPoints[selected].rssi));
       c.setTextColor(yellow,navy); c.drawString(line,160,135);
     } else {
       c.setTextColor(0x7BEF,navy); c.drawString("NO SCAN DATA",160,88);
     }
     const char* status=scanState==1?"SCAN LAEUFT":scanState==2?"SCAN FERTIG":scanState==3?"ABGEBROCHEN":scanState==4?"FEHLER":"BEREIT";
     c.setTextColor(scanState==4?red:(scanState==1?green:yellow),navy); c.drawString(status,160,150);
-    c.setTextColor(cyan,navy); c.drawString("KLICK: START / STOP   LANG: ABBRUCH",160,163);
+    c.setTextColor(cyan,navy); c.drawString(scanCount>0 && scanState!=1?"DREHEN: PEAK  KLICK: UEBERNEHMEN":"KLICK: START / STOP   LANG: ABBRUCH",160,163);
   } else {
     const char* status=seekState==1?"SUCHE LAEUFT":seekState==2?"SENDER GEFUNDEN":seekState==3?"KEIN SENDER GEFUNDEN":seekState==4?"ABGEBROCHEN":seekState==5?"FEHLER":"BEREIT";
     c.setTextColor(seekState==1?green:(seekState==5?red:yellow),navy); c.drawString(status,160,68);
