@@ -94,13 +94,14 @@ void RdsDecoder::addAfMethodB(uint32_t tuningKHz, uint32_t alternativeKHz) {
 }
 
 void RdsDecoder::processAlternativeFrequencyByte(uint8_t code) {
+  if (afState_ == 4) return;
   if (afLfMfPending_) {
     const uint32_t frequency = lfmfFrequency(code);
     if (frequency) addAlternativeFrequency(frequency);
     afLfMfPending_ = false;
     if (afState_ == 2 && afExpectedCount_) {
       ++afReceivedCount_;
-      if (afReceivedCount_ >= afExpectedCount_) afState_ = 0;
+      if (afReceivedCount_ >= afExpectedCount_) afState_ = 4;
     }
     return;
   }
@@ -113,7 +114,7 @@ void RdsDecoder::processAlternativeFrequencyByte(uint8_t code) {
   addAlternativeFrequency(afFrequency(code));
   if (afState_ == 2 && afExpectedCount_) {
     ++afReceivedCount_;
-    if (afReceivedCount_ >= afExpectedCount_) afState_ = 0;
+    if (afReceivedCount_ >= afExpectedCount_) afState_ = 4;
   }
 }
 
@@ -146,7 +147,7 @@ void RdsDecoder::processAlternativeFrequencies(uint16_t blockC, RdsDecodedFields
         ++afPairsReceived_;
         publishAfMethodB(out);
       }
-      if (afPairsReceived_ >= afPairsExpected_) afState_ = 0;
+      if (afPairsReceived_ >= afPairsExpected_) { afState_ = 0; afExpectedCount_ = 0; }
       return;
     }
     // A new list header may follow the final pair. Start it without treating
@@ -177,20 +178,24 @@ void RdsDecoder::processAlternativeFrequencies(uint16_t blockC, RdsDecodedFields
         ++afPairsReceived_;
         publishAfMethodB(out);
       }
-      if (afPairsReceived_ >= afPairsExpected_) afState_ = 0;
+      if (afPairsReceived_ >= afPairsExpected_) { afState_ = 0; afExpectedCount_ = 0; }
       return;
     }
     afState_ = 2;
     afReceivedCount_ = 0;
     processAlternativeFrequencyByte(first);
+    if (afState_ == 4) { afState_ = 0; afExpectedCount_ = afReceivedCount_ = 0; publishAf(out); return; }
     processAlternativeFrequencyByte(second);
+    if (afState_ == 4) { afState_ = 0; afExpectedCount_ = afReceivedCount_ = 0; }
     publishAf(out);
     return;
   }
 
   if (afState_ == 2) {
     processAlternativeFrequencyByte(first);
+    if (afState_ == 4) { afState_ = 0; afExpectedCount_ = afReceivedCount_ = 0; publishAf(out); return; }
     processAlternativeFrequencyByte(second);
+    if (afState_ == 4) { afState_ = 0; afExpectedCount_ = afReceivedCount_ = 0; }
     publishAf(out);
     return;
   }
@@ -209,13 +214,14 @@ void RdsDecoder::processAlternativeFrequencies(uint16_t blockC, RdsDecodedFields
     afExpectedCount_ = static_cast<uint8_t>(first - 224U);
     afReceivedCount_ = 0;
     afHeaderCode_ = second;
-    if (afExpectedCount_ && afFrequency(second)) {
+    if (afExpectedCount_ > 1 && afFrequency(second)) {
       afPairsExpected_ = static_cast<uint8_t>(afExpectedCount_ - 1U);
       afPairsReceived_ = 0;
-      afState_ = afPairsExpected_ ? 1 : 0;
+      afState_ = 1;
     } else {
       afState_ = 2;
       processAlternativeFrequencyByte(second);
+      if (afState_ == 4) { afState_ = 0; afExpectedCount_ = afReceivedCount_ = 0; }
     }
     publishAf(out);
     return;
