@@ -2661,3 +2661,12 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - AF-Liste und Decoderzustand werden bei Frequenz-/Bandwechsel zurückgesetzt, damit keine Senderdaten vermischt werden.
 - Noch nicht umgesetzt: EON (14A), RT+ (ODA-AID 0x4BD7), vollständige ODA-Verarbeitung, AF-Liste mit RDS-Anzahl-/Variantensemantik und vollständige Sync-/PI-Validierung. Diese benötigen weitere spezifikationsbasierte Decoderarbeit; sie werden nicht als verfügbar behauptet.
 - **Status:** Quelltextänderungen committed; kein Compile-Workflow gestartet und kein Flash. Manueller Compile-Test durch Nutzer erforderlich. RDS-Empfang und AF/TP/TA-Verhalten müssen anschließend am Gerät mit geeigneten Sendern validiert werden.
+
+
+## Spectrum Scan – Encoder-Peak-Auswahl (2026-11-16)
+- Nach Abschluss oder Abbruch des Scans navigiert der Encoder durch lokale RSSI-Maxima. Die Auswahl läuft zyklisch über die gemessenen Punkte; bei fehlenden lokalen Maxima wird der stärkste Messpunkt in Drehrichtung verwendet.
+- Beim Navigieren wird die Frequenz über `RadioCore::tune()` live abgestimmt. Messpunkte bleiben erhalten. Kurzer Klick übernimmt den Punkt und kehrt zum Radio zurück; während eines laufenden Scans stoppt kurzer Klick weiterhin den Scan.
+- Die Spektrumseite behält Geometrie und Farben. Gelber Ring = ausgewählter Punkt; der stärkste Peak bleibt dezent grün markiert. Keine Änderungen an den Radio-Hauptlayouts oder am LegacyFrequencyRenderer.
+- Betroffene Dateien: `ats-mini-os.ino`, `DisplayDriver.cpp`.
+- Frequenzcursor mit vollständiger ATS-Mini-DEV-Stellenwert-/Encoderlogik bleibt offen: Die Definitionen der Referenzfunktionen `getFreqInputStep()`, `getFreqInputPos()` und `doSelectDigit()` konnten in der verfügbaren Referenzdatei-Menge noch nicht verlässlich lokalisiert werden. Keine Ersatzlogik auf Verdacht eingebaut.
+- Statische Prüfungen und Build-Freigabe stehen noch aus. Kein Build, GitHub-Actions-Workflow oder Flash wurde gestartet.
