@@ -156,6 +156,30 @@ bool tuneDecoderPreset(uint8_t presetIndex) {
     static_cast<unsigned>(preset.modulation));
   return true;
 }
+uint16_t nextSpectrumPeak(const ScanService& scan, uint16_t current, int8_t direction) {
+  const uint16_t count=scan.count();
+  if(count<3 || !direction) return current;
+  uint8_t minR=255,maxR=0;
+  for(uint16_t i=0;i<count;++i){const uint8_t v=scan.point(i).rssi;if(v<minR)minR=v;if(v>maxR)maxR=v;}
+  const uint8_t threshold=static_cast<uint8_t>(minR+(static_cast<uint16_t>(maxR-minR)*5)/100);
+  for(uint16_t offset=1;offset<count;++offset){
+    int32_t candidate=static_cast<int32_t>(current)+static_cast<int32_t>(direction)*offset;
+    while(candidate<0)candidate+=count;
+    candidate%=count;
+    if(candidate==0 || candidate==count-1) continue;
+    const uint8_t v=scan.point(static_cast<uint16_t>(candidate)).rssi;
+    if(v>=threshold && v>=scan.point(static_cast<uint16_t>(candidate-1)).rssi &&
+       v>=scan.point(static_cast<uint16_t>(candidate+1)).rssi) return static_cast<uint16_t>(candidate);
+  }
+  uint16_t best=current;
+  for(uint16_t offset=1;offset<count;++offset){
+    int32_t candidate=static_cast<int32_t>(current)+static_cast<int32_t>(direction)*offset;
+    while(candidate<0)candidate+=count;
+    candidate%=count;
+    if(scan.point(static_cast<uint16_t>(candidate)).rssi>scan.point(best).rssi) best=static_cast<uint16_t>(candidate);
+  }
+  return best;
+}
 void fmRefresh(){ fmCount=0; if(!FileManager::list(fmPath,fmEntries,FileManager::MAX_ENTRIES,fmCount)) snprintf(fmMessage,sizeof(fmMessage),"Ordner nicht lesbar"); }
 void fmMessageSet(const char* m){ strncpy(fmMessage,m,sizeof(fmMessage)-1); fmMessage[sizeof(fmMessage)-1]=0; }
 void fmParent(){ if(strcmp(fmPath,"/")==0)return; char* p=strrchr(fmPath,47); if(p==fmPath)fmPath[1]=0; else if(p)*p=0; fmSelection=0; fmRefresh(); }
@@ -309,7 +333,12 @@ void loop() {
         const int16_t rotationDelta = (menuOpen || bfoAdjustmentActive)
           ? (inputEvent.delta > 0 ? 1 : -1) : inputEvent.delta;
         if (menuOpen) {
-          if(menuPage==22){int v=(int)selectedMemorySlot+rotationDelta;v%=MemoryService::kSlotCount;if(v<0)v+=MemoryService::kSlotCount;selectedMemorySlot=(uint8_t)v;}
+          if(menuPage==23 && scanner.state()!=ScanService::State::Running && scanner.count()>0) {
+            const uint16_t selected=nextSpectrumPeak(scanner,static_cast<uint16_t>(menuSelection),rotationDelta>0?1:-1);
+            menuSelection=static_cast<uint8_t>(selected);
+            if(scanner.point(selected).frequencyKHz && radio.tune(scanner.point(selected).frequencyKHz)) display.notifyTuning();
+          }
+          else if(menuPage==22){int v=(int)selectedMemorySlot+rotationDelta;v%=MemoryService::kSlotCount;if(v<0)v+=MemoryService::kSlotCount;selectedMemorySlot=(uint8_t)v;}
           else if(menuPage==21){ if(radio.nextChannel(rotationDelta)) display.notifyTuning(); }
           else if(menuPage==19){ frequencyKeypad.rotate(rotationDelta); }
           else if(menuPage==6){ if(fmMode==1){int v=(int)fmActionSelection+rotationDelta;v%=6;if(v<0)v+=6;fmActionSelection=(uint8_t)v;} else if(fmMode==2)fmActionSelection=fmActionSelection?0:1; else if(fmMode==4){const char* chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-.";size_t n=strlen(chars);char ch=fmEditName[fmEditCursor];const char* q=strchr(chars,ch?ch:65);int pos=q?(int)(q-chars):0;pos=(pos+rotationDelta)%(int)n;if(pos<0)pos+=(int)n;fmEditName[fmEditCursor]=chars[pos];fmEditName[fmEditCursor+1]=0;} else {uint8_t n=fmCount+(fmMode==3?1:3);int v=(int)fmSelection+rotationDelta;v%=n;if(v<0)v+=n;fmSelection=(uint8_t)v;} }
@@ -388,7 +417,16 @@ void loop() {
           if (memories.entry(selectedMemorySlot).frequencyKHz) { if(memories.recall(selectedMemorySlot,radio)){display.notifyTuning();closeMenuToRadio("memory recalled");} }
           else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\\n",static_cast<unsigned>(selectedMemorySlot+1));
         } else if (menuPage == 23) {
-          if(scanner.state()==ScanService::State::Running) scanner.stop(radio); else scanner.start(radio);
+          if(scanner.state()==ScanService::State::Running) scanner.stop(radio);
+          else if(scanner.count()>0 && scanner.state()!=ScanService::State::Idle) {
+            const uint16_t selected=static_cast<uint16_t>(menuSelection);
+            if(selected<scanner.count() && radio.tune(scanner.point(selected).frequencyKHz)) {
+              display.notifyTuning(); closeMenuToRadio("spectrum peak selected");
+            }
+          } else {
+            menuSelection=0;
+            scanner.start(radio);
+          }
         } else if (menuPage == 24) {
           if(seeker.state()==SeekService::State::Running) seeker.stop(); else seeker.start(radio,1,12);
         } else if (menuPage == 21) {
