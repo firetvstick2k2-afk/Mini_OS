@@ -1,5 +1,14 @@
 # Übergabeprotokoll – ATS Mini OS
 
+## Verbindlicher Arbeitsablauf für jede weitere Änderung
+
+- Vor jedem Arbeitsschritt zuerst dieses `HANDOVER.md` im aktuellen Stand lesen und mit dem tatsächlichen Branch-/Dateistand abgleichen.
+- Referenzprüfung: `13HN2709/ATS-Mini-Dev` ist die funktionierende Feature-Referenz. `Firetvstick2k2-afk/Mini_OS` auf `dev/first-build-preparation` ist das aktive, modulare Zielprojekt. Der Branch `dev/first-build` auf einem anderen Repository/Konto ist nicht mit dem Mini-OS-Arbeitsbranch zu verwechseln.
+- Vor Änderungen die aktuellen Zieldateien und bei Bedarf die entsprechenden Referenzdateien abrufen. Funktionierende Referenzdetails (Code, Bedienlogik, Farben, Grafiken und Darstellung) möglichst 1:1 erhalten; nur die notwendigen Anpassungen für Mini-OS und seine Module vornehmen.
+- Nach jeder von ChatGPT vorgenommenen Code- oder Konfigurationsänderung dieses Dokument aktualisieren: Änderungen/Dateien, Schnittstellen, Commit(s), Prüfungen und offene Punkte festhalten. Dokumentation und tatsächlichen GitHub-Stand anschließend verifizieren.
+- Vor Build-Freigabe statische Prüfungen und offene Aufgaben dokumentieren. Keine GitHub-Actions-Workflows starten und nicht flashen; der Nutzer startet Builds selbst.
+- Nach einem Build das Ergebnis erst dann als erfolgreich dokumentieren, wenn der Nutzer es bestätigt oder ein eindeutig ausgelesener CI-Status es belegt. QSPI und OSPI getrennt erfassen. Gerätetest/Flash-Erfolg nur nach ausdrücklicher Nutzerbestätigung dokumentieren.
+
 ## Arbeitsfortschritt – Spektrum-Renderer und SSB-Patchverwaltung (2026-11-16)
 
 Auf `dev/first-build-preparation` wurden folgende Änderungen committed:
@@ -62,7 +71,7 @@ Auf `dev/first-build-preparation` wurden die folgenden Funktionen vorbereitet un
 
 - Das aktive Projekt ist ausschließlich `firetvstick2k2-afk/Mini_OS`.
 - Frühere Repository-Zuordnungen sind kein aktives Ziel und dürfen nicht mehr als aktuelles Projekt bezeichnet werden.
-- `13HN2709/ats-mini-dev` kann weiterhin als historische Quellcode-Referenz genannt werden, wenn eine konkrete Portierung oder Herkunft von Code erläutert werden muss. Es ist kein Zielrepository und darf nur lesend verwendet werden, sofern der Nutzer nichts anderes freigibt.
+- `13HN2709/ATS-Mini-Dev` ist die maßgebliche funktionierende Referenzbasis für wiederherzustellende ATS-Mini-Funktionen. Vor einer Portierung wird dort geprüft, ob die gewünschte Funktion bereits vollständig und funktionsfähig vorhanden ist. Code, Bedienlogik, Farben, Grafiken und Darstellungsdetails werden so originalgetreu wie möglich übernommen und anschließend an die modulare Mini-OS-Architektur angepasst. Das Referenzrepository ist Quelle, nicht Ziel der Mini-OS-Änderungen.
 
 ## 4. Bestätigte Anforderungen und Grenzen
 
@@ -70,7 +79,7 @@ Auf `dev/first-build-preparation` wurden die folgenden Funktionen vorbereitet un
 - Hauptziel: ATS Mini V4 auf ESP32-S3.
 - Für das Gerät wurden zuvor 16 MB Flash genannt. Die genaue Speicheraufteilung muss anhand der tatsächlich verwendeten Hardware-/Bootmanager-Konfiguration bestätigt werden.
 - In bisherigen Firmwareprojekten kamen unter anderem PU2CLR SI4735 `2.1.8` und LovyanGFX `1.2.32` vor. Ob und wie diese übernommen werden, ist noch offen und muss anhand der Lizenz, Hardware-Anbindung und des tatsächlichen Quellcodes entschieden werden.
-- Ein früheres Entwicklungsprojekt existiert unter `13HN2709/ats-mini-dev`; es ist **nicht** dieses neue OS-Repository. Es darf nur lesend als mögliche Referenz untersucht werden, sofern der Nutzer das wünscht.
+- `13HN2709/ATS-Mini-Dev` ist das funktionierende Ausgangsprojekt und die wichtigste Feature-Referenz. Es wird bei jeder passenden Wiederintegration auf bereits vorhandene, getestete Umsetzungen geprüft; die Übernahme wird für Mini-OS modular adaptiert.
 
 ### Architekturprinzipien
 - Modularer Aufbau mit klaren Schnittstellen.
