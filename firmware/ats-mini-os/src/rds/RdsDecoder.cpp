@@ -152,13 +152,22 @@ void RdsDecoder::processAlternativeFrequencies(uint16_t blockC, RdsDecodedFields
     }
     // A new list header may follow the final pair. Start it without treating
     // its count/tuning-frequency bytes as ordinary AF values.
-    if (first >= 225 && first <= 249 && afFrequency(second)) {
+    if (first >= 225 && first <= 249) {
       afExpectedCount_ = static_cast<uint8_t>(first - 224U);
       afHeaderCode_ = second;
-      afPairsExpected_ = afExpectedCount_ > 0
-          ? static_cast<uint8_t>(afExpectedCount_ - 1U) : 0;
-      afPairsReceived_ = 0;
-      afState_ = afPairsExpected_ ? 1 : 0;
+      afReceivedCount_ = 0;
+      if (afExpectedCount_ > 1 && afFrequency(second)) {
+        afPairsExpected_ = static_cast<uint8_t>(afExpectedCount_ - 1U);
+        afPairsReceived_ = 0;
+        afState_ = 1;
+      } else {
+        afState_ = 2;
+        afCount_ = 0;
+        afMethodBCount_ = 0;
+        memset(afMethodBLists_, 0, sizeof(afMethodBLists_));
+        processAlternativeFrequencyByte(second);
+        if (afState_ == 4) { afState_ = 0; afExpectedCount_ = afReceivedCount_ = 0; }
+      }
       return;
     }
     afState_ = 0;
