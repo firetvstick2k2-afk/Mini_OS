@@ -15,6 +15,13 @@ constexpr uint8_t kFmFunction = 0;
 constexpr uint8_t kAudioMutePin = 3;
 constexpr uint8_t kAmplifierEnablePin = 10;
 
+void copyRawRdsText(char* dst, size_t capacity, const char* src) {
+  if (!capacity) return;
+  size_t i = 0;
+  for (; i + 1 < capacity && i < 64 && src && src[i] != '\0'; ++i) dst[i] = src[i];
+  dst[i] = '\0';
+}
+
 void copyRdsText(char* dst, size_t capacity, const char* src) {
   if (!capacity || !src) return;
   size_t i = 0;
@@ -53,8 +60,10 @@ bool TunerDriver::begin(uint32_t initialFrequencyKHz) {
   ready_ = false;
   haveTextFlag_ = false;
   lastTextFlag_ = 0;
+  lastPiCode_ = 0;
   rawRadioText_[0] = '\0';
   rdsDecoder_.reset();
+  lastPiCode_ = 0;
   // Keep audio muted and the amplifier disabled while the tuner starts, to avoid
   // startup pops and to ensure a failed tuner initialization cannot leave audio live.
   pinMode(kAudioMutePin, OUTPUT);
@@ -331,6 +340,7 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
   haveTextFlag_ = false;
   rawRadioText_[0] = '\0';
   rdsDecoder_.reset();
+  lastPiCode_ = 0;
 
   if (band.modulation == RadioModulation::FM) {
     static const uint16_t fmLow[] = {8750, 8790, 7600};
@@ -448,6 +458,7 @@ bool TunerDriver::tune(uint32_t frequencyKHz, const RadioBandDefinition& band) {
   haveTextFlag_ = false;
   rawRadioText_[0] = '\0';
   rdsDecoder_.reset();
+  lastPiCode_ = 0;
   return true;
 }
 
@@ -460,6 +471,7 @@ bool TunerDriver::tune(uint32_t frequencyKHz) {
   haveTextFlag_ = false;
   rawRadioText_[0] = '\0';
   rdsDecoder_.reset();
+  lastPiCode_ = 0;
   return true;
 }
 
@@ -486,8 +498,8 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
   out = TunerRdsData{};
   if (!ready_) return false;
 
-  // ATS Mini Dev drains up to one SI4735 RDS FIFO capacity per 250 ms cycle.
-  // This reconstructs PS/RT much faster than reading just one group each time.
+  // Drain one complete SI4735 RDS FIFO cycle. A group can contain several
+  // independently updated fields, so accumulate changes across this poll.
   static constexpr uint8_t kMaxGroupsPerPoll = 25;
   bool receivedAny = false;
   for (uint8_t i = 0; i < kMaxGroupsPerPoll; ++i) {
@@ -496,15 +508,33 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
     if (!fifoCount) break;
     receivedAny = true;
     const uint8_t group = radio_.getRdsGroupType();
-    RdsDecodedFields decoded;
+
+    // PI changes delimit a new programme service. Discard the previous
+    // service's assembled AF/EON/ODA/RT+ state before decoding this group.
+    if (radio_.getRdsNewBlockA()) {
+      const uint16_t pi = radio_.currentPiCode();
+      if (pi != 0) {
+        out.piValid = true;
+        out.piCode = pi;
+        if (lastPiCode_ != 0 && pi != lastPiCode_) {
+          rdsDecoder_.reset();
+          haveTextFlag_ = false;
+          lastTextFlag_ = 0;
+          rawRadioText_[0] = '\0';
+          radio_.clearRadioTextBuffers();
+        }
+        lastPiCode_ = pi;
+      }
+    }
+
     if (radio_.getRdsNewBlockB()) {
       const uint8_t version = radio_.getRdsVersionCode();
       const uint16_t blockB = radio_.currentBlockB();
       const uint16_t blockC = radio_.currentBlockC();
       const uint16_t blockD = radio_.currentBlockD();
-      // RT+ (group 11A) references the previously assembled group-2 text.
-      // PU2CLR's getRdsText2A/B() returns NULL outside group 2, so retain the
-      // completed buffer and pass that stable copy to the RT+ decoder.
+
+      // RT+ points into the exact 64-character RT buffer. Keep control
+      // characters and their positions here; only the UI copy is formatted.
       if (group == 2) {
         const uint8_t flag = radio_.getRdsFlagAB();
         if (!haveTextFlag_ || flag != lastTextFlag_) {
@@ -514,29 +544,40 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
           rawRadioText_[0] = '\0';
         }
         const char* freshRt = version == 0 ? radio_.getRdsText2A() : radio_.getRdsText2B();
-        if (freshRt) copyRdsText(rawRadioText_, sizeof(rawRadioText_), freshRt);
+        if (freshRt) copyRawRdsText(rawRadioText_, sizeof(rawRadioText_), freshRt);
       }
+
+      RdsDecodedFields decoded;
       rdsDecoder_.process(group, version, blockB, blockC, blockD,
-                          radio_.currentPiCode(), radio_.currentBlockCError(),
-                          radio_.currentBlockDError(), rawRadioText_, decoded);
-      out.tpValid = decoded.tpValid;
-      out.tp = decoded.tp;
-      out.ptyValid = true;
-      out.pty = decoded.pty;
-      out.taValid = decoded.taValid;
-      out.ta = decoded.ta;
-      out.msValid = decoded.msValid;
-      out.musicSpeech = decoded.musicSpeech;
-      out.diValid = decoded.diValid;
-      out.decoderIdentification = decoded.decoderIdentification;
+                          radio_.currentPiCode(), frequencyKHz(),
+                          radio_.currentBlockCError(), radio_.currentBlockDError(),
+                          rawRadioText_, decoded);
+
+      if (decoded.tpValid) { out.tpValid = true; out.tp = decoded.tp; }
+      if (decoded.ptyValid) { out.ptyValid = true; out.pty = decoded.pty; }
+      if (decoded.taValid) { out.taValid = true; out.ta = decoded.ta; }
+      if (decoded.msValid) { out.msValid = true; out.musicSpeech = decoded.musicSpeech; }
+      if (decoded.diValid) {
+        out.diValid = true;
+        out.decoderIdentification = decoded.decoderIdentification;
+      }
       if (decoded.eccValid) { out.eccValid = true; out.eccCode = decoded.ecc; }
-      if (decoded.ptynUpdated) { out.ptynUpdated = true; copyRdsText(out.ptyn, sizeof(out.ptyn), decoded.ptyn); }
       if (decoded.afUpdated) {
         out.afUpdated = true;
         out.afCount = decoded.afCount;
         for (uint8_t af = 0; af < decoded.afCount; ++af) out.afKHz[af] = decoded.afKHz[af];
       }
-      if (decoded.eonUpdated) { out.eonUpdated = true; out.eon = decoded.eon; }
+      if (decoded.afMethodBUpdated) {
+        out.afMethodBUpdated = true;
+        out.afMethodBCount = decoded.afMethodBCount;
+        memcpy(out.afMethodBLists, decoded.afMethodBLists, sizeof(out.afMethodBLists));
+      }
+      if (decoded.eonUpdated) {
+        out.eonUpdated = true;
+        out.eon = decoded.eon;
+        out.eonCount = decoded.eonCount;
+        memcpy(out.eonNetworks, decoded.eonNetworks, sizeof(out.eonNetworks));
+      }
       if (decoded.odaUpdated) {
         out.odaUpdated = true;
         out.odaAid = decoded.odaAid;
@@ -550,17 +591,14 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
         out.rtPlus[0] = decoded.rtPlus[0];
         out.rtPlus[1] = decoded.rtPlus[1];
       }
+      if (decoded.ptynUpdated) {
+        out.ptynUpdated = true;
+        copyRdsText(out.ptyn, sizeof(out.ptyn), decoded.ptyn);
+      }
     }
 
     if (group == 4 && radio_.currentRdsClock(out.clockHour, out.clockMinute))
       out.clockValid = true;
-
-    if (radio_.getRdsNewBlockA()) {
-      const uint16_t pi = radio_.currentPiCode();
-      if (pi != 0) { out.piValid = true; out.piCode = pi; }
-    }
-
-
 
     if (group == 0) {
       const char* ps = radio_.getRdsText0A();
@@ -574,19 +612,17 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
       if (textChanged) {
         haveTextFlag_ = true;
         lastTextFlag_ = flag;
-        // PU2CLR 2.1.8 does not clear the RT buffers on A/B changes.
         radio_.clearRadioTextBuffers();
+        rawRadioText_[0] = '\0';
       }
       const char* rt = radio_.getRdsVersionCode() == 0
                            ? radio_.getRdsText2A()
                            : radio_.getRdsText2B();
-      // Publish even an empty freshly-cleared buffer. This prevents old RT
-      // from remaining visible while the new A/B text is being assembled.
       formatRadioText(out.radioText, sizeof(out.radioText), rt);
       out.radioTextUpdated = true;
     }
 
-    // The count includes the group just read (AN332), as in ATS Mini Dev.
+    // The count includes the group just read (AN332).
     if (fifoCount == 1) break;
   }
   out.received = receivedAny;
