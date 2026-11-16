@@ -101,7 +101,7 @@ void updateLastFmFrequencyPersistence() {
   // Debounce encoder tuning so NVS is written once after the user stops tuning.
   if (fmFrequencySavePending && millis() - fmFrequencyChangedAtMs >= 1000) {
     const bool saved = settingsStore.saveLastFmFrequencyKHz(lastObservedFmFrequencyKHz);
-    Serial.printf("[SETTINGS] last FM frequency %.2f MHz %s\\n",
+    Serial.printf("[SETTINGS] last FM frequency %.2f MHz %s\n",
       lastObservedFmFrequencyKHz / 1000.0f, saved ? "saved" : "save failed");
     fmFrequencySavePending = false;
   }
@@ -149,7 +149,7 @@ void closeMenuToRadio(const char* reason) {
   sliderAdjustmentActive = false;
   menuPage = 0;
   menuSelection = 0;
-  Serial.printf("[MENU] returned to radio: %s\\n", reason);
+  Serial.printf("[MENU] returned to radio: %s\n", reason);
 }
 bool tuneDecoderPreset(uint8_t presetIndex) {
   if (presetIndex >= kDecoderFrequencyPresetCount) return false;
@@ -161,7 +161,7 @@ bool tuneDecoderPreset(uint8_t presetIndex) {
   if (!radio.setBandwidthChoice(preset.bandwidthChoice)) return false;
   if (!radio.tune(preset.frequencyKHz)) return false;
   display.notifyTuning();
-  Serial.printf("[DECODER FREQ] %s -> %lu kHz mode=%u\\n",
+  Serial.printf("[DECODER FREQ] %s -> %lu kHz mode=%u\n",
     preset.label, static_cast<unsigned long>(preset.frequencyKHz),
     static_cast<unsigned>(preset.modulation));
   return true;
@@ -299,14 +299,14 @@ void setup() {
   }
   const uint32_t startupFmFrequencyKHz =
     settingsStore.lastFmFrequencyKHz(DEFAULT_FM_FREQUENCY_KHZ);
-  Serial.printf("[SETTINGS] startup FM frequency %.2f MHz (%s)\\n",
+  Serial.printf("[SETTINGS] startup FM frequency %.2f MHz (%s)\n",
     startupFmFrequencyKHz / 1000.0f,
     settingsStore.isReady() ? "restored/default" : "NVS unavailable; default");
   memories.begin();
   if (radio.begin(startupFmFrequencyKHz)) {
     lastObservedFmFrequencyKHz = radio.snapshot().frequencyKHz;
     radio.setPatchProfile(savedPatchProfile);
-    Serial.printf("[PATCH] startup profile=%u (%s)\\n", static_cast<unsigned>(radio.patchProfile()), SsbPatchManager::profileName(radio.patchProfile()));
+    Serial.printf("[PATCH] startup profile=%u (%s)\n", static_cast<unsigned>(radio.patchProfile()), SsbPatchManager::profileName(radio.patchProfile()));
     const uint8_t startupVolume = settingsStore.volume(32);
     if (radio.setVolume(startupVolume)) {
       lastObservedVolume = radio.volume();
@@ -420,7 +420,7 @@ void loop() {
               volumeSavePending = true;
               lastObservedVolume = radio.volume();
               volumeChangedAtMs = millis();
-              Serial.printf("[MENU] volume=%u/63\\n", static_cast<unsigned>(radio.volume()));
+              Serial.printf("[MENU] volume=%u/63\n", static_cast<unsigned>(radio.volume()));
             }
           } else {
             const int16_t itemCount = menuPage == 0 ? 25 : menuPage == 26 ? (kDecoderFrequencyPresetCount + 1) : menuPage == 25 ? 19 : menuPage == 22 ? MemoryService::kSlotCount : menuPage == 18 ? 2 : menuPage == 20 ? 1 :
@@ -443,9 +443,9 @@ void loop() {
           const int16_t nextBfo = static_cast<int16_t>(constrain(requested, -16000, 16000));
           if (radio.setBfoOffsetHz(nextBfo)) {
             bfoSavePending = true;
-            Serial.printf("[BFO] offset=%d Hz\\n", static_cast<int>(radio.bfoOffsetHz()));
+            Serial.printf("[BFO] offset=%d Hz\n", static_cast<int>(radio.bfoOffsetHz()));
           }
-        } else if(frequencyCursorActive){if(tuneFrequencyDigit(rotationDelta))Serial.printf("[FREQ CURSOR] pos=%u step=%lu kHz\\n",frequencyCursorPos,static_cast<unsigned long>(frequencyCursorStepKHz(frequencyCursorPos,radio.snapshot().modulation)));} else if (radio.nextChannel(rotationDelta)) {
+        } else if(frequencyCursorActive){if(tuneFrequencyDigit(rotationDelta))Serial.printf("[FREQ CURSOR] pos=%u step=%lu kHz\n",frequencyCursorPos,static_cast<unsigned long>(frequencyCursorStepKHz(frequencyCursorPos,radio.snapshot().modulation)));} else if (radio.nextChannel(rotationDelta)) {
           display.notifyTuning();
           Serial.printf("[INPUT] tune step %s -> %.1f MHz\n",
             rotationDelta > 0 ? "CW" : "CCW",
@@ -459,11 +459,11 @@ void loop() {
           bfoAdjustmentActive = false;
           if (bfoSavePending) {
             const bool saved = settingsStore.saveBfoOffsetHz(radio.bfoOffsetHz());
-            Serial.printf("[SETTINGS] BFO=%d Hz %s\\n", static_cast<int>(radio.bfoOffsetHz()), saved ? "saved" : "save failed");
+            Serial.printf("[SETTINGS] BFO=%d Hz %s\n", static_cast<int>(radio.bfoOffsetHz()), saved ? "saved" : "save failed");
             bfoSavePending = false;
           }
           Serial.println("[BFO] adjustment finished; encoder returned to tuning");
-        } else if(frequencyCursorActive){if(alignFrequencyCursor())display.notifyTuning();frequencyCursorActive=false;if(bfoSavePending){const bool saved=settingsStore.saveBfoOffsetHz(radio.bfoOffsetHz());Serial.printf("[SETTINGS] cursor BFO=%d Hz %s\\n",static_cast<int>(radio.bfoOffsetHz()),saved?"saved":"save failed");bfoSavePending=false;}} else if (!menuOpen) {
+        } else if(frequencyCursorActive){if(alignFrequencyCursor())display.notifyTuning();frequencyCursorActive=false;if(bfoSavePending){const bool saved=settingsStore.saveBfoOffsetHz(radio.bfoOffsetHz());Serial.printf("[SETTINGS] cursor BFO=%d Hz %s\n",static_cast<int>(radio.bfoOffsetHz()),saved?"saved":"save failed");bfoSavePending=false;}} else if (!menuOpen) {
           menuOpen = true;
           sliderAdjustmentActive = false;
           menuPage = 0;
@@ -475,7 +475,7 @@ void loop() {
           } else if (tuneDecoderPreset(static_cast<uint8_t>(menuSelection - 1))) {
             closeMenuToRadio("decoder frequency selected");
           } else {
-            Serial.printf("[DECODER FREQ] tuning failed for selection %u\\n", static_cast<unsigned>(menuSelection));
+            Serial.printf("[DECODER FREQ] tuning failed for selection %u\n", static_cast<unsigned>(menuSelection));
           }
         } else if (menuPage == 22) {
           if(memoryEditActive) {
@@ -485,7 +485,7 @@ void loop() {
             }
           } else if (memories.entry(selectedMemorySlot).frequencyKHz) {
             if(memories.recall(selectedMemorySlot,radio)){display.notifyTuning();closeMenuToRadio("memory recalled");}
-          } else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\\n",static_cast<unsigned>(selectedMemorySlot+1));
+          } else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\n",static_cast<unsigned>(selectedMemorySlot+1));
         } else if (menuPage == 23) {
           if(scanner.state()==ScanService::State::Running) scanner.stop(radio);
           else if(scanner.count()>0 && scanner.state()!=ScanService::State::Idle) {
@@ -534,7 +534,7 @@ void loop() {
               else if (menuPage == 21) {
                 const bool entered = cwDecoder.enter(wifi.mode() == WifiClient::Mode::OFF);
                 if (!entered && !cwDecoder.wifiBlocked()) Serial.println("[CW] audio sampler unavailable");
-                else Serial.printf("[CW] decoder %s; Wi-Fi mode=%u\\n", entered ? "active" : "blocked (turn Wi-Fi OFF)", static_cast<unsigned>(wifi.mode()));
+                else Serial.printf("[CW] decoder %s; Wi-Fi mode=%u\n", entered ? "active" : "blocked (turn Wi-Fi OFF)", static_cast<unsigned>(wifi.mode()));
               }
               else if (menuPage == 8) menuSelection = static_cast<uint8_t>(radio.currentBandIndex() + 1);
               else if (menuPage == 11 && selectedMainItem == 16) {
@@ -569,7 +569,7 @@ void loop() {
           const uint8_t layout = menuSelection == 1 ? 0 : (menuSelection == 2 ? 2 : 3);
           display.setFmLayout(layout);
           const bool saved = settingsStore.saveDisplayFmLayout(layout);
-          Serial.printf("[SETTINGS] FM layout=%s %s\\n",
+          Serial.printf("[SETTINGS] FM layout=%s %s\n",
             layout == 3 ? "TEF6686 - Newsfeed" : (layout == 2 ? "TEF6686 -FM Version" : "DAB Style"), saved ? "saved" : "save failed");
           closeMenuToRadio("FM layout selected");
         } else if (menuPage == 15 && menuSelection > 0) {
@@ -583,7 +583,7 @@ void loop() {
             const uint8_t layout = layoutIds[index];
             display.setAmLayout(layout);
             const bool saved = settingsStore.saveDisplayAmLayout(layout);
-            Serial.printf("[SETTINGS] LW/MW/KW layout=%s %s\\n",
+            Serial.printf("[SETTINGS] LW/MW/KW layout=%s %s\n",
               layoutNames[index], saved ? "saved" : "save failed");
             closeMenuToRadio("LW/MW/KW layout selected");
           }
@@ -591,7 +591,7 @@ void loop() {
           const bool nextEnabled = !BootDiagnostics::enabled();
           if (settingsStore.saveBootLogEnabled(nextEnabled)) {
             BootDiagnostics::setEnabled(nextEnabled);
-            Serial.printf("[SETTINGS] Boot-Log %s\\n", nextEnabled ? "EIN" : "AUS");
+            Serial.printf("[SETTINGS] Boot-Log %s\n", nextEnabled ? "EIN" : "AUS");
           } else {
             Serial.println("[SETTINGS] Boot-Log konnte nicht gespeichert werden");
           }
@@ -604,13 +604,13 @@ void loop() {
         } else if (menuPage == 4 && menuSelection > 0) {
           const WifiClient::Mode selectedMode = static_cast<WifiClient::Mode>(menuSelection - 1);
           if (wifi.setMode(selectedMode)) {
-            Serial.printf("[WIFI] operating mode changed to %u\\n", static_cast<unsigned>(wifi.mode()));
+            Serial.printf("[WIFI] operating mode changed to %u\n", static_cast<unsigned>(wifi.mode()));
           } else {
             Serial.println("[WIFI] operating mode could not be saved");
           }
         } else if (menuPage == 5 && menuSelection == 8) {
           const bool started = eibi.beginDownload(wifi.connected() && wifi.dataServicesAllowed());
-          Serial.printf("[EIBI] download request %s: %s\\n", started ? "accepted" : "rejected", eibi.statusText());
+          Serial.printf("[EIBI] download request %s: %s\n", started ? "accepted" : "rejected", eibi.statusText());
           closeMenuToRadio("EiBi schedule download");
         } else if (menuPage == 5 && menuSelection == 2) {
           menuPage = 17;
@@ -622,7 +622,7 @@ void loop() {
           const CpuProfile selected = static_cast<CpuProfile>(menuSelection - 1);
           if (performance.setProfile(selected)) {
             const bool saved = settingsStore.saveCpuProfile(menuSelection - 1);
-            Serial.printf("[SETTINGS] CPU profile=%s %s\\n", performance.profileName(), saved ? "saved" : "save failed");
+            Serial.printf("[SETTINGS] CPU profile=%s %s\n", performance.profileName(), saved ? "saved" : "save failed");
             closeMenuToRadio("CPU profile selected");
           }
         } else if (menuPage == 5 && menuSelection == 1) {
@@ -657,7 +657,7 @@ void loop() {
           const uint8_t profile = static_cast<uint8_t>(menuSelection - 1);
           if (radio.setPatchProfile(profile)) {
             const bool saved = settingsStore.savePatchProfile(profile);
-            Serial.printf("[PATCH] selected %s %s\\n", SsbPatchManager::profileName(profile), saved ? "saved" : "save failed");
+            Serial.printf("[PATCH] selected %s %s\n", SsbPatchManager::profileName(profile), saved ? "saved" : "save failed");
             closeMenuToRadio("DSP patch profile selected");
           } else Serial.println("[PATCH] profile selection rejected");
         } else if (menuPage == 12 && menuSelection == 1) {
@@ -666,7 +666,7 @@ void loop() {
           bfoSavePending = false;
           menuPage = 0;
           menuSelection = 0;
-          Serial.printf("[BFO] adjustment active at %d Hz; rotate to change, click to finish\\n", static_cast<int>(radio.bfoOffsetHz()));
+          Serial.printf("[BFO] adjustment active at %d Hz; rotate to change, click to finish\n", static_cast<int>(radio.bfoOffsetHz()));
         } else if (menuPage == MenuSSB::kPage && menuSelection == 0) {
           menuPage = 0;
           menuSelection = 6;
@@ -693,7 +693,7 @@ void loop() {
           if (radio.setSquelch(threshold, useSnr)) {
             const bool a = settingsStore.saveSquelchThreshold(threshold);
             const bool b = settingsStore.saveSquelchUsesSnr(useSnr);
-            Serial.printf("[SETTINGS] Squelch=%u %s %s\\n", threshold, useSnr ? "SNR" : "RSSI", a && b ? "saved" : "save failed");
+            Serial.printf("[SETTINGS] Squelch=%u %s %s\n", threshold, useSnr ? "SNR" : "RSSI", a && b ? "saved" : "save failed");
             closeMenuToRadio("squelch selected");
           }
         } else if (menuPage == 25 && menuSelection >= 8 && menuSelection <= 12) {
@@ -701,21 +701,21 @@ void loop() {
           const uint8_t value = attValues[menuSelection - 8];
           if (radio.setAttenuationIndex(value)) {
             const bool saved = settingsStore.saveAttenuationIndex(value);
-            Serial.printf("[SETTINGS] ATT index=%u %s\\n", value, saved ? "saved" : "save failed");
+            Serial.printf("[SETTINGS] ATT index=%u %s\n", value, saved ? "saved" : "save failed");
             closeMenuToRadio("ATT selected");
           }
         } else if (menuPage == 25 && menuSelection >= 13 && menuSelection <= 15) {
           const uint8_t region = menuSelection - 13;
           if (radio.setFmRegion(region)) {
             const bool saved = settingsStore.saveFmRegion(region);
-            Serial.printf("[SETTINGS] FM region=%u %s\\n", region, saved ? "saved" : "save failed");
+            Serial.printf("[SETTINGS] FM region=%u %s\n", region, saved ? "saved" : "save failed");
             closeMenuToRadio("FM region selected");
           }
         } else if (menuPage == 25 && menuSelection >= 16 && menuSelection <= 18) {
           const uint8_t mode = menuSelection - 16;
           if (radio.setFmStereoMode(mode)) {
             const bool saved = settingsStore.saveFmStereoMode(mode);
-            Serial.printf("[SETTINGS] FM stereo=%u %s\\n", mode, saved ? "saved" : "save failed");
+            Serial.printf("[SETTINGS] FM stereo=%u %s\n", mode, saved ? "saved" : "save failed");
             closeMenuToRadio("FM stereo selected");
           }
         } else if (menuPage == 11 && menuSelection == 0) {
@@ -821,14 +821,14 @@ void loop() {
           if (menuPage == 22) {
             if(memoryEditActive) {
               const bool ok=memories.rename(selectedMemorySlot,memoryEditName);
-              Serial.printf("[MEMORY] rename slot %u %s\\n",static_cast<unsigned>(selectedMemorySlot+1),ok?"saved":"failed");
+              Serial.printf("[MEMORY] rename slot %u %s\n",static_cast<unsigned>(selectedMemorySlot+1),ok?"saved":"failed");
               memoryEditActive=false;
             } else if(memories.entry(selectedMemorySlot).frequencyKHz) {
               strncpy(memoryEditName,memories.entry(selectedMemorySlot).name,sizeof(memoryEditName)-1);
               memoryEditName[sizeof(memoryEditName)-1]='\0';
               if(!memoryEditName[0]) strncpy(memoryEditName,radio.snapshot().stationName[0]?radio.snapshot().stationName:radio.snapshot().bandName,sizeof(memoryEditName)-1);
               memoryEditCursor=0; memoryEditActive=true;
-            } else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\\n",static_cast<unsigned>(selectedMemorySlot+1));
+            } else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\n",static_cast<unsigned>(selectedMemorySlot+1));
           }
           else if (menuPage == 23) { scanner.stop(radio); menuPage=0; menuSelection=11; }
           else if (menuPage == 24) { seeker.stop(); menuPage=0; menuSelection=10; }
