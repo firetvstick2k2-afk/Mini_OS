@@ -1,5 +1,22 @@
 # Übergabeprotokoll – ATS Mini OS
 
+## Arbeitsfortschritt – Spektrum-Renderer und SSB-Patchverwaltung (2026-11-16)
+
+Auf `dev/first-build-preparation` wurden folgende Änderungen committed:
+
+- Der Spectrum-Scan stellt seine vorhandenen Messpunkte über eine konstante Datenansicht für den Display-Renderer bereit.
+- Die Scan-Seite zeichnet jetzt aus den tatsächlich gemessenen RSSI-Werten eine Kurve und markiert den stärksten Messpunkt samt Frequenz und RSSI-Wert. Es werden keine künstlichen oder interpolierten Messwerte erzeugt.
+- Der Display-Aufruf übergibt die Messpunktdaten an die Scan-Seite. Der Scan-Service behält weiterhin sein 256-Punkte-Limit und seine kooperative Messroutine.
+- Das Laden des eingebetteten SI4735-SSB-Patches ist in `SsbPatchManager` zentralisiert. Aktuell ist nur der vorhandene eingebettete Patch vorhanden; es wird ausdrücklich keine Auswahl mehrerer Patch-Versionen vorgetäuscht.
+
+Noch offen vor Build-Freigabe:
+- Frequenzcursor mit korrekter Stellenwert-/Schrittweitenzuordnung und Encoderbedienung.
+- Statische Schnittstellen-/Include-Prüfung aller geänderten Dateien sowie Aktualisierung dieses Übergabeprotokolls nach Abschluss.
+- Der Spektrum-Scan zeigt aktuell Kurve und Peak; Peak-Auswahl/Tuning per Encoder ist noch nicht umgesetzt.
+
+Build, GitHub Actions und Flash wurden nicht ausgeführt.
+
+
 > **Zweck:** Zentrale Übergabe für neue Chat-Sitzungen. Vor jeder Fortsetzung zuerst dieses Dokument lesen und anschließend den tatsächlichen Repository-Stand prüfen.
 >
 > **Stand:** 2026-11-16  
