@@ -308,7 +308,13 @@ bool TunerDriver::setStepKHz(uint16_t stepKHz) {
 uint8_t TunerDriver::patchProfile() const { return SsbPatchManager::profile(); }
 
 bool TunerDriver::setPatchProfile(uint8_t profile) {
+  const uint8_t previousProfile = SsbPatchManager::profile();
   if (!SsbPatchManager::setProfile(profile)) return false;
+  if (modulation_ == RadioModulation::AM &&
+      previousProfile != SsbPatchManager::Standard &&
+      profile == SsbPatchManager::Standard) {
+    amPatchRestorePending_ = true;
+  }
   ssbPatchLoaded_ = false;
   amPatchLoaded_ = false;
   return true;
@@ -354,13 +360,9 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
     radio_.setRdsConfig(1, 2, 2, 2, 2);
   } else if (band.modulation == RadioModulation::AM) {
     bandwidthChoice_ = 4;
-    if (previousModulation != RadioModulation::AM) { amPatchLoaded_ = false; ssbPatchLoaded_ = false; }
-    if (!amPatchLoaded_) {
-      if (!SsbPatchManager::loadAm(radio_)) {
-        Serial.println("[PATCH] AM patch failed; reverting to Standard");
-        SsbPatchManager::setProfile(SsbPatchManager::Standard);
-      }
-      amPatchLoaded_ = true;
+    if (previousModulation != RadioModulation::AM) {
+      amPatchLoaded_ = false;
+      ssbPatchLoaded_ = false;
     }
     radio_.setAM(static_cast<uint16_t>(band.minimumKHz),
                  static_cast<uint16_t>(band.maximumKHz),
@@ -369,6 +371,23 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
                            static_cast<uint16_t>(band.maximumKHz));
     radio_.setSeekAmRssiThreshold(10);
     radio_.setSeekAmSNRThreshold(3);
+
+    // ATS Mini Dev applies AM patches after selecting AM. The AM patch loader
+    // has its own power-up sequence and deliberately does not call loadPatch().
+    if (amPatchRestorePending_) {
+      radio_.loadAMPatch(nullptr, 0);
+      amPatchRestorePending_ = false;
+      amPatchLoaded_ = false;
+    } else if (!amPatchLoaded_ && SsbPatchManager::profile() != SsbPatchManager::Standard) {
+      if (SsbPatchManager::loadAm(radio_)) amPatchLoaded_ = true;
+      else {
+        Serial.println("[PATCH] AM patch failed; reverting to Standard");
+        SsbPatchManager::setProfile(SsbPatchManager::Standard);
+        radio_.loadAMPatch(nullptr, 0);
+      }
+    }
+    // Patch power-up can reset receiver properties; restore the selected AM
+    // bandwidth, AGC, soft mute and AVC after every patch transition.
     radio_.setBandwidth(2, 1);
     radio_.setAutomaticGainControl(attenuationIndex_ ? 1 : (agcAutomatic_ ? 0 : 1), attenuationIndex_ ? attenuationIndex_ - 1 : agcGainIndex_);
     radio_.setAmSoftMuteMaxAttenuation(softMuteAttenuationDb_);
