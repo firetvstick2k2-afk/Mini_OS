@@ -5,6 +5,7 @@
 #include "DisplayLayoutSW.h"
 #include "DisplayStatusBar.h"
 #include "../radio/BandManager.h"
+#include "../radio/DecoderFrequencyList.h"
 #include "../menus/MenuSSB.h"
 #include "../weather/WeatherService.h"
 #include "../system/MoonCalendar.h"
@@ -831,7 +832,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   if (returningToRadio) lastGeneration_ = UINT32_MAX;
   // Redraw the file manager promptly while the encoder is moving; this also
   // keeps the selection frame visually attached to the active row.
-  const uint32_t redrawInterval = menuOpen ? ((menuPage==21 || menuPage==23 || menuPage==24) ? 100 : ((menuPage==6 || menuPage==19 || menuPage==22) ? 20 : 500)) : 40;
+  const uint32_t redrawInterval = menuOpen ? ((menuPage==21 || menuPage==23 || menuPage==24) ? 100 : ((menuPage==6 || menuPage==19 || menuPage==22 || menuPage==26) ? 20 : 500)) : 40;
   if(!returningToRadio && s.generation==lastGeneration_ && now-lastDrawMs_<redrawInterval && !menuStateChanged)return;
   lastGeneration_=s.generation;
   lastDrawMs_=now;

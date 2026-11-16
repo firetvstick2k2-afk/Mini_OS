@@ -4,6 +4,7 @@
 #include <LittleFS.h>
 #include <time.h>
 #include "src/radio/RadioCore.h"
+#include "src/radio/DecoderFrequencyList.h"
 #include "src/radio/MemoryService.h"
 #include "src/radio/ScanService.h"
 #include "src/radio/SeekService.h"
@@ -139,6 +140,21 @@ void closeMenuToRadio(const char* reason) {
   menuPage = 0;
   menuSelection = 0;
   Serial.printf("[MENU] returned to radio: %s\\n", reason);
+}
+bool tuneDecoderPreset(uint8_t presetIndex) {
+  if (presetIndex >= kDecoderFrequencyPresetCount) return false;
+  const DecoderFrequencyPreset& preset = kDecoderFrequencyPresets[presetIndex];
+  // The ALL band spans the SI4735 AM/SSB range and lets these presets cross
+  // amateur, maritime and CB allocations without inheriting an old band limit.
+  if (!radio.selectBand(1)) return false;
+  if (!radio.setModulation(preset.modulation)) return false;
+  if (!radio.setBandwidthChoice(preset.bandwidthChoice)) return false;
+  if (!radio.tune(preset.frequencyKHz)) return false;
+  display.notifyTuning();
+  Serial.printf("[DECODER FREQ] %s -> %lu kHz mode=%u\\n",
+    preset.label, static_cast<unsigned long>(preset.frequencyKHz),
+    static_cast<unsigned>(preset.modulation));
+  return true;
 }
 void fmRefresh(){ fmCount=0; if(!FileManager::list(fmPath,fmEntries,FileManager::MAX_ENTRIES,fmCount)) snprintf(fmMessage,sizeof(fmMessage),"Ordner nicht lesbar"); }
 void fmMessageSet(const char* m){ strncpy(fmMessage,m,sizeof(fmMessage)-1); fmMessage[sizeof(fmMessage)-1]=0; }
@@ -314,7 +330,7 @@ void loop() {
               Serial.printf("[MENU] volume=%u/63\\n", static_cast<unsigned>(radio.volume()));
             }
           } else {
-            const int16_t itemCount = menuPage == 0 ? 24 : menuPage == 25 ? 19 : menuPage == 22 ? MemoryService::kSlotCount : menuPage == 18 ? 2 : menuPage == 20 ? 1 :
+            const int16_t itemCount = menuPage == 0 ? 25 : menuPage == 26 ? (kDecoderFrequencyPresetCount + 1) : menuPage == 25 ? 19 : menuPage == 22 ? MemoryService::kSlotCount : menuPage == 18 ? 2 : menuPage == 20 ? 1 :
               menuPage == 2 ? 4 : menuPage == 4 ? 6 : menuPage == 5 ? 11 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
               ((menuPage == 14) ? 4 : (menuPage == 15) ? 5 :
               menuPage == 10 ? 4 : menuPage == 11 ?
@@ -360,6 +376,14 @@ void loop() {
           menuPage = 0;
           menuSelection = 0;
           Serial.println("[MENU] opened");
+        } else if (menuPage == 26) {
+          if (menuSelection == 0) {
+            menuPage = 0; menuSelection = 13;
+          } else if (tuneDecoderPreset(static_cast<uint8_t>(menuSelection - 1))) {
+            closeMenuToRadio("decoder frequency selected");
+          } else {
+            Serial.printf("[DECODER FREQ] tuning failed for selection %u\\n", static_cast<unsigned>(menuSelection));
+          }
         } else if (menuPage == 22) {
           if (memories.entry(selectedMemorySlot).frequencyKHz) { if(memories.recall(selectedMemorySlot,radio)){display.notifyTuning();closeMenuToRadio("memory recalled");} }
           else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\\n",static_cast<unsigned>(selectedMemorySlot+1));
