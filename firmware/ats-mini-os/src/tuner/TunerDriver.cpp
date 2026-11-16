@@ -331,6 +331,7 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
   stepKHz_ = band.stepKHz ? band.stepKHz : 1;
   modulation_ = band.modulation;
   haveTextFlag_ = false;
+  lastPiCode_ = 0;
   rawRadioText_[0] = '\0';
   rdsDecoder_.reset();
 
