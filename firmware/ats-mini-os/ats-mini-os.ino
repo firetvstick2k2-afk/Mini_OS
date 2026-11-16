@@ -41,6 +41,9 @@ MemoryService memories;
 ScanService scanner;
 SeekService seeker;
 uint8_t selectedMemorySlot = 0;
+bool memoryEditActive = false;
+uint8_t memoryEditCursor = 0;
+char memoryEditName[16] = {};
 DisplayDriver display;
 SettingsStore settingsStore;
 bool brightnessSavePending = false;
@@ -395,7 +398,7 @@ void loop() {
             menuSelection=static_cast<uint8_t>(selected);
             if(scanner.point(selected).frequencyKHz && radio.tune(scanner.point(selected).frequencyKHz)) display.notifyTuning();
           }
-          else if(menuPage==22){int v=(int)selectedMemorySlot+rotationDelta;v%=MemoryService::kSlotCount;if(v<0)v+=MemoryService::kSlotCount;selectedMemorySlot=(uint8_t)v;}
+          else if(menuPage==22){if(memoryEditActive){const char* chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-.";const size_t n=strlen(chars);const char ch=memoryEditName[memoryEditCursor];const char* q=strchr(chars,ch?ch:'A');int pos=q?static_cast<int>(q-chars):0;pos=(pos+rotationDelta)%static_cast<int>(n);if(pos<0)pos+=static_cast<int>(n);memoryEditName[memoryEditCursor]=chars[pos];memoryEditName[memoryEditCursor+1]='\0';}else{int v=(int)selectedMemorySlot+rotationDelta;v%=MemoryService::kSlotCount;if(v<0)v+=MemoryService::kSlotCount;selectedMemorySlot=(uint8_t)v;}}
           else if(menuPage==21){ if(radio.nextChannel(rotationDelta)) display.notifyTuning(); }
           else if(menuPage==19){ frequencyKeypad.rotate(rotationDelta); }
           else if(menuPage==6){ if(fmMode==1){int v=(int)fmActionSelection+rotationDelta;v%=6;if(v<0)v+=6;fmActionSelection=(uint8_t)v;} else if(fmMode==2)fmActionSelection=fmActionSelection?0:1; else if(fmMode==4){const char* chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-.";size_t n=strlen(chars);char ch=fmEditName[fmEditCursor];const char* q=strchr(chars,ch?ch:65);int pos=q?(int)(q-chars):0;pos=(pos+rotationDelta)%(int)n;if(pos<0)pos+=(int)n;fmEditName[fmEditCursor]=chars[pos];fmEditName[fmEditCursor+1]=0;} else {uint8_t n=fmCount+(fmMode==3?1:3);int v=(int)fmSelection+rotationDelta;v%=n;if(v<0)v+=n;fmSelection=(uint8_t)v;} }
@@ -471,8 +474,14 @@ void loop() {
             Serial.printf("[DECODER FREQ] tuning failed for selection %u\\n", static_cast<unsigned>(menuSelection));
           }
         } else if (menuPage == 22) {
-          if (memories.entry(selectedMemorySlot).frequencyKHz) { if(memories.recall(selectedMemorySlot,radio)){display.notifyTuning();closeMenuToRadio("memory recalled");} }
-          else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\\n",static_cast<unsigned>(selectedMemorySlot+1));
+          if(memoryEditActive) {
+            if(memoryEditCursor < sizeof(memoryEditName)-2) {
+              ++memoryEditCursor;
+              if(memoryEditCursor >= strlen(memoryEditName)) { memoryEditName[memoryEditCursor]='A'; memoryEditName[memoryEditCursor+1]='\0'; }
+            }
+          } else if (memories.entry(selectedMemorySlot).frequencyKHz) {
+            if(memories.recall(selectedMemorySlot,radio)){display.notifyTuning();closeMenuToRadio("memory recalled");}
+          } else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\\n",static_cast<unsigned>(selectedMemorySlot+1));
         } else if (menuPage == 23) {
           if(scanner.state()==ScanService::State::Running) scanner.stop(radio);
           else if(scanner.count()>0 && scanner.state()!=ScanService::State::Idle) {
@@ -793,7 +802,18 @@ void loop() {
           bfoSavePending = false;
           Serial.println("[BFO] adjustment finished with long press");
         } else if (menuOpen) {
-          if (menuPage == 22) { if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\\n",static_cast<unsigned>(selectedMemorySlot+1)); }
+          if (menuPage == 22) {
+            if(memoryEditActive) {
+              const bool ok=memories.rename(selectedMemorySlot,memoryEditName);
+              Serial.printf("[MEMORY] rename slot %u %s\\n",static_cast<unsigned>(selectedMemorySlot+1),ok?"saved":"failed");
+              memoryEditActive=false;
+            } else if(memories.entry(selectedMemorySlot).frequencyKHz) {
+              strncpy(memoryEditName,memories.entry(selectedMemorySlot).name,sizeof(memoryEditName)-1);
+              memoryEditName[sizeof(memoryEditName)-1]='\0';
+              if(!memoryEditName[0]) strncpy(memoryEditName,radio.snapshot().stationName[0]?radio.snapshot().stationName:radio.snapshot().bandName,sizeof(memoryEditName)-1);
+              memoryEditCursor=0; memoryEditActive=true;
+            } else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\\n",static_cast<unsigned>(selectedMemorySlot+1));
+          }
           else if (menuPage == 23) { scanner.stop(radio); menuPage=0; menuSelection=11; }
           else if (menuPage == 24) { seeker.stop(); menuPage=0; menuSelection=10; }
           else if (menuPage == 21) { cwDecoder.exit(); menuPage=0; menuSelection=23; }
@@ -859,7 +879,7 @@ void loop() {
   syncFrequencyCursor();
   display.setFrequencyCursor(frequencyCursorActive?static_cast<uint8_t>(frequencyCursorPos|0x80U):100);
   const MoonCalendar::Snapshot currentMoon = MoonCalendar::calculate(time(nullptr));
-  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal(), selectedMemorySlot, memories.count(), scanner.count(), scanner.capacity(), static_cast<uint8_t>(scanner.state()), static_cast<uint8_t>(seeker.state()), scanner.data());
+  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal(), selectedMemorySlot, memories.count(), scanner.count(), scanner.capacity(), static_cast<uint8_t>(scanner.state()), static_cast<uint8_t>(seeker.state()), scanner.data(), memoryEditActive, memoryEditName, memoryEditCursor);
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
     lastStatusMs=now; const RadioSnapshot& s=radio.snapshot();
