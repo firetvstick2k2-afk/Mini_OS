@@ -335,7 +335,7 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
     radio_.setSeekFmRssiThreshold(0);
     radio_.setSeekFmSNRThreshold(1);
     radio_.setFmBandwidth(0);
-    radio_.setAutomaticGainControl(agcAutomatic_ ? 0 : 1, agcGainIndex_);
+    radio_.setAutomaticGainControl(attenuationIndex_ ? 1 : (agcAutomatic_ ? 0 : 1), attenuationIndex_ ? attenuationIndex_ - 1 : agcGainIndex_);
     radio_.setFmSoftMuteMaxAttenuation(softMuteAttenuationDb_);
     radio_.RdsInit();
     radio_.setRdsConfig(1, 2, 2, 2, 2);
@@ -350,7 +350,7 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
     radio_.setSeekAmRssiThreshold(10);
     radio_.setSeekAmSNRThreshold(3);
     radio_.setBandwidth(2, 1);
-    radio_.setAutomaticGainControl(agcAutomatic_ ? 0 : 1, agcGainIndex_);
+    radio_.setAutomaticGainControl(attenuationIndex_ ? 1 : (agcAutomatic_ ? 0 : 1), attenuationIndex_ ? attenuationIndex_ - 1 : agcGainIndex_);
     radio_.setAmSoftMuteMaxAttenuation(softMuteAttenuationDb_);
     radio_.setAvcAmMaxGain(avcGain_);
   } else {
@@ -368,7 +368,7 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
     radio_.setSSBConfig(2, 1, 0, 1, 0, 1);
     radio_.setSSBBfo(bfoOffsetHz_);
     setBandwidthChoice(ssbBandwidthChoice_);
-    radio_.setAutomaticGainControl(agcAutomatic_ ? 0 : 1, agcGainIndex_);
+    radio_.setAutomaticGainControl(attenuationIndex_ ? 1 : (agcAutomatic_ ? 0 : 1), attenuationIndex_ ? attenuationIndex_ - 1 : agcGainIndex_);
     radio_.setSsbSoftMuteMaxAttenuation(softMuteAttenuationDb_);
     radio_.setAvcAmMaxGain(avcGain_);
   }
