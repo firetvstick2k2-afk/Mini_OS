@@ -18,12 +18,12 @@ Auf `dev/first-build-preparation` wurden folgende Änderungen committed:
 - Der Display-Aufruf übergibt die Messpunktdaten an die Scan-Seite. Der Scan-Service behält weiterhin sein 256-Punkte-Limit und seine kooperative Messroutine.
 - Das Laden des eingebetteten SI4735-SSB-Patches ist in `SsbPatchManager` zentralisiert. Aktuell ist nur der vorhandene eingebettete Patch vorhanden; es wird ausdrücklich keine Auswahl mehrerer Patch-Versionen vorgetäuscht.
 
-Noch offen vor Build-Freigabe:
-- Frequenzcursor mit korrekter Stellenwert-/Schrittweitenzuordnung und Encoderbedienung.
-- Statische Schnittstellen-/Include-Prüfung aller geänderten Dateien sowie Aktualisierung dieses Übergabeprotokolls nach Abschluss.
-- Der Spektrum-Scan zeigt aktuell Kurve und Peak; Peak-Auswahl/Tuning per Encoder ist noch nicht umgesetzt.
+Build-Vorbereitung:
+- Frequenzcursor mit Push-and-Rotate-Stellenwertwahl, Stellenwertabstimmung und Schritt-Ausrichtung ist integriert. Die sichtbare Cursor-Markierung ist derzeit im HJB-Layout aktiv; die anderen Layouts wurden bewusst nicht umgestaltet.
+- Spektrum-Peak-Auswahl per Encoder ist integriert.
+- Statische Quelltextprüfungen (Klammerbalance, geänderte Schnittstellen und erneutes Abrufen der Dateien aus GitHub) wurden durchgeführt. Ein echter Compilerlauf steht aus.
 
-Build, GitHub Actions und Flash wurden nicht ausgeführt.
+Build, GitHub Actions und Flash wurden nicht ausgeführt; der nächste Compile-only-Build wird manuell vom Nutzer gestartet.
 
 
 > **Zweck:** Zentrale Übergabe für neue Chat-Sitzungen. Vor jeder Fortsetzung zuerst dieses Dokument lesen und anschließend den tatsächlichen Repository-Stand prüfen.
@@ -2678,7 +2678,7 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Schrittweiten-/Stellenwertberechnung orientiert sich an ATS Mini DEV. FM verwendet die FM-Schrittwahl; AM verwendet die AM-Schrittwahl; SSB führt die Stellenwertänderung über den BFO in Hz aus. Cursorgrenzen werden aus Modulation und Bandobergrenze abgeleitet.
 - Die Cursor-Markierung wird über den bestehenden LegacyFrequencyRenderer im HJB-Layout gezeichnet; Farben und Cursor-Geometrie bleiben unverändert. Andere Layouts behalten ihre bisherige Darstellung.
 - Betroffene Dateien: src/input/EncoderInput.h/.cpp, ats-mini-os.ino, src/display/DisplayDriver.h/.cpp, src/display/DisplayLayoutHJB.h.
-- Noch nicht kompiliert oder am Gerät getestet. Statische Prüfung und anschließende manuelle Build-Freigabe folgen.
+- Noch nicht kompiliert oder am Gerät getestet. Die statische Quelltextprüfung wurde abgeschlossen; als nächstes folgt der manuelle Compile-only-Build.
 - Nach der Cursor-Ausrichtung wird ein geänderter SSB-BFO-Wert über die bestehende SettingsStore-API gespeichert; die vorhandene BFO-Einstellung bleibt damit über Neustarts erhalten.
 - Die Cursor-Auswahl und die Stellenwertabstimmung verwenden jeweils unbeschleunigte Encoder-Detents; die bisherige Beschleunigung für normales Frequenz-Tuning bleibt unverändert.
 - Die Schrittwahl wird über die von TunerDriver tatsächlich gemeldete Step-Choice aufgelöst; die FM-/AM-Tabellenindizes werden begrenzt, damit ungültige Auswahlwerte nicht außerhalb der Tabellen lesen. Kein GitHub-Actions-Workflow gestartet, kein Flash.
