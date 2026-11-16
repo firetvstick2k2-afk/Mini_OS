@@ -85,7 +85,9 @@ void EncoderInput::update() {
     if (stableButtonPressed_) rotatedWhilePressed_ = true;
     const int8_t direction = steps > 0 ? 1 : -1;
     const int16_t magnitude = steps > 0 ? steps : -steps;
-    const int16_t accelerated = acceleratedDelta(direction, now);
+    // While the button is held, preserve raw detent counts for cursor
+    // selection. Normal tuning keeps the existing acceleration ramp.
+    const int16_t accelerated = stableButtonPressed_ ? direction : acceleratedDelta(direction, now);
     // Coalesce a burst into one event so the small main-loop queue cannot
     // discard fast encoder movement when several detents arrive between polls.
     const int16_t delta = static_cast<int16_t>(accelerated * magnitude);
