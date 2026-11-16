@@ -48,7 +48,7 @@ private:
   void processEon(uint8_t version, uint16_t blockB, uint16_t blockC,
                   uint16_t blockD, uint8_t blockCError,
                   uint8_t blockDError, RdsDecodedFields& out);
-  void processOda(uint16_t blockB, uint16_t blockD,
+  void processOda(uint16_t blockC, uint16_t blockD,
                   uint8_t blockDError, RdsDecodedFields& out);
   void processRtPlus(uint16_t blockB, uint16_t blockC, uint16_t blockD,
                      const char* radioText, uint8_t blockCError,
