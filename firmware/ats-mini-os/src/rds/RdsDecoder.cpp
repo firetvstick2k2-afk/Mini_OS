@@ -25,6 +25,7 @@ void RdsDecoder::reset() {
   afCount_ = expectedAfCount_ = 0;
   odaGroupType_ = odaGroupVersion_ = 0xFF;
   rtPlusAid_ = 0;
+  memset(odaAssignments_, 0, sizeof(odaAssignments_));
   memset(ptyn_, 0, sizeof(ptyn_));
   ptynSegments_ = 0;
   ptynFlag_ = 0xFF;
@@ -115,28 +116,52 @@ void RdsDecoder::processPtyn(uint16_t blockB, uint16_t blockC, uint16_t blockD,
   }
 }
 void RdsDecoder::processOda(uint16_t blockC, uint16_t blockD,
-                            uint8_t blockDError, RdsDecodedFields& out) {
-  if (blockDError >= 3) return;
+                            uint8_t blockCError, uint8_t blockDError,
+                            RdsDecodedFields& out) {
+  if (blockCError >= 3 || blockDError >= 3) return;
   // IEC 62106-2:2021: 3A block C carries the 5-bit Application Group Type
   // Code (A3..A0 plus B0); block D carries the AID. It is not in block B.
   const uint8_t applicationGroupCode = static_cast<uint8_t>((blockC >> 11) & 0x1FU);
   const uint8_t groupType = static_cast<uint8_t>((applicationGroupCode >> 1) & 0x0FU);
   const uint8_t groupVersion = static_cast<uint8_t>(applicationGroupCode & 0x01U);
-  odaGroupType_ = groupType;
-  odaGroupVersion_ = groupVersion;
   out.odaAid = blockD;
   out.odaGroupType = groupType;
   out.odaGroupVersion = groupVersion;
   out.odaUpdated = true;
   // A zero AGTC means the application group is not currently carried;
   // 11111 signals a temporary data fault. Neither may activate RT+.
-  if (applicationGroupCode == 0 || applicationGroupCode == 0x1F) {
-    rtPlusAid_ = 0;
-    return;
+  OdaAssignment* assignment = nullptr;
+  OdaAssignment* empty = nullptr;
+  for (uint8_t i = 0; i < 8; ++i) {
+    if (odaAssignments_[i].valid && odaAssignments_[i].aid == blockD) {
+      assignment = &odaAssignments_[i];
+      break;
+    }
+    if (!odaAssignments_[i].valid && !empty) empty = &odaAssignments_[i];
   }
-  // RT+ for legacy RadioText is AID 0x4BD7. The ODA assignment determines
-  // the group; it must be honoured rather than hard-coding group 11A.
-  rtPlusAid_ = (blockD == 0x4BD7U && groupType != 0x0FU) ? blockD : 0;
+  if (applicationGroupCode == 0 || applicationGroupCode == 0x1F) {
+    if (assignment) *assignment = OdaAssignment{};
+  } else {
+    if (!assignment) assignment = empty;
+    if (assignment) {
+      assignment->valid = true;
+      assignment->aid = blockD;
+      assignment->groupType = groupType;
+      assignment->groupVersion = groupVersion;
+    }
+  }
+  // Keep the RT+ dispatch assignment independent from unrelated ODAs. A
+  // station may announce several applications in its 3A groups.
+  rtPlusAid_ = 0;
+  odaGroupType_ = odaGroupVersion_ = 0xFF;
+  for (uint8_t i = 0; i < 8; ++i) {
+    if (odaAssignments_[i].valid && odaAssignments_[i].aid == 0x4BD7U) {
+      rtPlusAid_ = 0x4BD7U;
+      odaGroupType_ = odaAssignments_[i].groupType;
+      odaGroupVersion_ = odaAssignments_[i].groupVersion;
+      break;
+    }
+  }
 }
 
 void RdsDecoder::processRtPlus(uint16_t blockB, uint16_t blockC, uint16_t blockD,
@@ -208,7 +233,7 @@ void RdsDecoder::process(uint8_t groupType, uint8_t version, uint16_t blockB,
   if (groupType == 14)
     processEon(version, blockB, blockC, blockD, blockCError, blockDError, out);
   if (groupType == 3 && version == 0)
-    processOda(blockC, blockD, blockDError, out);
+    processOda(blockC, blockD, blockCError, blockDError, out);
   if (rtPlusAid_ == 0x4BD7U && groupType == odaGroupType_ &&
       version == odaGroupVersion_ && version == 0)
     processRtPlus(blockB, blockC, blockD, radioText,
