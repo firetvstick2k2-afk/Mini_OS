@@ -437,6 +437,8 @@ void RdsDecoder::processOda(uint16_t blockB, uint16_t blockC, uint16_t blockD,
     out.odaGroupVersion = 0xFF;
   } else if (applicationGroupCode == 0) {
     if (assignment) *assignment = OdaAssignment{};
+    out.odaGroupType = 0xFF;
+    out.odaGroupVersion = 0xFF;
   } else {
     if (!assignment) assignment = empty;
     if (assignment) {
