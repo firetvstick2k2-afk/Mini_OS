@@ -2740,3 +2740,33 @@ Commits:
 - **SSB-Patchauswahl ist weiterhin nicht implementiert.** Im Mini-OS-Ziel liegt nur der eine eingebettete Patch vor. Die Referenz ATS-Mini-Dev hat einen eigenen Upload-/Slot-Workflow, der auf eine vorhandene HTTP-Upload-Route und andere globale Radio-/Settings-Schnittstellen angewiesen ist. Im Zielprojekt ist aktuell keine entsprechende Patch-Upload-Route nachgewiesen. Eine sichere Portierung braucht daher erst eine passende Upload-/Dateiverwaltungsschnittstelle und bestätigte Patchdateien.
 
 **Buildstatus:** Nicht buildfreigegeben. Es wurde kein Compilerlauf, GitHub-Actions-Workflow oder Flash gestartet. Die Änderungen wurden nach dem Commit erneut aus dem Zielbranch abgerufen; dies ist keine Compile-Prüfung. Vor dem vom Nutzer gestarteten Build müssen die oben genannten Decoderpunkte abgeschlossen und die SSB-Auswahl entweder vollständig integriert oder ausdrücklich aus dem Buildumfang herausgenommen werden.
+
+
+## Arbeitsfortschritt – RDS-Fehlerprüfung und Metadaten-Reset (2026-11-16)
+
+Auf dem aktuellen Zielbranch wurden die RDS-Pfade weiter abgesichert:
+
+- Der SI4735-Treiber stellt jetzt zusätzlich den Block-D-Fehlerlevel (BLED) bereit.
+- EON 14A prüft die Fehlerkorrektur sowohl für Block C (Nutzdaten) als auch Block D (PI des Nachbarnetzes). EON 14B benötigt Block C nicht und wird deshalb nicht mehr wegen eines irrelevanten C-Fehlers verworfen; Block D muss weiterhin gültig sein.
+- ODA 3A wird nur übernommen, wenn der AID-Block D gültig ist.
+- RT+ 11A wird nur dekodiert, wenn die beiden Nutzdatenblöcke C und D gültig sind.
+- Beim Frequenzwechsel, Bandwechsel und Modulationswechsel werden jetzt sämtliche RDS-Zusatzfelder im RadioSnapshot gemeinsam zurückgesetzt. Dadurch bleiben keine EON-/ODA-/RT+-Daten des vorherigen Senders stehen.
+- Der RT+ 11A-Bitaufbau wurde mit dem veröffentlichten Gruppenbeispiel B008 / 24A0 / 2005 abgeglichen; die Aufteilung 1+1+6+6+6+6+6+5 Bit ist konsistent.
+
+Änderungen:
+- RdsDecoder.h – Prozessschnittstelle um Block-D-Fehlerlevel ergänzt.
+- RdsDecoder.cpp – Fehlerprüfung je nach RDS-Gruppe korrigiert.
+- TunerDriver.h/.cpp – BLED aus dem SI4735-Status an den Decoder weitergereicht.
+- RadioCore.cpp – zentraler vollständiger Reset aller RDS-Snapshotfelder.
+- Commits: a951d94, 025a975, 34055cf, 6fa354a, 9fe3e9c.
+
+Offen:
+- EON mapped frequencies, linkage und PIN werden weiterhin nicht dekodiert; der Snapshot hält derzeit nur das zuletzt aktualisierte EON-Netzwerk und keine vollständige Liste aller acht intern gespeicherten Netzwerke.
+- Die SSB-Patchauswahl ist weiterhin nicht integriert: Zielprojekt hat nur einen nachgewiesenen eingebetteten Patch. Im Zielprojekt wurde kein Webserver-/Upload-Endpunkt gefunden, über den zusätzliche Patchdateien sicher importiert werden könnten. Es werden keine Platzhalter-Patches oder duplizierten Binärdateien als Auswahloptionen angelegt.
+- RT+-/EON-Testvektoren sind auf Quellcodeebene geprüft, aber noch nicht als automatisierte Firmware-Unit-Tests ausgeführt.
+
+Prüfstatus:
+- PU2CLR-SI4735-Statusstruktur bestätigt die Felder BLEC und BLED; Fehlerwert 3 bedeutet unkorrektierbar.
+- RT+-Gruppenlayout anhand des dokumentierten Beispiels geprüft.
+- Geänderte Dateien wurden aus dem Zielbranch erneut abgerufen; vollständiger Compilerlauf und Hardwaretest stehen aus.
+- Kein GitHub-Actions-Workflow gestartet, kein Flash ausgeführt. Buildfreigabe bleibt ausstehend, bis die offenen Punkte geklärt und der Quellstand vollständig geprüft ist.
