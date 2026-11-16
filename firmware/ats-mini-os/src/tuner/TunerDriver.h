@@ -101,6 +101,8 @@ struct TunerRdsData {
   bool eccValid = false;
   bool tpValid = false;
   bool taValid = false;
+  bool linkageActuatorValid = false;
+  bool linkageActuator = false;
   bool msValid = false;
   bool diValid = false;
   bool afUpdated = false;
@@ -115,7 +117,7 @@ struct TunerRdsData {
   bool rtPlusUpdated = false;
   bool ptynUpdated = false;
   uint16_t odaAid = 0;
-  uint8_t odaGroupType = 0, odaGroupVersion = 0;
+  uint8_t odaGroupType = 0xFF, odaGroupVersion = 0xFF;
   RdsEonNetwork eon;
   uint8_t eonCount = 0;
   RdsEonNetwork eonNetworks[RDS_MAX_EON_NETWORKS] = {};
@@ -128,8 +130,6 @@ struct TunerRdsData {
   uint8_t eccCode = 0;
   uint8_t afCount = 0;
   uint32_t afKHz[25] = {};
-  uint8_t afMethodBCount = 0;
-  RdsAfMethodBList afMethodBLists[RDS_MAX_AF_METHOD_B_LISTS] = {};
   bool clockValid = false;
   uint8_t clockHour = 0;
   uint8_t clockMinute = 0;
