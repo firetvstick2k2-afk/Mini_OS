@@ -1291,14 +1291,14 @@ void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnect
       return;
     }
     if (fmLayout_ == 1) {
-      if (useSprite_) { sprite_.fillSprite(BLACK); drawHJBLayout(sprite_, s, radioReady, wifiConnected); sprite_.pushSprite(0, 0); }
-      else { device_.fillScreen(BLACK); drawHJBLayout(device_, s, radioReady, wifiConnected); }
+      if (useSprite_) { sprite_.fillSprite(BLACK); drawHJBLayout(sprite_, s, radioReady, wifiConnected, frequencyCursor_); sprite_.pushSprite(0, 0); }
+      else { device_.fillScreen(BLACK); drawHJBLayout(device_, s, radioReady, wifiConnected, frequencyCursor_); }
       return;
     }
   } else {
     auto renderSw = [&](auto& canvas) {
       switch (amLayout_) {
-        case 1: drawHJBLayout(canvas, s, radioReady, wifiConnected); break;
+        case 1: drawHJBLayout(canvas, s, radioReady, wifiConnected, frequencyCursor_); break;
         case 4: SWLayouts::drawDecoder(canvas, s, radioReady, wifiConnected); break;
         case 7: SWLayouts::drawTiny(canvas, s, radioReady, wifiConnected); break;
         case 8: SWLayouts::drawTef6686SW(canvas, s, radioReady, wifiConnected, eibiStation, eibiStatus, eibiAvailable, eibiDownloading); break;
