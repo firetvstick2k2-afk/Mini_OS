@@ -16,6 +16,7 @@ struct RadioSnapshot {
   int16_t snr = -1;
   uint16_t piCode = 0;
   uint8_t pty = 0;
+  char rdsPtyn[9] = {};
   bool rdsTpValid = false;
   bool rdsTp = false;
   bool rdsTaValid = false;
