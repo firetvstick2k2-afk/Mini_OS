@@ -15,6 +15,7 @@ public:
   uint16_t count() const { return count_; }
   uint16_t capacity() const { return planned_; }
   const Point& point(uint16_t index) const;
+  const Point* data() const { return points_; }
   uint32_t savedFrequencyKHz() const { return savedFrequencyKHz_; }
 private:
   Point points_[kMaxPoints]{};
