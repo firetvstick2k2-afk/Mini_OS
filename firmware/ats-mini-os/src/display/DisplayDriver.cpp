@@ -541,7 +541,8 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
       else { items=ssbBandwidthItems; count=sizeof(ssbBandwidthItems)/sizeof(ssbBandwidthItems[0]); }
       title="BANDBREITE"; break;
     case 8: count=static_cast<uint8_t>(BandManager::count()+1); title="BAND WÄHLEN"; break;
-    case 11: items=radioSettingsItems; count=(modulation==RadioModulation::FM?10:14); title="EMPFANG"; break;\n    case 25: items=receiverFeatureItems; count=sizeof(receiverFeatureItems)/sizeof(receiverFeatureItems[0]); title="RX / FM OPTIONEN"; break;
+    case 11: items=radioSettingsItems; count=(modulation==RadioModulation::FM?10:14); title="EMPFANG"; break;
+    case 25: items=receiverFeatureItems; count=sizeof(receiverFeatureItems)/sizeof(receiverFeatureItems[0]); title="RX / FM OPTIONEN"; break;
     case 12: items=bfoItems; count=sizeof(bfoItems)/sizeof(bfoItems[0]); title="SSB / BFO"; break;
     case 16:
       if (BandManager::current().type == RadioBandType::FM) { items=fmModulationItems; count=2; }
