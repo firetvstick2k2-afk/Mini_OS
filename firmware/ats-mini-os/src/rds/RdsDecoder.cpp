@@ -535,15 +535,19 @@ void RdsDecoder::process(uint8_t groupType, uint8_t version, uint16_t blockB,
     out.ta = (blockB & 0x0010U) != 0;
     out.musicSpeech = (blockB & 0x0008U) != 0;
     out.decoderIdentification = (blockB & 0x0004U) != 0;
-  } else if (groupType == 15 && version == 0) {
-    out.taValid = true;
-    out.ta = (blockB & 0x0010U) != 0;
   }
 
-  if (groupType == 1 && version == 0 &&
-      ((blockB >> 2) & 0x07U) == 0 && blockCError < 3) {
-    const uint8_t ecc = static_cast<uint8_t>(blockC >> 8);
-    if (ecc) { out.eccValid = true; out.ecc = ecc; }
+  if (groupType == 1 && version == 0 && blockCError < 3) {
+    // Group 1A block C: b15 is the tuned-network Linkage Actuator,
+    // b14..b12 are the slow-labelling variant code, and variant 0 carries
+    // the Extended Country Code in b7..b0.
+    out.linkageActuatorValid = true;
+    out.linkageActuator = (blockC & 0x8000U) != 0;
+    const uint8_t variant = static_cast<uint8_t>((blockC >> 12) & 0x07U);
+    if (variant == 0) {
+      const uint8_t ecc = static_cast<uint8_t>(blockC & 0x00FFU);
+      if (ecc) { out.eccValid = true; out.ecc = ecc; }
+    }
   }
   if (groupType == 0 && version == 0 && blockCError < 3)
     processAlternativeFrequencies(blockC, out);
