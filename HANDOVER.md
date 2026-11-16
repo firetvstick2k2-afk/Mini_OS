@@ -2784,5 +2784,14 @@ Prüfstatus:
 - Corrected a substantive decoder defect in group 3A: IEC 62106-2:2021 Figure 10 places the 5-bit Application Group Type Code in block C (A3..A0 plus B0), not in block B. `RdsDecoder::processOda()` now reads block C bits 15..11.
 - RT+ dispatch now follows the group type/version announced by the ODA assignment rather than assuming group 11A. The RT+ AID 0x4BD7 is only enabled for a valid announced application group assignment; code 00000 (not carried) and 11111 (temporary data fault) disable it.
 - Commits: 76805da (interface), 98eaced (decoder).
-- This is an incremental correction, **not a claim that RDS is finished**. Remaining completion work: full EON per-PI state and mapped-frequency/linkage fields; complete ODA assignment lifecycle; RT+ tag validation and item semantics; PTYN/long-PS where appropriate; host-side decoder test vectors; then compile and on-device validation. Dual RX and VFO A/B remain last by user instruction.
+- This is an incremental correction, **not a claim that RDS is finished**. Remaining completion work: full EON per-PI state and mapped-frequency/linkage fields; complete ODA assignment lifecycle; RT+ tag validation and item semantics; long-PS where appropriate; host-side decoder test vectors; then compile and on-device validation. Dual RX and VFO A/B remain last by user instruction.
 - Reference: IEC 62106-2:2021, Figure 10 (3A AGTC in block C) and clauses 6.7/7.5/7.6 (EON); IEC 62106-6 for RT+.
+
+
+### RDS – PTYN (Programme Type Name) support (2026-11-16)
+
+- Added decoding for RDS group 10A (PTYN). The two 4-character segments are assembled into an 8-character name; incomplete segment sets are not published.
+- The PTYN A/B flag resets the assembly buffer when a new PTYN sequence begins. Block C and D error levels are checked before accepting segment data.
+- PTYN is forwarded through `TunerRdsData` into `RadioSnapshot` and cleared on the existing RDS reset path. No display layout or RadioDNS/sender-logo code was changed.
+- Commits: `a8c1747` (decoder contract), `1580ca1` (group 10A decoder), `b2fd1fb`/`3254b97` (tuner forwarding), `4bf069a`/`679db18` (snapshot publication/reset).
+- Status: source changes committed and re-fetched from the target branch. No compiler run or device test has been performed; PTYN reception still needs validation with a station that broadcasts group 10A.
