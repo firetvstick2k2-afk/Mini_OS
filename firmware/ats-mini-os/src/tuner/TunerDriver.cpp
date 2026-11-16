@@ -560,6 +560,10 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
       if (decoded.tpValid) { out.tpValid = true; out.tp = decoded.tp; }
       if (decoded.ptyValid) { out.ptyValid = true; out.pty = decoded.pty; }
       if (decoded.taValid) { out.taValid = true; out.ta = decoded.ta; }
+      if (decoded.linkageActuatorValid) {
+        out.linkageActuatorValid = true;
+        out.linkageActuator = decoded.linkageActuator;
+      }
       if (decoded.msValid) { out.msValid = true; out.musicSpeech = decoded.musicSpeech; }
       if (decoded.diValid) {
         out.diValid = true;
