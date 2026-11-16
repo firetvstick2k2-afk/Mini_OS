@@ -171,6 +171,7 @@ void RdsDecoder::processAlternativeFrequencies(uint16_t blockC, RdsDecodedFields
     if (first == afHeaderCode_ || second == afHeaderCode_) {
       const uint8_t alternativeCode = first == afHeaderCode_ ? second : first;
       const uint32_t alternative = afFrequency(alternativeCode);
+      if (afMethodBCount_ == 0) afCount_ = 0;
       afState_ = 3;
       afPairsReceived_ = 0;
       if (alternative && afPairsExpected_) {
@@ -183,6 +184,9 @@ void RdsDecoder::processAlternativeFrequencies(uint16_t blockC, RdsDecodedFields
     }
     afState_ = 2;
     afReceivedCount_ = 0;
+    afCount_ = 0;
+    afMethodBCount_ = 0;
+    memset(afMethodBLists_, 0, sizeof(afMethodBLists_));
     processAlternativeFrequencyByte(afHeaderCode_);
     if (afState_ == 4) { afState_ = 0; afExpectedCount_ = afReceivedCount_ = 0; publishAf(out); return; }
     processAlternativeFrequencyByte(first);
@@ -207,6 +211,8 @@ void RdsDecoder::processAlternativeFrequencies(uint16_t blockC, RdsDecodedFields
   // which AF method is in use.
   if (first == 224) {
     afCount_ = 0;
+    afMethodBCount_ = 0;
+    memset(afMethodBLists_, 0, sizeof(afMethodBLists_));
     afState_ = 0;
     afExpectedCount_ = afReceivedCount_ = 0;
     publishAf(out);
@@ -222,6 +228,9 @@ void RdsDecoder::processAlternativeFrequencies(uint16_t blockC, RdsDecodedFields
       afState_ = 1;
     } else {
       afState_ = 2;
+      afCount_ = 0;
+      afMethodBCount_ = 0;
+      memset(afMethodBLists_, 0, sizeof(afMethodBLists_));
       processAlternativeFrequencyByte(second);
       if (afState_ == 4) { afState_ = 0; afExpectedCount_ = afReceivedCount_ = 0; }
     }
