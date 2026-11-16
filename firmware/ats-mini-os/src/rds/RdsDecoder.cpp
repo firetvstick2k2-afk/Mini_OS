@@ -183,6 +183,8 @@ void RdsDecoder::processAlternativeFrequencies(uint16_t blockC, RdsDecodedFields
     }
     afState_ = 2;
     afReceivedCount_ = 0;
+    processAlternativeFrequencyByte(afHeaderCode_);
+    if (afState_ == 4) { afState_ = 0; afExpectedCount_ = afReceivedCount_ = 0; publishAf(out); return; }
     processAlternativeFrequencyByte(first);
     if (afState_ == 4) { afState_ = 0; afExpectedCount_ = afReceivedCount_ = 0; publishAf(out); return; }
     processAlternativeFrequencyByte(second);
