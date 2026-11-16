@@ -30,6 +30,8 @@ public:
   bool setSoftMuteAttenuation(uint8_t attenuationDb);
   bool setAvcGain(uint8_t gain);
   bool setBfoOffsetHz(int16_t offsetHz);
+  bool setPatchProfile(uint8_t profile);
+  uint8_t patchProfile() const { return tuner_.patchProfile(); }
   int16_t bfoOffsetHz() const { return tuner_.bfoOffsetHz(); }
   bool setSsbBandwidthChoice(uint8_t choice);
   uint8_t ssbBandwidthChoice() const { return tuner_.ssbBandwidthChoice(); }
