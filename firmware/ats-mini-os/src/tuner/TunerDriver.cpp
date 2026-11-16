@@ -453,7 +453,7 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
       const char* rawRt = version == 0 ? radio_.getRdsText2A() : radio_.getRdsText2B();
       rdsDecoder_.process(group, version, blockB, blockC, blockD,
                           radio_.currentPiCode(), radio_.currentBlockCError(),
-                          rawRt, decoded);
+                          radio_.currentBlockDError(), rawRt, decoded);
       out.tpValid = decoded.tpValid;
       out.tp = decoded.tp;
       out.ptyValid = true;
