@@ -13,6 +13,7 @@ struct EncoderEvent {
   EncoderEventType type = EncoderEventType::None;
   int16_t delta = 0;
   uint32_t timestampMs = 0;
+  bool buttonHeld = false;
 };
 
 // Interrupt-driven quadrature input for ATS Mini V4 (A=GPIO2, B=GPIO1, SW=GPIO21).
@@ -37,6 +38,7 @@ private:
   bool rawButtonPressed_ = false;
   bool stableButtonPressed_ = false;
   bool longPressSent_ = false;
+  bool rotatedWhilePressed_ = false;
   uint32_t buttonChangedMs_ = 0;
   uint32_t pressStartedMs_ = 0;
   EncoderEvent eventQueue_[kEventQueueCapacity]{};
