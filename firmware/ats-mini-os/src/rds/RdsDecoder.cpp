@@ -42,9 +42,11 @@ void RdsDecoder::addAlternativeFrequency(uint8_t code) {
 }
 
 void RdsDecoder::processEon(uint8_t version, uint16_t blockB, uint16_t blockC,
-                            uint16_t blockD, uint8_t blockCError,
+                            uint16_t blockD, uint8_t blockCError, uint8_t blockDError,
                             RdsDecodedFields& out) {
-  if (blockCError >= 3) return;
+  // Block D carries the other-network PI in both 14A and 14B.
+  if (blockDError >= 3) return;
+  if (version == 0 && blockCError >= 3) return;
   const uint16_t otherPi = blockD;
   if (!otherPi) return;
   RdsEonNetwork* net = findEon(eonNetworks_, otherPi);
@@ -83,7 +85,9 @@ void RdsDecoder::processEon(uint8_t version, uint16_t blockB, uint16_t blockC,
   out.eonUpdated = true;
 }
 
-void RdsDecoder::processOda(uint16_t blockB, uint16_t blockD, RdsDecodedFields& out) {
+void RdsDecoder::processOda(uint16_t blockB, uint16_t blockD,
+                            uint8_t blockDError, RdsDecodedFields& out) {
+  if (blockDError >= 3) return;
   // 3A announces the ODA group assignment in A3..A0 and its version bit.
   odaGroupType_ = static_cast<uint8_t>((blockB >> 7) & 0x0FU);
   odaGroupVersion_ = static_cast<uint8_t>((blockB >> 6) & 0x01U);
@@ -95,8 +99,10 @@ void RdsDecoder::processOda(uint16_t blockB, uint16_t blockD, RdsDecodedFields& 
 }
 
 void RdsDecoder::processRtPlus(uint16_t blockB, uint16_t blockC, uint16_t blockD,
-                               const char* radioText, RdsDecodedFields& out) {
-  if (!radioText || rtPlusAid_ != 0x4BD7U) return;
+                               const char* radioText, uint8_t blockCError, uint8_t blockDError,
+                               RdsDecodedFields& out) {
+  if (!radioText || rtPlusAid_ != 0x4BD7U ||
+      blockCError >= 3 || blockDError >= 3) return;
   // The 37 RT+ message bits are contiguous: B[4:0], C[15:0], D[15:0].
   const uint64_t bits = (static_cast<uint64_t>(blockB & 0x001FU) << 32) |
                         (static_cast<uint64_t>(blockC) << 16) | blockD;
@@ -134,7 +140,7 @@ void RdsDecoder::processRtPlus(uint16_t blockB, uint16_t blockC, uint16_t blockD
 
 void RdsDecoder::process(uint8_t groupType, uint8_t version, uint16_t blockB,
                          uint16_t blockC, uint16_t blockD, uint16_t pi,
-                         uint8_t blockCError, const char* radioText,
+                         uint8_t blockCError, uint8_t blockDError, const char* radioText,
                          RdsDecodedFields& out) {
   out.tpValid = true;
   out.tp = (blockB & 0x0400U) != 0;
@@ -156,11 +162,13 @@ void RdsDecoder::process(uint8_t groupType, uint8_t version, uint16_t blockB,
     out.afCount = afCount_;
     for (uint8_t i = 0; i < afCount_; ++i) out.afKHz[i] = afKHz_[i];
   }
-  if (groupType == 14) processEon(version, blockB, blockC, blockD, blockCError, out);
-  if (groupType == 3 && version == 0 && blockCError < 3)
-    processOda(blockB, blockD, out);
+  if (groupType == 14)
+    processEon(version, blockB, blockC, blockD, blockCError, blockDError, out);
+  if (groupType == 3 && version == 0)
+    processOda(blockB, blockD, blockDError, out);
   if (groupType == 11 && odaGroupType_ == 11 && odaGroupVersion_ == 0 &&
-      rtPlusAid_ == 0x4BD7U && blockCError < 3)
-    processRtPlus(blockB, blockC, blockD, radioText, out);
+      rtPlusAid_ == 0x4BD7U)
+    processRtPlus(blockB, blockC, blockD, radioText,
+                  blockCError, blockDError, out);
   (void)pi;
 }
