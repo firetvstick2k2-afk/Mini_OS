@@ -186,6 +186,7 @@ private:
   bool ready_ = false;
   bool ssbPatchLoaded_ = false;
   bool amPatchLoaded_ = false;
+  bool amPatchRestorePending_ = false;
   uint8_t volume_ = 25;
   bool agcAutomatic_ = true;
   uint8_t agcGainIndex_ = 20;
