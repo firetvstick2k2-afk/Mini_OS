@@ -108,6 +108,8 @@ public:
   bool begin(uint32_t initialFrequencyKHz);
   bool tune(uint32_t frequencyKHz);
   bool setBand(const RadioBandDefinition& band);
+  bool setPatchProfile(uint8_t profile);
+  uint8_t patchProfile() const;
   bool setModulation(const RadioBandDefinition& band, RadioModulation modulation);
   bool tune(uint32_t frequencyKHz, const RadioBandDefinition& band);
   RadioModulation modulation() const { return modulation_; }
@@ -158,6 +160,7 @@ private:
   RdsDecoder rdsDecoder_;
   bool ready_ = false;
   bool ssbPatchLoaded_ = false;
+  bool amPatchLoaded_ = false;
   uint8_t volume_ = 25;
   bool agcAutomatic_ = true;
   uint8_t agcGainIndex_ = 20;
