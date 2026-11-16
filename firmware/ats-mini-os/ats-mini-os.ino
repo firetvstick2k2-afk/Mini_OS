@@ -387,7 +387,7 @@ void loop() {
         lastEncoderEvent = inputEvent.type == EncoderEventType::RotateClockwise ? "CW" : "CCW";
         // Acceleration is reserved for live frequency tuning. Menus and BFO
         // adjustment always move one logical step per encoder detent.
-        const int16_t rotationDelta = (menuOpen || bfoAdjustmentActive || inputEvent.buttonHeld || frequencyCursorActive)
+        const int16_t rotationDelta = (menuOpen || bfoAdjustmentActive || frequencyCursorActive) && !inputEvent.buttonHeld
           ? (inputEvent.delta > 0 ? 1 : -1) : inputEvent.delta;
         if(inputEvent.buttonHeld&&!menuOpen&&!bfoAdjustmentActive){syncFrequencyCursor();frequencyCursorPos=static_cast<uint8_t>(constrain(static_cast<int>(frequencyCursorPos)-rotationDelta,static_cast<int>(frequencyCursorMinimum()),static_cast<int>(frequencyCursorMaximum())));frequencyCursorActive=true;} else if (menuOpen) {
           if(menuPage==23 && scanner.state()!=ScanService::State::Running && scanner.count()>0) {
