@@ -55,7 +55,7 @@ bool TunerDriver::begin(uint32_t initialFrequencyKHz) {
   haveTextFlag_ = false;
   lastTextFlag_ = 0;
   lastPiCode_ = 0;
-  rawRadioText_[0] = '\0';
+  memset(rawRadioText_, 0, sizeof(rawRadioText_));
   rdsDecoder_.reset();
   // Keep audio muted and the amplifier disabled while the tuner starts, to avoid
   // startup pops and to ensure a failed tuner initialization cannot leave audio live.
@@ -332,7 +332,7 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
   modulation_ = band.modulation;
   haveTextFlag_ = false;
   lastPiCode_ = 0;
-  rawRadioText_[0] = '\0';
+  memset(rawRadioText_, 0, sizeof(rawRadioText_));
   rdsDecoder_.reset();
 
   if (band.modulation == RadioModulation::FM) {
@@ -449,7 +449,7 @@ bool TunerDriver::tune(uint32_t frequencyKHz, const RadioBandDefinition& band) {
   else
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz));
   haveTextFlag_ = false;
-  rawRadioText_[0] = '\0';
+  memset(rawRadioText_, 0, sizeof(rawRadioText_));
   rdsDecoder_.reset();
   lastPiCode_ = 0;
   return true;
@@ -462,7 +462,7 @@ bool TunerDriver::tune(uint32_t frequencyKHz) {
   else
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz));
   haveTextFlag_ = false;
-  rawRadioText_[0] = '\0';
+  memset(rawRadioText_, 0, sizeof(rawRadioText_));
   rdsDecoder_.reset();
   lastPiCode_ = 0;
   return true;
@@ -513,7 +513,7 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
           rdsDecoder_.reset();
           haveTextFlag_ = false;
           lastTextFlag_ = 0;
-          rawRadioText_[0] = '\0';
+          memset(rawRadioText_, 0, sizeof(rawRadioText_));
         }
         lastPiCode_ = pi;
       }
