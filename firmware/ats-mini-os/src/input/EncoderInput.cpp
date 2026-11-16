@@ -82,6 +82,7 @@ void EncoderInput::update() {
 
   const uint32_t now = millis();
   if (steps != 0) {
+    if (stableButtonPressed_) rotatedWhilePressed_ = true;
     const int8_t direction = steps > 0 ? 1 : -1;
     const int16_t magnitude = steps > 0 ? steps : -steps;
     const int16_t accelerated = acceleratedDelta(direction, now);
@@ -104,7 +105,8 @@ void EncoderInput::update() {
     if (stableButtonPressed_) {
       pressStartedMs_ = now;
       longPressSent_ = false;
-    } else if (!longPressSent_) {
+      rotatedWhilePressed_ = false;
+    } else if (!longPressSent_ && !rotatedWhilePressed_) {
       queueEvent(EncoderEventType::ShortPress, 0);
     }
   }
@@ -165,6 +167,7 @@ void EncoderInput::queueEvent(EncoderEventType type, int16_t delta) {
   eventQueue_[queueTail_].type = type;
   eventQueue_[queueTail_].delta = delta;
   eventQueue_[queueTail_].timestampMs = millis();
+  eventQueue_[queueTail_].buttonHeld = stableButtonPressed_;
   queueTail_ = static_cast<uint8_t>((queueTail_ + 1) % kEventQueueCapacity);
   ++queueCount_;
 }
