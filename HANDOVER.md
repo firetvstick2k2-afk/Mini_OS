@@ -2770,3 +2770,10 @@ Prüfstatus:
 - RT+-Gruppenlayout anhand des dokumentierten Beispiels geprüft.
 - Geänderte Dateien wurden aus dem Zielbranch erneut abgerufen; vollständiger Compilerlauf und Hardwaretest stehen aus.
 - Kein GitHub-Actions-Workflow gestartet, kein Flash ausgeführt. Buildfreigabe bleibt ausstehend, bis die offenen Punkte geklärt und der Quellstand vollständig geprüft ist.
+
+
+### RT+-Anbindung – zusätzlicher Integrationsfix
+
+- PU2CLR 2.1.8 liefert über getRdsText2A/B() nur innerhalb einer Gruppe 2 einen Textpuffer; bei Gruppe 11A ist der Rückgabewert NULL. Der Tuner hält deshalb jetzt den zuletzt zusammengesetzten RadioText in einem eigenen 65-Byte-Puffer vor und reicht diesen bei RT+-Gruppen 11A an den Decoder weiter.
+- Der Textpuffer wird beim Sender-/Bandwechsel und bei einem RT-A/B-Flag-Wechsel geleert, bevor neuer Text übernommen wird.
+- Commits: 3d1d38c (Puffer), bd68d9f (FIFO-Anbindung).
