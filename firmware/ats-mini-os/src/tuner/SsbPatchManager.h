@@ -45,6 +45,28 @@ private:
     return value;
   }
 
+  static bool validFraming(const uint8_t* data, size_t size) {
+    if (!data || size < 24 || size > kMaxPatchSize || (size % 8) != 0) return false;
+    uint16_t remaining = 0;
+    bool terminal = false;
+    for (size_t offset = 0; offset < size; offset += 8) {
+      const uint8_t* row = data + offset;
+      if (terminal) return false;
+      if (!remaining) {
+        if (row[0] != 0x15 || row[1] != 0) return false;
+        remaining = static_cast<uint16_t>((static_cast<uint16_t>(row[2]) << 8) | row[3]);
+        terminal = remaining == 0;
+      } else {
+        if (row[0] != 0x16) return false;
+        const uint8_t used = remaining < 7 ? static_cast<uint8_t>(remaining) : 7;
+        for (uint8_t i = static_cast<uint8_t>(used + 1); i < 8; ++i)
+          if (row[i] != 0) return false;
+        remaining = static_cast<uint16_t>(remaining - used);
+      }
+    }
+    return terminal && remaining == 0;
+  }
+
   template <typename Radio>
   static bool loadExperimental(Radio& radio, bool ssb) {
     static uint8_t patchBuffer[kMaxPatchSize];
@@ -59,14 +81,14 @@ private:
     const size_t expected = profile() == V1
       ? (ssb ? 10208U : 1200U)
       : (ssb ? 15744U : 1608U);
-    if (decodedSize != expected || decodedSize < 24 ||
-        (decodedSize % 8) != 0) {
+    if (decodedSize != expected || !validFraming(patchBuffer, decodedSize)) {
       Serial.printf("[PATCH] Invalid patch size: %u (expected %u)\\n",
                     static_cast<unsigned>(decodedSize),
                     static_cast<unsigned>(expected));
       return false;
     }
-    radio.loadPatch(patchBuffer, decodedSize, 2);
+    if (ssb) radio.loadPatch(patchBuffer, decodedSize, 2);
+    else radio.loadAMPatch(patchBuffer, static_cast<uint16_t>(decodedSize));
     Serial.printf("[PATCH] Loaded %s %s (%u bytes)\\n",
                   profileName(profile()), ssb ? "SSB" : "AM",
                   static_cast<unsigned>(decodedSize));
