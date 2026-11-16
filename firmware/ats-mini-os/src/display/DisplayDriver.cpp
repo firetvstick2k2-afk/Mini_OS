@@ -740,6 +740,36 @@ void drawRadioUtilityPage(Canvas& c,uint8_t page,uint8_t selection,const RadioSn
 }
 
 template <typename Canvas>
+void drawDecoderFrequencyPage(Canvas& c,uint8_t selection) {
+  constexpr uint16_t navy=0x0008, blue=0x001F, cyan=0x07FF, green=0x07E0, white=0xFFFF, yellow=0xFFE0;
+  c.fillScreen(navy); c.drawRect(5,5,310,160,blue);
+  c.setTextDatum(MC_DATUM); c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  c.setTextColor(cyan,navy); c.drawString("DECODER FREQUENZEN",160,18);
+  const uint8_t total=static_cast<uint8_t>(kDecoderFrequencyPresetCount+1);
+  char line[64];
+  if(selection==0) {
+    c.setTextColor(yellow,navy); c.drawString("ZURUECK",160,72);
+    c.setTextColor(white,navy); c.setFont(&lgfx::fonts::FreeSans9pt7b);
+    c.drawString("Zur Hauptmenuebene",160,101);
+  } else {
+    const DecoderFrequencyPreset& preset=kDecoderFrequencyPresets[selection-1];
+    c.setTextColor(green,navy); c.drawString(preset.label,160,58);
+    c.setTextColor(white,navy); c.setFont(&lgfx::fonts::FreeSans9pt7b);
+    snprintf(line,sizeof(line),"%lu kHz  |  %s",
+      static_cast<unsigned long>(preset.frequencyKHz),
+      preset.modulation==RadioModulation::USB?"USB":preset.modulation==RadioModulation::LSB?"LSB":"AM");
+    c.drawString(line,160,88);
+    const char* note=(selection>=33 && selection<=38)?"DWD PINNEBERG / RTTY F1B 50 BAUD":
+      (selection>=39?"CB-DATENKANAL":"Empfangsfrequenz / Betriebsart");
+    c.setTextColor(yellow,navy); c.setFont(&lgfx::fonts::Font0); c.drawString(note,160,113);
+  }
+  snprintf(line,sizeof(line),"%02u / %02u",static_cast<unsigned>(selection+1),static_cast<unsigned>(total));
+  c.setTextColor(cyan,navy); c.setFont(&lgfx::fonts::Font0); c.drawString(line,160,137);
+  c.drawString("DREHEN: AUSWAEHLEN  |  KLICK: TUNEN",160,157);
+  c.setTextDatum(TL_DATUM); c.setFont(&lgfx::fonts::Font0);
+}
+
+template <typename Canvas>
 void drawLegacyCWPage(Canvas& c,const RadioSnapshot& state,bool blocked,const char* decoded,bool signal) {
   constexpr uint16_t navy=0x0008,blueA=0x0359,blueB=0x047D,frame=0xF800,green=0x07E0,red=0xF800;
   c.fillScreen(navy);
@@ -846,6 +876,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   lastMenuTheme_=themeIndex_;
   lastMenuBootLogEnabled_=bootLogEnabled;
   if (menuOpen) {
+    if(menuPage==26){if(useSprite_){sprite_.fillSprite(BLACK);drawDecoderFrequencyPage(sprite_,menuSelection);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawDecoderFrequencyPage(device_,menuSelection);}return;}
     if(menuPage==22 || menuPage==23 || menuPage==24){if(useSprite_){sprite_.fillSprite(BLACK);drawRadioUtilityPage(sprite_,menuPage,menuSelection,s,memorySlot,memoryCount,scanCount,scanCapacity,scanState,seekState);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawRadioUtilityPage(device_,menuPage,menuSelection,s,memorySlot,memoryCount,scanCount,scanCapacity,scanState,seekState);}return;}
     if(menuPage==21){if(useSprite_){sprite_.fillSprite(BLACK);drawLegacyCWPage(sprite_,s,cwWifiBlocked,cwText,cwSignal);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawLegacyCWPage(device_,s,cwWifiBlocked,cwText,cwSignal);}return;}
     if(menuPage==19 && keypadView){if(useSprite_){sprite_.fillSprite(BLACK);drawFrequencyKeypad(sprite_,*keypadView);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFrequencyKeypad(device_,*keypadView);}return;}
