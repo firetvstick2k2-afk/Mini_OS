@@ -2678,4 +2678,5 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Schrittweiten-/Stellenwertberechnung orientiert sich an ATS Mini DEV. FM verwendet die FM-Schrittwahl; AM verwendet die AM-Schrittwahl; SSB führt die Stellenwertänderung über den BFO in Hz aus. Cursorgrenzen werden aus Modulation und Bandobergrenze abgeleitet.
 - Die Cursor-Markierung wird über den bestehenden LegacyFrequencyRenderer im HJB-Layout gezeichnet; Farben und Cursor-Geometrie bleiben unverändert. Andere Layouts behalten ihre bisherige Darstellung.
 - Betroffene Dateien: src/input/EncoderInput.h/.cpp, ats-mini-os.ino, src/display/DisplayDriver.h/.cpp, src/display/DisplayLayoutHJB.h.
-- Noch nicht kompiliert oder am Gerät getestet. Statische Prüfung und anschließende manuelle Build-Freigabe folgen. Kein GitHub-Actions-Workflow gestartet, kein Flash.
+- Noch nicht kompiliert oder am Gerät getestet. Statische Prüfung und anschließende manuelle Build-Freigabe folgen.
+- Nach der Cursor-Ausrichtung wird ein geänderter SSB-BFO-Wert über die bestehende SettingsStore-API gespeichert; die vorhandene BFO-Einstellung bleibt damit über Neustarts erhalten. Kein GitHub-Actions-Workflow gestartet, kein Flash.
