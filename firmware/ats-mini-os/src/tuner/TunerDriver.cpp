@@ -15,13 +15,6 @@ constexpr uint8_t kFmFunction = 0;
 constexpr uint8_t kAudioMutePin = 3;
 constexpr uint8_t kAmplifierEnablePin = 10;
 
-void copyRawRdsText(char* dst, size_t capacity, const char* src) {
-  if (!capacity) return;
-  size_t i = 0;
-  for (; i + 1 < capacity && i < 64 && src && src[i] != '\0'; ++i) dst[i] = src[i];
-  dst[i] = '\0';
-}
-
 void copyRdsText(char* dst, size_t capacity, const char* src) {
   if (!capacity || !src) return;
   size_t i = 0;
@@ -63,7 +56,6 @@ bool TunerDriver::begin(uint32_t initialFrequencyKHz) {
   lastPiCode_ = 0;
   rawRadioText_[0] = '\0';
   rdsDecoder_.reset();
-  lastPiCode_ = 0;
   // Keep audio muted and the amplifier disabled while the tuner starts, to avoid
   // startup pops and to ensure a failed tuner initialization cannot leave audio live.
   pinMode(kAudioMutePin, OUTPUT);
@@ -521,7 +513,6 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
           haveTextFlag_ = false;
           lastTextFlag_ = 0;
           rawRadioText_[0] = '\0';
-          radio_.clearRadioTextBuffers();
         }
         lastPiCode_ = pi;
       }
@@ -533,18 +524,30 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
       const uint16_t blockC = radio_.currentBlockC();
       const uint16_t blockD = radio_.currentBlockD();
 
-      // RT+ points into the exact 64-character RT buffer. Keep control
-      // characters and their positions here; only the UI copy is formatted.
+      // Assemble RT directly from the received group blocks. This preserves
+      // the exact character offsets required by RT+ and avoids losing the
+      // first segment when the A/B flag changes.
       if (group == 2) {
-        const uint8_t flag = radio_.getRdsFlagAB();
+        const uint8_t flag = static_cast<uint8_t>((blockB >> 4) & 0x01U);
         if (!haveTextFlag_ || flag != lastTextFlag_) {
           haveTextFlag_ = true;
           lastTextFlag_ = flag;
-          radio_.clearRadioTextBuffers();
-          rawRadioText_[0] = '\0';
+          memset(rawRadioText_, 0, sizeof(rawRadioText_));
         }
-        const char* freshRt = version == 0 ? radio_.getRdsText2A() : radio_.getRdsText2B();
-        if (freshRt) copyRawRdsText(rawRadioText_, sizeof(rawRadioText_), freshRt);
+        const uint8_t segment = static_cast<uint8_t>(blockB & 0x0FU);
+        if (version == 0 && radio_.currentBlockCError() < 3 &&
+            radio_.currentBlockDError() < 3) {
+          const uint8_t offset = static_cast<uint8_t>(segment * 4U);
+          rawRadioText_[offset] = static_cast<char>(blockC >> 8);
+          rawRadioText_[offset + 1U] = static_cast<char>(blockC);
+          rawRadioText_[offset + 2U] = static_cast<char>(blockD >> 8);
+          rawRadioText_[offset + 3U] = static_cast<char>(blockD);
+        } else if (version == 1 && radio_.currentBlockDError() < 3) {
+          const uint8_t offset = static_cast<uint8_t>(segment * 2U);
+          rawRadioText_[offset] = static_cast<char>(blockD >> 8);
+          rawRadioText_[offset + 1U] = static_cast<char>(blockD);
+        }
+        rawRadioText_[64] = '\0';
       }
 
       RdsDecodedFields decoded;
@@ -607,18 +610,7 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
         out.stationNameUpdated = true;
       }
     } else if (group == 2) {
-      const uint8_t flag = radio_.getRdsFlagAB();
-      const bool textChanged = !haveTextFlag_ || flag != lastTextFlag_;
-      if (textChanged) {
-        haveTextFlag_ = true;
-        lastTextFlag_ = flag;
-        radio_.clearRadioTextBuffers();
-        rawRadioText_[0] = '\0';
-      }
-      const char* rt = radio_.getRdsVersionCode() == 0
-                           ? radio_.getRdsText2A()
-                           : radio_.getRdsText2B();
-      formatRadioText(out.radioText, sizeof(out.radioText), rt);
+      formatRadioText(out.radioText, sizeof(out.radioText), rawRadioText_);
       out.radioTextUpdated = true;
     }
 
