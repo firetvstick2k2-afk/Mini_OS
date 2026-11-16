@@ -85,17 +85,29 @@ void RdsDecoder::processEon(uint8_t version, uint16_t blockB, uint16_t blockC,
   out.eonUpdated = true;
 }
 
-void RdsDecoder::processOda(uint16_t blockB, uint16_t blockD,
+void RdsDecoder::processOda(uint16_t blockC, uint16_t blockD,
                             uint8_t blockDError, RdsDecodedFields& out) {
   if (blockDError >= 3) return;
-  // 3A announces the ODA group assignment in A3..A0 and its version bit.
-  odaGroupType_ = static_cast<uint8_t>((blockB >> 7) & 0x0FU);
-  odaGroupVersion_ = static_cast<uint8_t>((blockB >> 6) & 0x01U);
+  // IEC 62106-2:2021: 3A block C carries the 5-bit Application Group Type
+  // Code (A3..A0 plus B0); block D carries the AID. It is not in block B.
+  const uint8_t applicationGroupCode = static_cast<uint8_t>((blockC >> 11) & 0x1FU);
+  const uint8_t groupType = static_cast<uint8_t>((applicationGroupCode >> 1) & 0x0FU);
+  const uint8_t groupVersion = static_cast<uint8_t>(applicationGroupCode & 0x01U);
+  odaGroupType_ = groupType;
+  odaGroupVersion_ = groupVersion;
   out.odaAid = blockD;
-  out.odaGroupType = odaGroupType_;
-  out.odaGroupVersion = odaGroupVersion_;
+  out.odaGroupType = groupType;
+  out.odaGroupVersion = groupVersion;
   out.odaUpdated = true;
-  if (blockD == 0x4BD7U) rtPlusAid_ = blockD;
+  // A zero AGTC means the application group is not currently carried;
+  // 11111 signals a temporary data fault. Neither may activate RT+.
+  if (applicationGroupCode == 0 || applicationGroupCode == 0x1F) {
+    rtPlusAid_ = 0;
+    return;
+  }
+  // RT+ for legacy RadioText is AID 0x4BD7. The ODA assignment determines
+  // the group; it must be honoured rather than hard-coding group 11A.
+  rtPlusAid_ = (blockD == 0x4BD7U && groupType != 0x0FU) ? blockD : 0;
 }
 
 void RdsDecoder::processRtPlus(uint16_t blockB, uint16_t blockC, uint16_t blockD,
@@ -165,9 +177,9 @@ void RdsDecoder::process(uint8_t groupType, uint8_t version, uint16_t blockB,
   if (groupType == 14)
     processEon(version, blockB, blockC, blockD, blockCError, blockDError, out);
   if (groupType == 3 && version == 0)
-    processOda(blockB, blockD, blockDError, out);
-  if (groupType == 11 && odaGroupType_ == 11 && odaGroupVersion_ == 0 &&
-      rtPlusAid_ == 0x4BD7U)
+    processOda(blockC, blockD, blockDError, out);
+  if (rtPlusAid_ == 0x4BD7U && groupType == odaGroupType_ &&
+      version == odaGroupVersion_ && version == 0)
     processRtPlus(blockB, blockC, blockD, radioText,
                   blockCError, blockDError, out);
   (void)pi;
