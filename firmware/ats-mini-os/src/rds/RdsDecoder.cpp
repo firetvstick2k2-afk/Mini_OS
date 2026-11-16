@@ -404,6 +404,7 @@ void RdsDecoder::processOda(uint16_t blockB, uint16_t blockC, uint16_t blockD,
   const uint8_t groupType = static_cast<uint8_t>((applicationGroupCode >> 1) & 0x0FU);
   const uint8_t groupVersion = static_cast<uint8_t>(applicationGroupCode & 0x01U);
   const uint16_t aid = blockD;
+  if (!aid) return;
   out.odaUpdated = true;
   out.odaAid = aid;
   out.odaGroupType = groupType;
@@ -475,22 +476,27 @@ void RdsDecoder::processRtPlus(uint16_t blockB, uint16_t blockC, uint16_t blockD
     static_cast<uint8_t>(bits & 0x1FU)
   };
 
-  uint8_t textLength = 0;
-  while (textLength < 64 && radioText[textLength] && radioText[textLength] != '\r')
-    ++textLength;
-
   for (uint8_t i = 0; i < 2; ++i) {
     RdsRtPlusTag& tag = out.rtPlus[i];
     tag.contentType = types[i];
     tag.start = starts[i];
     tag.length = lengths[i];
     const uint16_t count = static_cast<uint16_t>(lengths[i]) + 1U;
-    if (types[i] == 0 || starts[i] >= textLength ||
-        count > static_cast<uint16_t>(textLength - starts[i])) continue;
+    if (types[i] == 0 || static_cast<uint16_t>(starts[i]) + count > 64U)
+      continue;
+
+    // RT+ groups may arrive before every RadioText segment. Validate only the
+    // characters referenced by this tag instead of requiring a contiguous
+    // prefix from character zero.
+    bool complete = true;
+    for (uint16_t n = 0; n < count; ++n) {
+      const char ch = radioText[starts[i] + n];
+      if (ch == '\r' || ch == '\0') { complete = false; break; }
+    }
+    if (!complete) continue;
 
     for (uint16_t n = 0; n < count && n < sizeof(tag.text) - 1; ++n) {
       const unsigned char ch = static_cast<unsigned char>(radioText[starts[i] + n]);
-      if (ch == '\r' || ch == '\0') break;
       tag.text[n] = (ch >= 0x20U && ch <= 0x7EU) ? static_cast<char>(ch) : ' ';
     }
     tag.text[count] = '\0';
