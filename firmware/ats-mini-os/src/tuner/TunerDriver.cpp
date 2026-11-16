@@ -53,6 +53,7 @@ bool TunerDriver::begin(uint32_t initialFrequencyKHz) {
   ready_ = false;
   haveTextFlag_ = false;
   lastTextFlag_ = 0;
+  rawRadioText_[0] = '\0';
   rdsDecoder_.reset();
   // Keep audio muted and the amplifier disabled while the tuner starts, to avoid
   // startup pops and to ensure a failed tuner initialization cannot leave audio live.
@@ -312,6 +313,7 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
   stepKHz_ = band.stepKHz ? band.stepKHz : 1;
   modulation_ = band.modulation;
   haveTextFlag_ = false;
+  rawRadioText_[0] = '\0';
   rdsDecoder_.reset();
 
   if (band.modulation == RadioModulation::FM) {
@@ -396,6 +398,7 @@ bool TunerDriver::tune(uint32_t frequencyKHz, const RadioBandDefinition& band) {
   else
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz));
   haveTextFlag_ = false;
+  rawRadioText_[0] = '\0';
   rdsDecoder_.reset();
   return true;
 }
@@ -407,6 +410,7 @@ bool TunerDriver::tune(uint32_t frequencyKHz) {
   else
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz));
   haveTextFlag_ = false;
+  rawRadioText_[0] = '\0';
   rdsDecoder_.reset();
   return true;
 }
@@ -450,10 +454,23 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
       const uint16_t blockB = radio_.currentBlockB();
       const uint16_t blockC = radio_.currentBlockC();
       const uint16_t blockD = radio_.currentBlockD();
-      const char* rawRt = version == 0 ? radio_.getRdsText2A() : radio_.getRdsText2B();
+      // RT+ (group 11A) references the previously assembled group-2 text.
+      // PU2CLR's getRdsText2A/B() returns NULL outside group 2, so retain the
+      // completed buffer and pass that stable copy to the RT+ decoder.
+      if (group == 2) {
+        const uint8_t flag = radio_.getRdsFlagAB();
+        if (!haveTextFlag_ || flag != lastTextFlag_) {
+          haveTextFlag_ = true;
+          lastTextFlag_ = flag;
+          radio_.clearRadioTextBuffers();
+          rawRadioText_[0] = '\0';
+        }
+        const char* freshRt = version == 0 ? radio_.getRdsText2A() : radio_.getRdsText2B();
+        if (freshRt) copyRdsText(rawRadioText_, sizeof(rawRadioText_), freshRt);
+      }
       rdsDecoder_.process(group, version, blockB, blockC, blockD,
                           radio_.currentPiCode(), radio_.currentBlockCError(),
-                          radio_.currentBlockDError(), rawRt, decoded);
+                          radio_.currentBlockDError(), rawRadioText_, decoded);
       out.tpValid = decoded.tpValid;
       out.tp = decoded.tp;
       out.ptyValid = true;
