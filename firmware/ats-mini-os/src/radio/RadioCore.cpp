@@ -9,6 +9,36 @@ void copyField(char* dst, size_t capacity, const char* src) {
   for (; i + 1 < capacity && src[i] != '\0'; ++i) dst[i] = src[i];
   dst[i] = '\0';
 }
+void clearRdsSnapshot(RadioSnapshot& s) {
+  s.piCode = 0;
+  s.pty = 0;
+  s.rdsTpValid = s.rdsTaValid = s.rdsMusicSpeechValid = s.rdsDiValid = false;
+  s.rdsTp = s.rdsTa = s.rdsMusicSpeech = s.rdsDi = false;
+  s.rdsEccValid = false;
+  s.rdsEcc = 0;
+  s.rdsAfCount = 0;
+  memset(s.rdsAfKHz, 0, sizeof(s.rdsAfKHz));
+  s.rdsEonValid = false;
+  s.rdsEonPi = 0;
+  s.rdsEonTp = s.rdsEonTa = false;
+  s.rdsEonPty = s.rdsEonAfCount = 0;
+  memset(s.rdsEonAfKHz, 0, sizeof(s.rdsEonAfKHz));
+  memset(s.rdsEonPs, 0, sizeof(s.rdsEonPs));
+  s.rdsOdaAid = 0;
+  s.rdsOdaGroupType = s.rdsOdaGroupVersion = 0xFF;
+  s.rdsRtPlusItemToggle = s.rdsRtPlusItemRunning = false;
+  memset(s.rdsRtPlusValid, 0, sizeof(s.rdsRtPlusValid));
+  memset(s.rdsRtPlusType, 0, sizeof(s.rdsRtPlusType));
+  memset(s.rdsRtPlusStart, 0, sizeof(s.rdsRtPlusStart));
+  memset(s.rdsRtPlusLength, 0, sizeof(s.rdsRtPlusLength));
+  memset(s.rdsRtPlusText, 0, sizeof(s.rdsRtPlusText));
+  s.rdsAvailable = false;
+  s.rdsClockValid = false;
+  s.rdsClockHour = s.rdsClockMinute = 0;
+  s.stationName[0] = '\0';
+  s.radioText[0] = '\0';
+}
+
 void publishBand(RadioSnapshot& snapshot, const RadioBandDefinition& band) {
   strncpy(snapshot.bandName, band.name, sizeof(snapshot.bandName) - 1);
   snapshot.bandName[sizeof(snapshot.bandName) - 1] = '\0';
@@ -120,15 +150,7 @@ bool RadioCore::tune(uint32_t frequencyKHz) {
        (frequencyKHz < 1800 || frequencyKHz > 30000)) ||
       !tuner_.tune(frequencyKHz, band)) return false;
   snapshot_.frequencyKHz = tuner_.frequencyKHz();
-  snapshot_.piCode = 0;
-  snapshot_.pty = 0;
-  snapshot_.rdsTpValid = snapshot_.rdsTaValid = snapshot_.rdsMusicSpeechValid = snapshot_.rdsDiValid = snapshot_.rdsEccValid = false;
-  snapshot_.rdsAfCount = 0;
-  for (uint8_t af = 0; af < 25; ++af) snapshot_.rdsAfKHz[af] = 0;
-  snapshot_.rdsAvailable = false;
-  snapshot_.rdsClockValid = false;
-  snapshot_.stationName[0] = '\0';
-  snapshot_.radioText[0] = '\0';
+  clearRdsSnapshot(snapshot_);
   snapshot_.generation = ++generation_;
   return true;
 }
@@ -139,15 +161,7 @@ bool RadioCore::selectBand(uint8_t index) {
   if (!tuner_.setBand(band) || !BandManager::select(index)) return false;
   publishBand(snapshot_, band);
   snapshot_.frequencyKHz = tuner_.frequencyKHz();
-  snapshot_.piCode = 0;
-  snapshot_.pty = 0;
-  snapshot_.rdsTpValid = snapshot_.rdsTaValid = snapshot_.rdsMusicSpeechValid = snapshot_.rdsDiValid = snapshot_.rdsEccValid = false;
-  snapshot_.rdsAfCount = 0;
-  for (uint8_t af = 0; af < 25; ++af) snapshot_.rdsAfKHz[af] = 0;
-  snapshot_.rdsAvailable = false;
-  snapshot_.rdsClockValid = false;
-  snapshot_.stationName[0] = '\0';
-  snapshot_.radioText[0] = '\0';
+  clearRdsSnapshot(snapshot_);
   snapshot_.generation = ++generation_;
   lastRdsPollMs_ = millis();
   Serial.printf("[RADIO] band=%s mode=%u freq=%lu kHz\n",
@@ -172,9 +186,8 @@ bool RadioCore::setModulation(RadioModulation modulation) {
   BandManager::setCurrentStepKHz(band.stepKHz ? band.stepKHz : 1);
   snapshot_.modulation = modulation;
   snapshot_.frequencyKHz = tuner_.frequencyKHz();
-  snapshot_.piCode = 0; snapshot_.pty = 0; snapshot_.rdsAvailable = false;
-  snapshot_.rdsClockValid = false; snapshot_.stationName[0] = '\0';
-  snapshot_.radioText[0] = '\0'; snapshot_.stereo = false;
+  clearRdsSnapshot(snapshot_);
+  snapshot_.stereo = false;
   snapshot_.generation = ++generation_;
   lastRdsPollMs_ = millis();
   Serial.printf("[RADIO] modulation=%u freq=%lu kHz band=%s\\n",
