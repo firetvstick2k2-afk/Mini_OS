@@ -190,7 +190,7 @@ bool RadioCore::setModulation(RadioModulation modulation) {
   snapshot_.stereo = false;
   snapshot_.generation = ++generation_;
   lastRdsPollMs_ = millis();
-  Serial.printf("[RADIO] modulation=%u freq=%lu kHz band=%s\\n",
+  Serial.printf("[RADIO] modulation=%u freq=%lu kHz band=%s\n",
     static_cast<unsigned>(modulation), static_cast<unsigned long>(snapshot_.frequencyKHz), snapshot_.bandName);
   return true;
 }
@@ -219,7 +219,7 @@ bool RadioCore::setStepChoice(uint8_t choice) {
   const uint16_t step = snapshot_.modulation == RadioModulation::FM ? fmSteps[choice] : amSteps[choice];
   if (!tuner_.setStepKHz(step) || !BandManager::setCurrentStepKHz(step)) return false;
   snapshot_.generation = ++generation_;
-  Serial.printf("[RADIO] step=%u kHz mode=%u\\n", static_cast<unsigned>(step), static_cast<unsigned>(snapshot_.modulation));
+  Serial.printf("[RADIO] step=%u kHz mode=%u\n", static_cast<unsigned>(step), static_cast<unsigned>(snapshot_.modulation));
   return true;
 }
 
@@ -268,7 +268,7 @@ bool RadioCore::setPatchProfile(uint8_t profile) {
   if (!tuner_.setBand(configured)) return false;
   snapshot_.frequencyKHz = tuner_.frequencyKHz();
   snapshot_.generation = ++generation_;
-  Serial.printf("[RADIO] DSP patch profile=%u\\n", static_cast<unsigned>(profile));
+  Serial.printf("[RADIO] DSP patch profile=%u\n", static_cast<unsigned>(profile));
   return true;
 }
 
