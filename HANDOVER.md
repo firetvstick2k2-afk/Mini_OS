@@ -2777,3 +2777,12 @@ Prüfstatus:
 - PU2CLR 2.1.8 liefert über getRdsText2A/B() nur innerhalb einer Gruppe 2 einen Textpuffer; bei Gruppe 11A ist der Rückgabewert NULL. Der Tuner hält deshalb jetzt den zuletzt zusammengesetzten RadioText in einem eigenen 65-Byte-Puffer vor und reicht diesen bei RT+-Gruppen 11A an den Decoder weiter.
 - Der Textpuffer wird beim Sender-/Bandwechsel und bei einem RT-A/B-Flag-Wechsel geleert, bevor neuer Text übernommen wird.
 - Commits: 3d1d38c (Puffer), bd68d9f (FIFO-Anbindung).
+
+
+## RDS completion – standards-based ODA correction (2026-11-16)
+
+- Corrected a substantive decoder defect in group 3A: IEC 62106-2:2021 Figure 10 places the 5-bit Application Group Type Code in block C (A3..A0 plus B0), not in block B. `RdsDecoder::processOda()` now reads block C bits 15..11.
+- RT+ dispatch now follows the group type/version announced by the ODA assignment rather than assuming group 11A. The RT+ AID 0x4BD7 is only enabled for a valid announced application group assignment; code 00000 (not carried) and 11111 (temporary data fault) disable it.
+- Commits: 76805da (interface), 98eaced (decoder).
+- This is an incremental correction, **not a claim that RDS is finished**. Remaining completion work: full EON per-PI state and mapped-frequency/linkage fields; complete ODA assignment lifecycle; RT+ tag validation and item semantics; PTYN/long-PS where appropriate; host-side decoder test vectors; then compile and on-device validation. Dual RX and VFO A/B remain last by user instruction.
+- Reference: IEC 62106-2:2021, Figure 10 (3A AGTC in block C) and clauses 6.7/7.5/7.6 (EON); IEC 62106-6 for RT+.
