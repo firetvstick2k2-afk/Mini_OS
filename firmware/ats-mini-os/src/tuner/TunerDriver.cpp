@@ -1,7 +1,7 @@
 #include "TunerDriver.h"
 #include <Wire.h>
 #include <stdio.h>
-#include "ssb_patch.h"
+#include "SsbPatchManager.h"
 
 namespace {
 constexpr uint8_t kI2cSdaPin = 18;
@@ -358,7 +358,7 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
     // Load it only when entering SSB; AM/FM transitions invalidate this state.
     bandwidthChoice_ = ssbBandwidthChoice_;
     if (!ssbPatchLoaded_) {
-      radio_.loadPatch(ssb_patch_content, sizeof(ssb_patch_content), 2);
+      if (!SsbPatchManager::load(radio_)) return false;
       ssbPatchLoaded_ = true;
     }
     const uint8_t mode = band.modulation == RadioModulation::USB ? 2 : 1;
