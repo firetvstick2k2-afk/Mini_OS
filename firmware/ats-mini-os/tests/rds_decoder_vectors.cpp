@@ -98,37 +98,37 @@ static void testEon() {
   RdsDecodedFields out;
 
   // 14A: block C is PI(ON), block D is the information block.
-  send(decoder, 14, 0, 0xE000, 0x1234, 0x4142, 0x1111, 95400, "", out);
+  send(decoder, 14, 0, 0xE000, 0x4142, 0x1234, 0x1111, 95400, "", out);
   assert(out.eonUpdated && out.eonCount == 1);
   assert(out.eon.pi == 0x1234);
   assert(strcmp(out.eon.ps, "AB") == 0);
 
   // Variant 4: AF method A list for the other network.
-  send(decoder, 14, 0, 0xE004, 0x1234, 0xE312, 0x1111, 95400, "", out);
-  send(decoder, 14, 0, 0xE004, 0x1234, 0x1415, 0x1111, 95400, "", out);
+  send(decoder, 14, 0, 0xE004, 0xE312, 0x1234, 0x1111, 95400, "", out);
+  send(decoder, 14, 0, 0xE004, 0x1415, 0x1234, 0x1111, 95400, "", out);
   assert(out.eon.afCount == 3);
   assert(out.eon.afKHz[0] == 89300);
   assert(out.eon.afKHz[1] == 89500);
   assert(out.eon.afKHz[2] == 89600);
 
   // Variant 5 maps a tuned FM frequency to the corresponding other-network FM.
-  send(decoder, 14, 0, 0xE005, 0x1234, 0x1214, 0x1111, 95400, "", out);
+  send(decoder, 14, 0, 0xE005, 0x1214, 0x1234, 0x1111, 95400, "", out);
   assert(out.eon.mappedTuningKHz == 89300);
   assert(out.eon.mappedFmValid[0]);
   assert(out.eon.mappedFmKHz[0] == 89500);
 
   // Variant 9 maps to LF/MF; code 16 is 531 kHz in ITU regions 1 and 3.
-  send(decoder, 14, 0, 0xE009, 0x1234, 0x1210, 0x1111, 95400, "", out);
+  send(decoder, 14, 0, 0xE009, 0x1210, 0x1234, 0x1111, 95400, "", out);
   assert(out.eon.mappedAmValid);
   assert(out.eon.mappedAmKHz == 531);
 
   // Variant 10 maps across FM bands: Band II tuned, Band I mapped.
-  send(decoder, 14, 0, 0xE00A, 0x1234, 0x1276, 0x1111, 95400, "", out);
+  send(decoder, 14, 0, 0xE00A, 0x1276, 0x1234, 0x1111, 95400, "", out);
   assert(out.eon.mappedOtherBandValid);
   assert(out.eon.mappedOtherBandKHz == 75800);
 
   // Variant 12 linkage information.
-  send(decoder, 14, 0, 0xE00C, 0x1234, 0xD123, 0x1111, 95400, "", out);
+  send(decoder, 14, 0, 0xE00C, 0xD123, 0x1234, 0x1111, 95400, "", out);
   assert(out.eon.linkageValid);
   assert(out.eon.linkageActuator);
   assert(out.eon.extendedGeneric);
@@ -136,7 +136,7 @@ static void testEon() {
   assert(out.eon.linkageSetNumber == 0x123);
 
   // Variant 13 carries the other network PTY and TA flag.
-  send(decoder, 14, 0, 0xE00D, 0x1234, 0x8801, 0x1111, 95400, "", out);
+  send(decoder, 14, 0, 0xE00D, 0x8801, 0x1234, 0x1111, 95400, "", out);
   assert(out.eon.pty == 17);
   assert(out.eon.ta);
 
