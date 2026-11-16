@@ -503,7 +503,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   static const char* const patchProfileItems[] = { "Zurück", "Standard", "Experimental V1", "Experimental V2" };
   static const char* const radioItems[] = {
     "Zurück", "Modulation", "Band wählen", "Bandbreite", "Schrittweite",
-    "Empfangseinstellungen", "SSB / BFO"
+    "Empfangseinstellungen", "SSB / BFO", "DSP-Patch"
   };
   static const char* const fmModulationItems[] = { "Zurück", "FM" };
   static const char* const amModulationItems[] = { "Zurück", "AM", "USB", "LSB" };
