@@ -174,8 +174,10 @@ void syncFrequencyCursor() {
   const uint8_t choice=radio.stepChoice();
   const uint16_t fmSteps[]={10,50,100,200,1000};
   const uint16_t amSteps[]={1,5,9,10};
-  const uint16_t step=s.modulation==RadioModulation::FM?fmSteps[min<uint8_t>(choice,4)]:
-    (s.modulation==RadioModulation::LSB||s.modulation==RadioModulation::USB?1000:amSteps[min<uint8_t>(choice,3)]);
+  const uint8_t fmIndex=choice<5?choice:4;
+  const uint8_t amIndex=choice<4?choice:3;
+  const uint16_t step=s.modulation==RadioModulation::FM?fmSteps[fmIndex]:
+    (s.modulation==RadioModulation::LSB||s.modulation==RadioModulation::USB?1000:amSteps[amIndex]);
   if(cursorBandIndex==radio.currentBandIndex()&&cursorModulation==s.modulation&&cursorStepKHz==step)return;
   cursorBandIndex=radio.currentBandIndex();cursorModulation=s.modulation;cursorStepKHz=step;
   frequencyCursorPos=static_cast<uint8_t>(max(0,static_cast<int>(log10f(step)*2.0f)+(s.modulation==RadioModulation::AM?6:0)));
