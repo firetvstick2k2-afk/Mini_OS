@@ -48,6 +48,7 @@ struct RdsRtPlusTag {
 
 struct RdsDecodedFields {
   bool tpValid = false, ptyValid = false, taValid = false;
+  bool linkageActuatorValid = false, linkageActuator = false;
   bool msValid = false, diValid = false;
   bool eccValid = false, afUpdated = false, afMethodBUpdated = false;
   bool eonUpdated = false, rtPlusUpdated = false;
