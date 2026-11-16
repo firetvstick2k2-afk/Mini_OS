@@ -44,6 +44,8 @@ public:
   bool saveFmStereoMode(uint8_t mode);
   uint8_t ssbBandwidthChoice(uint8_t fallback = 4);
   bool saveSsbBandwidthChoice(uint8_t choice);
+  uint8_t patchProfile(uint8_t fallback = 0);
+  bool savePatchProfile(uint8_t profile);
   int16_t bfoOffsetHz(int16_t fallback = 0);
   bool saveBfoOffsetHz(int16_t offsetHz);
   uint8_t cpuProfile(uint8_t fallback = 0);
@@ -71,6 +73,7 @@ private:
   static constexpr char kFmStereoKey[] = "fm_stereo";
   static constexpr char kSsbBandwidthKey[] = "ssb_bw";
   static constexpr char kBfoOffsetKey[] = "ssb_bfo";
+  static constexpr char kPatchProfileKey[] = "dsp_patch";
   static constexpr char kCpuProfileKey[] = "cpu_prof";
   static constexpr char kBootLogEnabledKey[] = "boot_log";
 
