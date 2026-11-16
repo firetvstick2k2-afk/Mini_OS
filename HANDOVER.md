@@ -2681,4 +2681,5 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Noch nicht kompiliert oder am Gerät getestet. Die statische Quelltextprüfung wurde abgeschlossen; als nächstes folgt der manuelle Compile-only-Build.
 - Nach der Cursor-Ausrichtung wird ein geänderter SSB-BFO-Wert über die bestehende SettingsStore-API gespeichert; die vorhandene BFO-Einstellung bleibt damit über Neustarts erhalten.
 - Die Cursor-Auswahl und die Stellenwertabstimmung verwenden jeweils unbeschleunigte Encoder-Detents; die bisherige Beschleunigung für normales Frequenz-Tuning bleibt unverändert.
+- Während die Taste gehalten wird, übergibt der Encoder die tatsächliche Detent-Anzahl ohne Beschleunigung; gebündelte Drehimpulse bleiben bei der Cursorwahl erhalten. Normales Frequenz-Tuning behält die Beschleunigungsrampe.
 - Die Schrittwahl wird über die von TunerDriver tatsächlich gemeldete Step-Choice aufgelöst; die FM-/AM-Tabellenindizes werden begrenzt, damit ungültige Auswahlwerte nicht außerhalb der Tabellen lesen. Kein GitHub-Actions-Workflow gestartet, kein Flash.
