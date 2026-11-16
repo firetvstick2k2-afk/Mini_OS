@@ -22,6 +22,8 @@ struct RadioSnapshot {
   bool rdsTp = false;
   bool rdsTaValid = false;
   bool rdsTa = false;
+  bool rdsLinkageActuatorValid = false;
+  bool rdsLinkageActuator = false;
   bool rdsMusicSpeechValid = false;
   bool rdsMusicSpeech = false;
   bool rdsDiValid = false;
