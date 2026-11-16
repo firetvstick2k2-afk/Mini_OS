@@ -2712,3 +2712,31 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Die Cursor-Auswahl und die Stellenwertabstimmung verwenden jeweils unbeschleunigte Encoder-Detents; die bisherige Beschleunigung für normales Frequenz-Tuning bleibt unverändert.
 - Während die Taste gehalten wird, übergibt der Encoder die tatsächliche Detent-Anzahl ohne Beschleunigung; gebündelte Drehimpulse bleiben bei der Cursorwahl erhalten. Normales Frequenz-Tuning behält die Beschleunigungsrampe.
 - Die Schrittwahl wird über die von TunerDriver tatsächlich gemeldete Step-Choice aufgelöst; die FM-/AM-Tabellenindizes werden begrenzt, damit ungültige Auswahlwerte nicht außerhalb der Tabellen lesen. Kein GitHub-Actions-Workflow gestartet, kein Flash.
+
+
+## RDS-Erweiterung – EON / ODA / RT+ Decoderstufe (2026-11-16)
+
+Auf `dev/first-build-preparation` wurden folgende Quelltextänderungen committed:
+
+- `RdsDecoder` besitzt jetzt Datenstrukturen für EON-Netzwerke, ODA-Zuordnungen und zwei RT+-Tags.
+- Group 14A/14B: Erkennung anderer Netzwerke anhand der PI(ON), TP(ON)/TA(ON), PS-Segmente (Varianten 0–3), AF(ON) (Variante 4) und PTY/TA (Variante 13). Die übrigen EON-Varianten werden ausdrücklich noch nicht dekodiert.
+- Group 3A: ODA-AID und zugewiesene Anwendungsgruppe/-version werden erfasst. AID 0x4BD7 aktiviert die RT+-Zuordnung.
+- Group 11A: RT+-Item-Flags und zwei Tag-Felder werden aus den 37 Nachrichtenbits extrahiert; markierte Textbereiche werden aus dem vorhandenen RT-Puffer übernommen.
+- Die Daten werden vom Tuner-FIFO an `TunerRdsData` und weiter in den RadioSnapshot gereicht. Bestehende PS-/RT-Ausgabe und Radio-Layouts wurden nicht umgestaltet.
+
+Commits:
+- `02bf41c` – RDS EON/ODA/RT+ Datenverträge
+- `eaa52c8` – Decoder für EON-Netzwerkdaten und RT+-Tags
+- `406c39d` – Tuner-RDS-Datenstruktur erweitern
+- `3be5154` – Decoder in den Tuner-FIFO integrieren
+- `01440c6` – RadioSnapshot um RDS-Erweiterungen ergänzen
+- `313c105` – EON/ODA/RT+ im RadioCore veröffentlichen
+
+**Noch offen vor Build-Freigabe:**
+- EON ist derzeit eine aktuelle Netzwerk-Datenmeldung (nicht vollständige persistente Liste mehrerer ONs); Varianten für gemappte Frequenzen, Linkage und PIN fehlen.
+- RT+ muss gegen echte Mitschnitte/Referenzvektoren validiert werden. Der aktuelle Decoder nimmt Group 11A an, sobald ODA-AID 0x4BD7 angekündigt wurde; vollständige ODA-Lebenszyklus-/Fehlerbehandlung und RT-/eRT-Unterscheidung fehlen.
+- Die RT+-Tag-Längen-/Positionsauswertung ist noch nicht mit Testvektoren abgesichert.
+- Block-D-Fehlerstatus wird noch nicht separat ausgewertet.
+- **SSB-Patchauswahl ist weiterhin nicht implementiert.** Im Mini-OS-Ziel liegt nur der eine eingebettete Patch vor. Die Referenz ATS-Mini-Dev hat einen eigenen Upload-/Slot-Workflow, der auf eine vorhandene HTTP-Upload-Route und andere globale Radio-/Settings-Schnittstellen angewiesen ist. Im Zielprojekt ist aktuell keine entsprechende Patch-Upload-Route nachgewiesen. Eine sichere Portierung braucht daher erst eine passende Upload-/Dateiverwaltungsschnittstelle und bestätigte Patchdateien.
+
+**Buildstatus:** Nicht buildfreigegeben. Es wurde kein Compilerlauf, GitHub-Actions-Workflow oder Flash gestartet. Die Änderungen wurden nach dem Commit erneut aus dem Zielbranch abgerufen; dies ist keine Compile-Prüfung. Vor dem vom Nutzer gestarteten Build müssen die oben genannten Decoderpunkte abgeschlossen und die SSB-Auswahl entweder vollständig integriert oder ausdrücklich aus dem Buildumfang herausgenommen werden.
