@@ -272,10 +272,10 @@ void RdsDecoder::processEon(uint8_t version, uint16_t blockB, uint16_t blockC,
                             RdsDecodedFields& out) {
   if (blockCError >= 3 || blockDError >= 3) return;
 
-  // 14A: block C is PI(ON), block D is the selected information block.
-  // 14B: block C is PI(TN), block D is PI(ON).
+  // 14A: block C is the information block and block D is PI(ON).
+  // 14B: block C' is PI(TN) and block D is PI(ON).
   if (version == 1 && pi && blockC != pi) return;
-  const uint16_t otherPi = version == 0 ? blockC : blockD;
+  const uint16_t otherPi = blockD;
   if (!otherPi) return;
 
   uint8_t networkIndex = 0;
@@ -292,8 +292,8 @@ void RdsDecoder::processEon(uint8_t version, uint16_t blockB, uint16_t blockC,
     net->ta = (blockB & 0x0008U) != 0;
   } else {
     const uint8_t variant = static_cast<uint8_t>(blockB & 0x000FU);
-    const uint8_t high = static_cast<uint8_t>(blockD >> 8);
-    const uint8_t low = static_cast<uint8_t>(blockD);
+    const uint8_t high = static_cast<uint8_t>(blockC >> 8);
+    const uint8_t low = static_cast<uint8_t>(blockC);
     const bool tunedBandI = tunedFrequencyKHz < 87500UL;
 
     switch (variant) {
@@ -343,14 +343,14 @@ void RdsDecoder::processEon(uint8_t version, uint16_t blockB, uint16_t blockC,
       }
       case 12:
         net->linkageValid = true;
-        net->linkageActuator = (blockD & 0x8000U) != 0;
-        net->extendedGeneric = (blockD & 0x4000U) != 0;
-        net->internationalLink = (blockD & 0x1000U) != 0;
-        net->linkageSetNumber = static_cast<uint16_t>(blockD & 0x0FFFU);
+        net->linkageActuator = (blockC & 0x8000U) != 0;
+        net->extendedGeneric = (blockC & 0x4000U) != 0;
+        net->internationalLink = (blockC & 0x1000U) != 0;
+        net->linkageSetNumber = static_cast<uint16_t>(blockC & 0x0FFFU);
         break;
       case 13:
-        net->pty = static_cast<uint8_t>((blockD >> 11) & 0x1FU);
-        net->ta = (blockD & 0x0001U) != 0;
+        net->pty = static_cast<uint8_t>((blockC >> 11) & 0x1FU);
+        net->ta = (blockC & 0x0001U) != 0;
         break;
       // Variant 14 is reserved for future use in IEC 62106-2:2021.
       default:
