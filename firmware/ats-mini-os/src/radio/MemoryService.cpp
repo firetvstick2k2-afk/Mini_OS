@@ -41,6 +41,19 @@ bool MemoryService::save(uint8_t slot,const RadioSnapshot& radio,uint8_t bandInd
   else strncpy(next.name,radio.stationName[0]?radio.stationName:radio.bandName,sizeof(next.name)-1);
   store_.entries[slot]=next; return persist();
 }
+bool MemoryService::rename(uint8_t slot,const char* name) {
+  if(!ready_||slot>=kSlotCount||!store_.entries[slot].frequencyKHz||!name) return false;
+  char clean[16] = {};
+  size_t n=0;
+  while(name[n] && n<sizeof(clean)-1) {
+    const unsigned char ch=static_cast<unsigned char>(name[n]);
+    clean[n]=(ch>=32 && ch<=126)?static_cast<char>(ch):'_';
+    ++n;
+  }
+  if(!n) return false;
+  memcpy(store_.entries[slot].name,clean,sizeof(clean));
+  return persist();
+}
 bool MemoryService::erase(uint8_t slot) {
   if(!ready_||slot>=kSlotCount) return false;
   memset(&store_.entries[slot],0,sizeof(Entry)); return persist();
