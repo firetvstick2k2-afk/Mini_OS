@@ -7,7 +7,7 @@
 // HJB layout ported from ats-mini-dev/Layout-HJB.cpp.
 // It is deliberately logo-free and consumes only the published radio snapshot.
 template <typename Canvas>
-void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifiConnected) {
+void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifiConnected, uint8_t frequencyCursor = 100) {
   constexpr uint16_t BG=0x0000, YELLOW=0xFFE0, GREEN=0x07E0, BLUE=0x07FF;
   constexpr uint16_t RED=0xF800, MUTED=0x7BEF, GRID=0x4208;
   const int w=d.width();
@@ -52,7 +52,7 @@ void drawHJBLayout(Canvas& d, const RadioSnapshot& s, bool radioReady, bool wifi
     // geometry, MHz/kHz placement, SSB BFO precision and 800 ms tune cue.
     // The HJB layout uses the right-aligned frequency anchor at x=260.
     LegacyFrequencyRenderer::draw(
-      d, s, 235, 92, 240, 92, 100,
+      d, s, 235, 92, 240, 92, frequencyCursor,
       YELLOW, GREEN, YELLOW, 0x07E0, false
     );
   }
