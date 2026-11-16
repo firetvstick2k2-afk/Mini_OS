@@ -73,7 +73,8 @@ public:
 
   // Decode RDS group 4A Clock-Time and apply its transmitted local-time offset.
   bool currentRdsClock(uint8_t& hour, uint8_t& minute) {
-    if (getRdsGroupType() != 4 || getRdsVersionCode() != 0) return false;
+    if (getRdsGroupType() != 4 || getRdsVersionCode() != 0 ||
+        currentBlockCError() >= 3 || currentBlockDError() >= 3) return false;
     const uint16_t blockB = currentBlockB();
     const uint16_t blockC = currentBlockC();
     const uint16_t blockD = currentBlockD();
@@ -83,6 +84,7 @@ public:
                    + static_cast<int>((blockD >> 6) & 0x003F);
     if (utcMinutes >= 24 * 60 || ((blockD >> 6) & 0x003F) > 59) return false;
     const int offsetHalfHours = blockD & 0x001F;
+    if (offsetHalfHours > 24) return false;
     const int offsetMinutes = offsetHalfHours * 30;
     utcMinutes += (blockD & 0x0020) ? -offsetMinutes : offsetMinutes;
     utcMinutes = (utcMinutes % 1440 + 1440) % 1440;
