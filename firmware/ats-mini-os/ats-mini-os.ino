@@ -170,20 +170,27 @@ uint32_t frequencyCursorStepKHz(uint8_t position, RadioModulation mode) {
   return (position&1U)?5U*power:power;
 }
 void syncFrequencyCursor() {
-  const RadioSnapshot& s=radio.snapshot(); const uint16_t step=s.tuningStepKHz?s.tuningStepKHz:1;
+  const RadioSnapshot& s=radio.snapshot();
+  const uint8_t choice=radio.stepChoice();
+  const uint16_t fmSteps[]={10,50,100,200,1000};
+  const uint16_t amSteps[]={1,5,9,10};
+  const uint16_t step=s.modulation==RadioModulation::FM?fmSteps[min<uint8_t>(choice,4)]:
+    (s.modulation==RadioModulation::LSB||s.modulation==RadioModulation::USB?1000:amSteps[min<uint8_t>(choice,3)]);
   if(cursorBandIndex==radio.currentBandIndex()&&cursorModulation==s.modulation&&cursorStepKHz==step)return;
   cursorBandIndex=radio.currentBandIndex();cursorModulation=s.modulation;cursorStepKHz=step;
   frequencyCursorPos=static_cast<uint8_t>(max(0,static_cast<int>(log10f(step)*2.0f)+(s.modulation==RadioModulation::AM?6:0)));
   frequencyCursorActive=false;
 }
+uint8_t frequencyCursorMinimum() { return radio.snapshot().modulation==RadioModulation::FM ? 2 : 0; }
 uint8_t frequencyCursorMaximum() {
   const RadioSnapshot& s=radio.snapshot();const int offset=s.modulation==RadioModulation::FM?-2:6;
-  return static_cast<uint8_t>(max(0,static_cast<int>(log10f(max<uint32_t>(s.bandMaximumKHz,1))*2.0f)+offset));
+  const uint32_t maximum=s.bandMaximumKHz?s.bandMaximumKHz:1;
+  return static_cast<uint8_t>(max(0,static_cast<int>(log10f(maximum)*2.0f)+offset));
 }
 bool tuneFrequencyDigit(int16_t delta) {
   const RadioSnapshot& s=radio.snapshot();const uint32_t step=frequencyCursorStepKHz(frequencyCursorPos,s.modulation);
   if(s.modulation==RadioModulation::LSB||s.modulation==RadioModulation::USB){
-    const int32_t hz=static_cast<int32_t>(step*1000UL);
+    const int32_t hz=static_cast<int32_t>(step);
     const int32_t next=static_cast<int32_t>(radio.bfoOffsetHz())+static_cast<int32_t>(delta)*hz;
     if(!radio.setBfoOffsetHz(static_cast<int16_t>(constrain(next,-16000,16000))))return false;
     bfoSavePending=true;
@@ -197,7 +204,7 @@ bool tuneFrequencyDigit(int16_t delta) {
 bool alignFrequencyCursor() {
   const RadioSnapshot& s=radio.snapshot();const uint32_t step=frequencyCursorStepKHz(frequencyCursorPos,s.modulation);
   if(s.modulation==RadioModulation::LSB||s.modulation==RadioModulation::USB){
-    const int32_t hz=static_cast<int32_t>(step*1000UL);
+    const int32_t hz=static_cast<int32_t>(step);
     const int32_t combined=static_cast<int32_t>(s.frequencyKHz*1000UL)+radio.bfoOffsetHz();
     const int32_t rem=((combined%hz)+hz)%hz;
     return radio.setBfoOffsetHz(static_cast<int16_t>(radio.bfoOffsetHz()-rem));
@@ -380,7 +387,7 @@ void loop() {
         // adjustment always move one logical step per encoder detent.
         const int16_t rotationDelta = (menuOpen || bfoAdjustmentActive)
           ? (inputEvent.delta > 0 ? 1 : -1) : inputEvent.delta;
-        if(inputEvent.buttonHeld&&!menuOpen&&!bfoAdjustmentActive){syncFrequencyCursor();frequencyCursorPos=static_cast<uint8_t>(constrain(static_cast<int>(frequencyCursorPos)-rotationDelta,0,static_cast<int>(frequencyCursorMaximum())));frequencyCursorActive=true;} else if (menuOpen) {
+        if(inputEvent.buttonHeld&&!menuOpen&&!bfoAdjustmentActive){syncFrequencyCursor();frequencyCursorPos=static_cast<uint8_t>(constrain(static_cast<int>(frequencyCursorPos)-rotationDelta,static_cast<int>(frequencyCursorMinimum()),static_cast<int>(frequencyCursorMaximum())));frequencyCursorActive=true;} else if (menuOpen) {
           if(menuPage==23 && scanner.state()!=ScanService::State::Running && scanner.count()>0) {
             const uint16_t selected=nextSpectrumPeak(scanner,static_cast<uint16_t>(menuSelection),rotationDelta>0?1:-1);
             menuSelection=static_cast<uint8_t>(selected);
