@@ -171,6 +171,15 @@ uint8_t SettingsStore::ssbBandwidthChoice(uint8_t fallback) {
 bool SettingsStore::saveSsbBandwidthChoice(uint8_t choice) {
   return ready_ && choice < 6 && preferences_.putUChar(kSsbBandwidthKey, choice) == sizeof(uint8_t);
 }
+uint8_t SettingsStore::patchProfile(uint8_t fallback) {
+  if (!ready_) return fallback;
+  const uint8_t saved = preferences_.getUChar(kPatchProfileKey, fallback);
+  return saved <= 2 ? saved : fallback;
+}
+bool SettingsStore::savePatchProfile(uint8_t profile) {
+  return ready_ && profile <= 2 && preferences_.putUChar(kPatchProfileKey, profile) == sizeof(uint8_t);
+}
+
 int16_t SettingsStore::bfoOffsetHz(int16_t fallback) {
   if (!ready_) return fallback;
   const int16_t saved = preferences_.getShort(kBfoOffsetKey, fallback);
