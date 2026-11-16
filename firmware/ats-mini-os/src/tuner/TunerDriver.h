@@ -111,6 +111,7 @@ struct TunerRdsData {
   bool eonUpdated = false;
   bool odaUpdated = false;
   bool rtPlusUpdated = false;
+  bool ptynUpdated = false;
   uint16_t odaAid = 0;
   uint8_t odaGroupType = 0, odaGroupVersion = 0;
   RdsEonNetwork eon;
@@ -125,6 +126,7 @@ struct TunerRdsData {
   uint8_t clockHour = 0;
   uint8_t clockMinute = 0;
   char stationName[9] = {};
+  char ptyn[9] = {};
   char radioText[65] = {};
 };
 
