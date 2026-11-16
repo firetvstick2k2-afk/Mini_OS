@@ -287,6 +287,7 @@ void setup() {
   const uint8_t savedFmLayout = settingsStore.displayFmLayout(0);
   const uint8_t savedAmLayout = settingsStore.displayAmLayout(0);
   const uint8_t savedCpuProfile = settingsStore.cpuProfile(0);
+  const uint8_t savedPatchProfile = settingsStore.patchProfile(0);
   performance.setProfile(static_cast<CpuProfile>(savedCpuProfile));
   if (display.begin(savedBrightness)) {
     display.setTheme(savedTheme);
@@ -303,6 +304,8 @@ void setup() {
   memories.begin();
   if (radio.begin(startupFmFrequencyKHz)) {
     lastObservedFmFrequencyKHz = radio.snapshot().frequencyKHz;
+    radio.setPatchProfile(savedPatchProfile);
+    Serial.printf("[PATCH] startup profile=%u (%s)\\n", static_cast<unsigned>(radio.patchProfile()), SsbPatchManager::profileName(radio.patchProfile()));
     const uint8_t startupVolume = settingsStore.volume(32);
     if (radio.setVolume(startupVolume)) {
       lastObservedVolume = radio.volume();
@@ -424,7 +427,7 @@ void loop() {
               ((menuPage == 14) ? 4 : (menuPage == 15) ? 5 :
               menuPage == 10 ? 4 : menuPage == 11 ?
               (radio.snapshot().modulation == RadioModulation::FM ? 10 : 14) :
-              menuPage == 3 ? 7 :
+              menuPage == 3 ? 8 : menuPage == 27 ? 4 :
               menuPage == 12 ? 2 : menuPage == 16 ?
               (radio.canUseModulation(RadioModulation::USB) ? 4 : 2) :
               menuPage == 7 ? radio.bandwidthChoiceCount()+1 :
@@ -646,6 +649,16 @@ void loop() {
         } else if (menuPage == 12 && menuSelection == 0) {
           menuPage = 0;
           menuSelection = 6;
+        } else if (menuPage == 27 && menuSelection == 0) {
+          menuPage = 3;
+          menuSelection = 7;
+        } else if (menuPage == 27 && menuSelection > 0 && menuSelection <= 3) {
+          const uint8_t profile = static_cast<uint8_t>(menuSelection - 1);
+          if (radio.setPatchProfile(profile)) {
+            const bool saved = settingsStore.savePatchProfile(profile);
+            Serial.printf("[PATCH] selected %s %s\\n", SsbPatchManager::profileName(profile), saved ? "saved" : "save failed");
+            closeMenuToRadio("DSP patch profile selected");
+          } else Serial.println("[PATCH] profile selection rejected");
         } else if (menuPage == 12 && menuSelection == 1) {
           menuOpen = false;
           bfoAdjustmentActive = true;
