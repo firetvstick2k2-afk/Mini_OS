@@ -272,7 +272,7 @@ void RdsDecoder::processEon(uint8_t version, uint16_t blockB, uint16_t blockC,
                             RdsDecodedFields& out) {
   if (blockCError >= 3 || blockDError >= 3) return;
 
-  // 14A: block C is the information block and block D is PI(ON).
+  // IEC 62106-2:2021 group 14A uses block C for information and block D for PI(ON).
   // 14B: block C' is PI(TN) and block D is PI(ON).
   if (version == 1 && pi && blockC != pi) return;
   const uint16_t otherPi = blockD;
