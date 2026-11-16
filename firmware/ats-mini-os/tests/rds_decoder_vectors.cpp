@@ -150,6 +150,19 @@ static void testEon() {
   assert(out.eonCount == 2);
 }
 
+static void testEonAfSpecialCode() {
+  RdsDecoder decoder;
+  RdsDecodedFields out;
+  // EON variant 4 also supports code 250 followed by an LF/MF code.
+  send(decoder, 14, 0, 0xE004, 0xE3FA, 0x2222, 0x1111, 95400, "", out);
+  send(decoder, 14, 0, 0xE004, 0x1011, 0x2222, 0x1111, 95400, "", out);
+  send(decoder, 14, 0, 0xE004, 0x1200, 0x2222, 0x1111, 95400, "", out);
+  assert(out.eon.afCount == 3);
+  assert(out.eon.afKHz[0] == 531);
+  assert(out.eon.afKHz[1] == 89200);
+  assert(out.eon.afKHz[2] == 89300);
+}
+
 static void testSlowLabellingAndLinkage() {
   RdsDecoder decoder;
   RdsDecodedFields out;
@@ -183,6 +196,7 @@ int main() {
   testAfMethodA();
   testAfMethodB();
   testEon();
+  testEonAfSpecialCode();
   testSlowLabellingAndLinkage();
   testPtynSegments();
   puts("RDS decoder vectors: PASS");
