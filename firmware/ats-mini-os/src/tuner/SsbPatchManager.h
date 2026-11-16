@@ -82,14 +82,14 @@ private:
       ? (ssb ? 10208U : 1200U)
       : (ssb ? 15744U : 1608U);
     if (decodedSize != expected || !validFraming(patchBuffer, decodedSize)) {
-      Serial.printf("[PATCH] Invalid patch size: %u (expected %u)\\n",
+      Serial.printf("[PATCH] Invalid patch size: %u (expected %u)\n",
                     static_cast<unsigned>(decodedSize),
                     static_cast<unsigned>(expected));
       return false;
     }
     if (ssb) radio.loadPatch(patchBuffer, decodedSize, 2);
     else radio.loadAMPatch(patchBuffer, static_cast<uint16_t>(decodedSize));
-    Serial.printf("[PATCH] Loaded %s %s (%u bytes)\\n",
+    Serial.printf("[PATCH] Loaded %s %s (%u bytes)\n",
                   profileName(profile()), ssb ? "SSB" : "AM",
                   static_cast<unsigned>(decodedSize));
     return true;
