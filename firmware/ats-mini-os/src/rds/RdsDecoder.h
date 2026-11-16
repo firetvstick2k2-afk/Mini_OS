@@ -40,15 +40,19 @@ public:
   void reset();
   void process(uint8_t groupType, uint8_t version, uint16_t blockB,
                uint16_t blockC, uint16_t blockD, uint16_t pi,
-               uint8_t blockCError, const char* radioText,
+               uint8_t blockCError, uint8_t blockDError,
+               const char* radioText,
                RdsDecodedFields& out);
 private:
   void addAlternativeFrequency(uint8_t code);
   void processEon(uint8_t version, uint16_t blockB, uint16_t blockC,
-                  uint16_t blockD, uint8_t blockCError, RdsDecodedFields& out);
-  void processOda(uint16_t blockB, uint16_t blockD, RdsDecodedFields& out);
+                  uint16_t blockD, uint8_t blockCError,
+                  uint8_t blockDError, RdsDecodedFields& out);
+  void processOda(uint16_t blockB, uint16_t blockD,
+                  uint8_t blockDError, RdsDecodedFields& out);
   void processRtPlus(uint16_t blockB, uint16_t blockC, uint16_t blockD,
-                     const char* radioText, RdsDecodedFields& out);
+                     const char* radioText, uint8_t blockCError,
+                     uint8_t blockDError, RdsDecodedFields& out);
   uint32_t afKHz_[25] = {};
   uint8_t afCount_ = 0, expectedAfCount_ = 0;
   uint8_t odaGroupType_ = 0xFF, odaGroupVersion_ = 0xFF;
