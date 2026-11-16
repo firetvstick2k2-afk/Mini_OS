@@ -149,6 +149,24 @@ static void testEon() {
   assert(out.eonCount == 2);
 }
 
+static void testSlowLabellingAndLinkage() {
+  RdsDecoder decoder;
+  RdsDecodedFields out;
+  // Group 1A: b15 is LA, b14..b12 variant 0, b7..b0 ECC.
+  send(decoder, 1, 0, 0x1000, 0x80E1, 0, 0x1234, 95400, "", out);
+  assert(out.linkageActuatorValid && out.linkageActuator);
+  assert(out.eccValid && out.ecc == 0xE1);
+
+  // Variant 1 still carries the LA bit but does not carry the ECC.
+  send(decoder, 1, 0, 0x1000, 0x9000, 0, 0x1234, 95400, "", out);
+  assert(out.linkageActuatorValid && out.linkageActuator);
+  assert(!out.eccValid);
+
+  // 15A is long PS, not a TA/MS/DI status group.
+  send(decoder, 15, 0, 0xF010, 0, 0, 0x1234, 95400, "", out);
+  assert(!out.taValid);
+}
+
 static void testPtynSegments() {
   RdsDecoder decoder;
   RdsDecodedFields out;
@@ -164,6 +182,7 @@ int main() {
   testAfMethodA();
   testAfMethodB();
   testEon();
+  testSlowLabellingAndLinkage();
   testPtynSegments();
   puts("RDS decoder vectors: PASS");
   return 0;
