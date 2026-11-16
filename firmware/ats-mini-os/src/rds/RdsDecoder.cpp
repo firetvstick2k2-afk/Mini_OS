@@ -25,6 +25,9 @@ void RdsDecoder::reset() {
   afCount_ = expectedAfCount_ = 0;
   odaGroupType_ = odaGroupVersion_ = 0xFF;
   rtPlusAid_ = 0;
+  memset(ptyn_, 0, sizeof(ptyn_));
+  ptynSegments_ = 0;
+  ptynFlag_ = 0xFF;
   memset(afKHz_, 0, sizeof(afKHz_));
   memset(eonNetworks_, 0, sizeof(eonNetworks_));
 }
@@ -85,6 +88,32 @@ void RdsDecoder::processEon(uint8_t version, uint16_t blockB, uint16_t blockC,
   out.eonUpdated = true;
 }
 
+void RdsDecoder::processPtyn(uint16_t blockB, uint16_t blockC, uint16_t blockD,
+                            uint8_t blockCError, uint8_t blockDError,
+                            RdsDecodedFields& out) {
+  if (blockCError >= 3 || blockDError >= 3) return;
+  const uint8_t flag = static_cast<uint8_t>((blockB >> 4) & 0x01U);
+  if (ptynFlag_ != flag) {
+    memset(ptyn_, 0, sizeof(ptyn_));
+    ptynSegments_ = 0;
+    ptynFlag_ = flag;
+  }
+  const uint8_t segment = static_cast<uint8_t>(blockB & 0x03U);
+  const uint8_t offset = static_cast<uint8_t>(segment * 4U);
+  const uint8_t bytes[4] = { static_cast<uint8_t>(blockC >> 8),
+    static_cast<uint8_t>(blockC), static_cast<uint8_t>(blockD >> 8),
+    static_cast<uint8_t>(blockD) };
+  for (uint8_t i = 0; i < 4; ++i) {
+    const uint8_t ch = bytes[i];
+    ptyn_[offset + i] = (ch >= 0x20U && ch <= 0x7EU) ? static_cast<char>(ch) : ' ';
+  }
+  ptyn_[8] = '\0';
+  ptynSegments_ |= static_cast<uint8_t>(1U << segment);
+  if (ptynSegments_ == 0x03U) {
+    memcpy(out.ptyn, ptyn_, sizeof(out.ptyn));
+    out.ptynUpdated = true;
+  }
+}
 void RdsDecoder::processOda(uint16_t blockC, uint16_t blockD,
                             uint8_t blockDError, RdsDecodedFields& out) {
   if (blockDError >= 3) return;
@@ -174,6 +203,8 @@ void RdsDecoder::process(uint8_t groupType, uint8_t version, uint16_t blockB,
     out.afCount = afCount_;
     for (uint8_t i = 0; i < afCount_; ++i) out.afKHz[i] = afKHz_[i];
   }
+  if (groupType == 10 && version == 0)
+    processPtyn(blockB, blockC, blockD, blockCError, blockDError, out);
   if (groupType == 14)
     processEon(version, blockB, blockC, blockD, blockCError, blockDError, out);
   if (groupType == 3 && version == 0)
