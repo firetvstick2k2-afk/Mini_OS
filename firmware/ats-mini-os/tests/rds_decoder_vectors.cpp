@@ -6,6 +6,7 @@
 static void send(RdsDecoder& decoder, uint8_t group, uint8_t version,
                  uint16_t b, uint16_t c, uint16_t d, uint16_t pi,
                  uint32_t frequency, const char* rt, RdsDecodedFields& out) {
+  out = RdsDecodedFields{};
   decoder.process(group, version, b, c, d, pi, frequency, 0, 0, rt, out);
 }
 
