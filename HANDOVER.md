@@ -2795,3 +2795,11 @@ Prüfstatus:
 - PTYN is forwarded through `TunerRdsData` into `RadioSnapshot` and cleared on the existing RDS reset path. No display layout or RadioDNS/sender-logo code was changed.
 - Commits: `a8c1747` (decoder contract), `1580ca1` (group 10A decoder), `b2fd1fb`/`3254b97` (tuner forwarding), `4bf069a`/`679db18` (snapshot publication/reset).
 - Status: source changes committed and re-fetched from the target branch. No compiler run or device test has been performed; PTYN reception still needs validation with a station that broadcasts group 10A.
+
+### RDS – unabhängige ODA-Zuordnungen (2026-11-16)
+
+- Der Decoder verwaltet jetzt bis zu acht ODA-AID-Zuordnungen getrennt. Eine 3A-Meldung für eine andere Anwendung löscht nicht mehr versehentlich die aktive RT+-Zuordnung.
+- AGTC `00000` (nicht übertragen) und `11111` (temporärer Datenfehler) entfernen nur die Zuordnung der betroffenen AID. Die RT+-Gruppe wird anschließend aus der verbleibenden AID `0x4BD7`-Zuordnung neu bestimmt.
+- 3A wird nur akzeptiert, wenn Block C (AGTC) und Block D (AID) fehlerfrei genug sind (BLEC/BLED unterhalb der unkorrektierbaren Stufe).
+- Commits: `a9f6c89` (ODA-Zuordnungstabelle), `da37498` (Lebenszyklus und RT+-Dispatch).
+- Noch nicht kompiliert oder auf dem ATS Mini getestet.
