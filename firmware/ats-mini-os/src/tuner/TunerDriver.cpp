@@ -53,6 +53,7 @@ bool TunerDriver::begin(uint32_t initialFrequencyKHz) {
   ready_ = false;
   haveTextFlag_ = false;
   lastTextFlag_ = 0;
+  rdsDecoder_.reset();
   // Keep audio muted and the amplifier disabled while the tuner starts, to avoid
   // startup pops and to ensure a failed tuner initialization cannot leave audio live.
   pinMode(kAudioMutePin, OUTPUT);
@@ -244,6 +245,7 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
   stepKHz_ = band.stepKHz ? band.stepKHz : 1;
   modulation_ = band.modulation;
   haveTextFlag_ = false;
+  rdsDecoder_.reset();
 
   if (band.modulation == RadioModulation::FM) {
     bandwidthChoice_ = 0;
@@ -319,6 +321,7 @@ bool TunerDriver::tune(uint32_t frequencyKHz, const RadioBandDefinition& band) {
   else
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz));
   haveTextFlag_ = false;
+  rdsDecoder_.reset();
   return true;
 }
 
@@ -329,6 +332,7 @@ bool TunerDriver::tune(uint32_t frequencyKHz) {
   else
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz));
   haveTextFlag_ = false;
+  rdsDecoder_.reset();
   return true;
 }
 
@@ -356,6 +360,27 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
     if (!fifoCount) break;
     receivedAny = true;
     const uint8_t group = radio_.getRdsGroupType();
+    RdsDecodedFields decoded;
+    if (radio_.getRdsNewBlockB()) {
+      rdsDecoder_.process(group, radio_.getRdsVersionCode(), radio_.currentBlockB(),
+                          radio_.currentBlockC(), radio_.currentBlockCError(), decoded);
+      out.tpValid = decoded.tpValid;
+      out.tp = decoded.tp;
+      out.ptyValid = true;
+      out.pty = decoded.pty;
+      out.taValid = decoded.taValid;
+      out.ta = decoded.ta;
+      out.msValid = decoded.msValid;
+      out.musicSpeech = decoded.musicSpeech;
+      out.diValid = decoded.diValid;
+      out.decoderIdentification = decoded.decoderIdentification;
+      if (decoded.eccValid) { out.eccValid = true; out.eccCode = decoded.ecc; }
+      if (decoded.afUpdated) {
+        out.afUpdated = true;
+        out.afCount = decoded.afCount;
+        for (uint8_t af = 0; af < decoded.afCount; ++af) out.afKHz[af] = decoded.afKHz[af];
+      }
+    }
 
     if (group == 4 && radio_.currentRdsClock(out.clockHour, out.clockMinute))
       out.clockValid = true;
@@ -365,16 +390,7 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
       if (pi != 0) { out.piValid = true; out.piCode = pi; }
     }
 
-    if (group == 1 && radio_.getRdsVersionCode() == 0 &&
-        radio_.getRdsNewBlockB() && radio_.currentBlockCError() < 3) {
-      const uint16_t blockC = radio_.currentBlockC();
-      const uint8_t ecc = static_cast<uint8_t>(blockC & 0xFF);
-      if (ecc != 0) { out.eccValid = true; out.eccCode = ecc; }
-    }
-    if (radio_.getRdsNewBlockB()) {
-      out.ptyValid = true;
-      out.pty = radio_.getRdsProgramType();
-    }
+
 
     if (group == 0) {
       const char* ps = radio_.getRdsText0A();

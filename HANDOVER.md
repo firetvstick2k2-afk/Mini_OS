@@ -2611,3 +2611,14 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Menüeinträge Suche, Scannen und Speicher sind nun mit eigenen Displayseiten und den Services verbunden. Bestehende CW-, Wetter-, News-, Waterfall- und Radio-Layoutpfade wurden nicht gezielt verändert.
 - **Noch offen / zwingend zu prüfen:** Es wurde noch kein Compile-Run ausgeführt. Seek-Schwelle und Messwartezeiten müssen nach dem ersten Build und anschließend am Gerät geprüft/abgestimmt werden. Die Scan-Seite zeigt zunächst Fortschritt und Status; eine grafische Spektrumskurve/Peak-Auswahl ist noch nicht implementiert. Speicher-Slot-Namen sind derzeit automatisch PS-/Bandname; eine manuelle Namenseingabe folgt gegebenenfalls separat.
 - Änderungen liegen auf `dev/first-build-preparation`. Der manuelle Workflow `ATS Mini OS - First Compile` bleibt unverändert; Nutzer startet den Build selbst. Kein Flashen.
+
+
+## RDS EU (ALL) – erste erweiterte Decoder-Stufe
+- RDS-Auswertung bleibt im Tuner-FIFO-Eigentümer; neue reine Decoderlogik liegt separat in `src/rds/RdsDecoder.h/.cpp`.
+- Group 0A/0B Block B wird jetzt für TP und PTY ausgewertet; Group 0A zusätzlich für TA, Music/Speech und Decoder Identification (DI).
+- Group 0A Version A Block C wird auf AF-Codes geprüft. Frequenzcodes 1–204 werden in kHz umgerechnet, doppelte Einträge verworfen und bis zu 25 AF-Frequenzen gesammelt. Die Snapshot-Daten sind layoutunabhängig.
+- Group 1A ECC wird aus dem **hohen Byte** von Block C gelesen; das niedrige Byte ist LIC und darf nicht als ECC ausgegeben werden. Block-C-Fehlergrenze wird berücksichtigt.
+- Der bestehende PS-/RT-/PI-/PTY-/CT-Ablauf und die Anzeigegeometrie bleiben unverändert. Der europäische PTY-Namenssatz im FM-Layout bleibt der bestehende RDS-Satz; kein RBDS-Mapping wird eingeführt.
+- AF-Liste und Decoderzustand werden bei Frequenz-/Bandwechsel zurückgesetzt, damit keine Senderdaten vermischt werden.
+- Noch nicht umgesetzt: EON (14A), RT+ (ODA-AID 0x4BD7), vollständige ODA-Verarbeitung, AF-Liste mit RDS-Anzahl-/Variantensemantik und vollständige Sync-/PI-Validierung. Diese benötigen weitere spezifikationsbasierte Decoderarbeit; sie werden nicht als verfügbar behauptet.
+- **Status:** Quelltextänderungen committed; kein Compile-Workflow gestartet und kein Flash. Manueller Compile-Test durch Nutzer erforderlich. RDS-Empfang und AF/TP/TA-Verhalten müssen anschließend am Gerät mit geeigneten Sendern validiert werden.

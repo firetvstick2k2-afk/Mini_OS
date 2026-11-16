@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <SI4735.h>
 #include "../radio/BandManager.h"
+#include "../rds/RdsDecoder.h"
 
 // Thin adapter: PU2CLR keeps the individual RT buffer-clear helpers protected.
 class TunerSI4735 : public SI4735 {
@@ -67,11 +68,22 @@ struct TunerRdsData {
   bool piValid = false;
   bool ptyValid = false;
   bool eccValid = false;
+  bool tpValid = false;
+  bool taValid = false;
+  bool msValid = false;
+  bool diValid = false;
+  bool afUpdated = false;
+  bool tp = false;
+  bool ta = false;
+  bool musicSpeech = false;
+  bool decoderIdentification = false;
   bool stationNameUpdated = false;
   bool radioTextUpdated = false;
   uint16_t piCode = 0;
   uint8_t pty = 0;
   uint8_t eccCode = 0;
+  uint8_t afCount = 0;
+  uint32_t afKHz[25] = {};
   bool clockValid = false;
   uint8_t clockHour = 0;
   uint8_t clockMinute = 0;
@@ -122,6 +134,7 @@ private:
   static constexpr uint32_t kMinFrequencyKHz = 64000;
   static constexpr uint32_t kMaxFrequencyKHz = 108000;
   TunerSI4735 radio_;
+  RdsDecoder rdsDecoder_;
   bool ready_ = false;
   bool ssbPatchLoaded_ = false;
   uint8_t volume_ = 25;

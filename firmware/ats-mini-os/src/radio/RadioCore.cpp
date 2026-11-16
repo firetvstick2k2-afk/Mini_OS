@@ -57,6 +57,15 @@ void RadioCore::update() {
     if (tuner_.pollRds(rds)) {
       if (rds.piValid) snapshot_.piCode = rds.piCode;
       if (rds.ptyValid) snapshot_.pty = rds.pty;
+      if (rds.tpValid) { snapshot_.rdsTpValid = true; snapshot_.rdsTp = rds.tp; }
+      if (rds.taValid) { snapshot_.rdsTaValid = true; snapshot_.rdsTa = rds.ta; }
+      if (rds.msValid) { snapshot_.rdsMusicSpeechValid = true; snapshot_.rdsMusicSpeech = rds.musicSpeech; }
+      if (rds.diValid) { snapshot_.rdsDiValid = true; snapshot_.rdsDi = rds.decoderIdentification; }
+      if (rds.eccValid) { snapshot_.rdsEccValid = true; snapshot_.rdsEcc = rds.eccCode; }
+      if (rds.afUpdated) {
+        snapshot_.rdsAfCount = rds.afCount;
+        for (uint8_t af = 0; af < rds.afCount; ++af) snapshot_.rdsAfKHz[af] = rds.afKHz[af];
+      }
       if (rds.clockValid) {
         snapshot_.rdsClockHour = rds.clockHour;
         snapshot_.rdsClockMinute = rds.clockMinute;
@@ -79,6 +88,9 @@ bool RadioCore::tune(uint32_t frequencyKHz) {
   snapshot_.frequencyKHz = tuner_.frequencyKHz();
   snapshot_.piCode = 0;
   snapshot_.pty = 0;
+  snapshot_.rdsTpValid = snapshot_.rdsTaValid = snapshot_.rdsMusicSpeechValid = snapshot_.rdsDiValid = snapshot_.rdsEccValid = false;
+  snapshot_.rdsAfCount = 0;
+  for (uint8_t af = 0; af < 25; ++af) snapshot_.rdsAfKHz[af] = 0;
   snapshot_.rdsAvailable = false;
   snapshot_.rdsClockValid = false;
   snapshot_.stationName[0] = '\0';
@@ -95,6 +107,9 @@ bool RadioCore::selectBand(uint8_t index) {
   snapshot_.frequencyKHz = tuner_.frequencyKHz();
   snapshot_.piCode = 0;
   snapshot_.pty = 0;
+  snapshot_.rdsTpValid = snapshot_.rdsTaValid = snapshot_.rdsMusicSpeechValid = snapshot_.rdsDiValid = snapshot_.rdsEccValid = false;
+  snapshot_.rdsAfCount = 0;
+  for (uint8_t af = 0; af < 25; ++af) snapshot_.rdsAfKHz[af] = 0;
   snapshot_.rdsAvailable = false;
   snapshot_.rdsClockValid = false;
   snapshot_.stationName[0] = '\0';
