@@ -16,6 +16,7 @@ public:
   bool begin();
   const Entry& entry(uint8_t slot) const;
   bool save(uint8_t slot, const RadioSnapshot& radio, uint8_t bandIndex, const char* name = nullptr);
+  bool rename(uint8_t slot, const char* name);
   bool erase(uint8_t slot);
   bool recall(uint8_t slot, RadioCore& radio) const;
   uint8_t count() const;
