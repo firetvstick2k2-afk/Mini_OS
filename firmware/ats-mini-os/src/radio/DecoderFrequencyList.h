@@ -34,7 +34,7 @@ static constexpr DecoderFrequencyPreset kDecoderFrequencyPresets[] = {
   {"FT8 10m", 28074, RadioModulation::USB, 4},
 
   {"FT4 80m", 3575, RadioModulation::USB, 4},
-  {"FT4 40m", 7047, RadioModulation::USB, 4},
+  {"FT4 40m", 7048, RadioModulation::USB, 4},
   {"FT4 30m", 10140, RadioModulation::USB, 4},
   {"FT4 20m", 14080, RadioModulation::USB, 4},
   {"FT4 17m", 18104, RadioModulation::USB, 4},
