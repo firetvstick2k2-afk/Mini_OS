@@ -530,6 +530,7 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
       out.diValid = decoded.diValid;
       out.decoderIdentification = decoded.decoderIdentification;
       if (decoded.eccValid) { out.eccValid = true; out.eccCode = decoded.ecc; }
+      if (decoded.ptynUpdated) { out.ptynUpdated = true; copyRdsText(out.ptyn, sizeof(out.ptyn), decoded.ptyn); }
       if (decoded.afUpdated) {
         out.afUpdated = true;
         out.afCount = decoded.afCount;
