@@ -9,6 +9,35 @@
 - Vor Build-Freigabe statische Prüfungen und offene Aufgaben dokumentieren. Keine GitHub-Actions-Workflows starten und nicht flashen; der Nutzer startet Builds selbst.
 - Nach einem Build das Ergebnis erst dann als erfolgreich dokumentieren, wenn der Nutzer es bestätigt oder ein eindeutig ausgelesener CI-Status es belegt. QSPI und OSPI getrennt erfassen. Gerätetest/Flash-Erfolg nur nach ausdrücklicher Nutzerbestätigung dokumentieren.
 
+## Arbeitsfortschritt – Memory-Namenseditor (2026-11-16)
+
+Auf `dev/first-build-preparation` wurde die manuelle Bearbeitung von Speicherplatznamen direkt am ATS Mini integriert:
+
+- `MemoryService::rename()` ändert ausschließlich den Namen eines belegten Slots und speichert ihn persistent im vorhandenen NVS-Speicherformat. Frequenz, Band und Modulation bleiben unverändert.
+- Auf der Speicher-Seite: langen Druck auf einen belegten Slot starten den Namenseditor; Encoder-Drehung ändert das Zeichen, kurzer Druck springt zum nächsten Zeichen, langer Druck speichert.
+- Der Editor verwendet das bestehende Zeichenset (A–Z, a–z, Ziffern, Leerzeichen und `_ - .`) und unterstützt bis zu 15 Zeichen gemäß vorhandener `Entry::name[16]`.
+- Leere Slots behalten den bisherigen Ablauf: kurzer Druck speichert den aktuellen Sender, langer Druck speichert ebenfalls. Anschließend kann der belegte Slot durch langen Druck umbenannt werden.
+- Die Speicheranzeige zeigt den Bearbeitungsmodus und die Cursorposition. Bestehende Radio-Layouts wurden nicht verändert.
+
+Commits:
+- `257e1d3` – MemoryService: Rename-Schnittstelle
+- `5eddd13` – persistente Namensänderung
+- `f26586f` – Encoder-Bedienlogik
+- `b7719fd` – Display-Schnittstelle
+- `88be277` – Editoranzeige
+- `598f304` – Cursorbreite ohne temporäre String-Allokation
+
+## Noch nicht als integriert freigegeben – RDS-Erweiterungen und SSB-Patchauswahl
+
+- **EON / RT+ / ODA:** Der bestehende Decoder verarbeitet PI, PTY, PS, RT, AF, ECC, Clock-Time sowie TP/TA/MS/DI. Für EON und RT+ fehlen derzeit noch vollständige, gegengeprüfte Gruppen-/ODA-Zuordnungen und eine passende Ausgabe-/Speicherstruktur. Diese Protokollpfade wurden bewusst nicht mit unbestätigten Gruppenzuordnungen ergänzt.
+- **SSB-Patchauswahl:** Im Zielprojekt ist weiterhin nur ein einzelner, vorhandener SI4735-SSB-Patch nachgewiesen. Eine Auswahl mehrerer Patch-Sätze wäre ohne zusätzliche, lizenz-/formatgeprüfte Patchdateien und einen sicheren Import-/Validierungspfad nur eine Schein-Funktion. Der zentrale Manager lädt daher weiterhin den einen verifizierten eingebetteten Patch.
+- Die genannten Punkte bleiben ausdrücklich offen und sind keine Build- oder Gerätefunktion.
+
+Buildstatus:
+- GitHub Actions, lokaler Compilerlauf und Flash wurden nicht gestartet.
+- Statische Prüfung/Verifikation: geänderte Dateien wurden erneut aus dem Zielbranch abgerufen; Signaturen und Aufrufstellen des Memory-Editors stimmen überein. Ein echter Compile-Test ist weiterhin erforderlich.
+- Der Nutzer startet den Compile-only-Build selbst.
+
 ## Arbeitsfortschritt – Spektrum-Renderer und SSB-Patchverwaltung (2026-11-16)
 
 Auf `dev/first-build-preparation` wurden folgende Änderungen committed:
