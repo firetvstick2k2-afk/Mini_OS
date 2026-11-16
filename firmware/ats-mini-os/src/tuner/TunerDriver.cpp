@@ -305,8 +305,18 @@ bool TunerDriver::setStepKHz(uint16_t stepKHz) {
   return true;
 }
 
+uint8_t TunerDriver::patchProfile() const { return SsbPatchManager::profile(); }
+
+bool TunerDriver::setPatchProfile(uint8_t profile) {
+  if (!SsbPatchManager::setProfile(profile)) return false;
+  ssbPatchLoaded_ = false;
+  amPatchLoaded_ = false;
+  return true;
+}
+
 bool TunerDriver::setBand(const RadioBandDefinition& band) {
   if (!ready_) return false;
+  const RadioModulation previousModulation = modulation_;
   const uint32_t target = constrain(band.startKHz, band.minimumKHz, band.maximumKHz);
   minimumFrequencyKHz_ = band.minimumKHz;
   maximumFrequencyKHz_ = band.maximumKHz;
@@ -329,6 +339,7 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
     stepKHz_ = static_cast<uint16_t>(spacing * 10U);
     bandwidthChoice_ = 0;
     ssbPatchLoaded_ = false;
+    amPatchLoaded_ = false;
     radio_.setFM(low, high, static_cast<uint16_t>(fmTarget / 10UL), spacing);
     radio_.setTuneFrequencyAntennaCapacitor(1);
     radio_.setSeekFmLimits(low, high);
@@ -343,7 +354,14 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
     radio_.setRdsConfig(1, 2, 2, 2, 2);
   } else if (band.modulation == RadioModulation::AM) {
     bandwidthChoice_ = 4;
-    ssbPatchLoaded_ = false;
+    if (previousModulation != RadioModulation::AM) { amPatchLoaded_ = false; ssbPatchLoaded_ = false; }
+    if (!amPatchLoaded_) {
+      if (!SsbPatchManager::loadAm(radio_)) {
+        Serial.println("[PATCH] AM patch failed; reverting to Standard");
+        SsbPatchManager::setProfile(SsbPatchManager::Standard);
+      }
+      amPatchLoaded_ = true;
+    }
     radio_.setAM(static_cast<uint16_t>(band.minimumKHz),
                  static_cast<uint16_t>(band.maximumKHz),
                  static_cast<uint16_t>(target), stepKHz_);
@@ -356,11 +374,18 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
     radio_.setAmSoftMuteMaxAttenuation(softMuteAttenuationDb_);
     radio_.setAvcAmMaxGain(avcGain_);
   } else {
-    // The SI4735 requires the SSB DSP patch before sideband mode can be used.
-    // Load it only when entering SSB; AM/FM transitions invalidate this state.
+    // Load the selected SSB DSP patch once per SSB activation.
     bandwidthChoice_ = ssbBandwidthChoice_;
+    if (previousModulation != RadioModulation::LSB && previousModulation != RadioModulation::USB) {
+      ssbPatchLoaded_ = false;
+      amPatchLoaded_ = false;
+    }
     if (!ssbPatchLoaded_) {
-      if (!SsbPatchManager::load(radio_)) return false;
+      if (!SsbPatchManager::loadSsb(radio_)) {
+        Serial.println("[PATCH] SSB patch failed; reverting to Standard");
+        SsbPatchManager::setProfile(SsbPatchManager::Standard);
+        if (!SsbPatchManager::loadSsb(radio_)) return false;
+      }
       ssbPatchLoaded_ = true;
     }
     const uint8_t mode = band.modulation == RadioModulation::USB ? 2 : 1;
