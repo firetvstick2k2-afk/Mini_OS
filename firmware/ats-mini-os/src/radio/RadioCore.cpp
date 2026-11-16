@@ -12,6 +12,7 @@ void copyField(char* dst, size_t capacity, const char* src) {
 void clearRdsSnapshot(RadioSnapshot& s) {
   s.piCode = 0;
   s.pty = 0;
+  s.rdsPtyn[0] = '\0';
   s.rdsTpValid = s.rdsTaValid = s.rdsMusicSpeechValid = s.rdsDiValid = false;
   s.rdsTp = s.rdsTa = s.rdsMusicSpeech = s.rdsDi = false;
   s.rdsEccValid = false;
@@ -93,6 +94,7 @@ void RadioCore::update() {
     if (tuner_.pollRds(rds)) {
       if (rds.piValid) snapshot_.piCode = rds.piCode;
       if (rds.ptyValid) snapshot_.pty = rds.pty;
+      if (rds.ptynUpdated) copyField(snapshot_.rdsPtyn, sizeof(snapshot_.rdsPtyn), rds.ptyn);
       if (rds.tpValid) { snapshot_.rdsTpValid = true; snapshot_.rdsTp = rds.tp; }
       if (rds.taValid) { snapshot_.rdsTaValid = true; snapshot_.rdsTa = rds.ta; }
       if (rds.msValid) { snapshot_.rdsMusicSpeechValid = true; snapshot_.rdsMusicSpeech = rds.musicSpeech; }
