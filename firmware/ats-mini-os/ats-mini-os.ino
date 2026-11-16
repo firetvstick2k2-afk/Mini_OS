@@ -3,6 +3,7 @@
 #include <LovyanGFX.hpp>
 #include <LittleFS.h>
 #include <time.h>
+#include <math.h>
 #include "src/radio/RadioCore.h"
 #include "src/radio/DecoderFrequencyList.h"
 #include "src/radio/MemoryService.h"
@@ -64,6 +65,11 @@ bool menuOpen = false;
 bool sliderAdjustmentActive = false;
 bool bfoAdjustmentActive = false;
 bool bfoSavePending = false;
+bool frequencyCursorActive = false;
+uint8_t frequencyCursorPos = 0;
+uint8_t cursorBandIndex = 0xFF;
+RadioModulation cursorModulation = static_cast<RadioModulation>(0xFF);
+uint16_t cursorStepKHz = 0;
 uint8_t menuPage = 0;
 uint8_t menuSelection = 0;
 FileManager::Entry fmEntries[FileManager::MAX_ENTRIES];
@@ -155,6 +161,48 @@ bool tuneDecoderPreset(uint8_t presetIndex) {
     preset.label, static_cast<unsigned long>(preset.frequencyKHz),
     static_cast<unsigned>(preset.modulation));
   return true;
+}
+uint32_t frequencyCursorStepKHz(uint8_t position, RadioModulation mode) {
+  const int offset = mode == RadioModulation::AM ? 6 : 0;
+  if (position < offset) return 1;
+  uint32_t power = 1;
+  for (int i=0;i<(position-offset)/2;++i) power*=10;
+  return (position&1U)?5U*power:power;
+}
+void syncFrequencyCursor() {
+  const RadioSnapshot& s=radio.snapshot(); const uint16_t step=s.tuningStepKHz?s.tuningStepKHz:1;
+  if(cursorBandIndex==radio.currentBandIndex()&&cursorModulation==s.modulation&&cursorStepKHz==step)return;
+  cursorBandIndex=radio.currentBandIndex();cursorModulation=s.modulation;cursorStepKHz=step;
+  frequencyCursorPos=static_cast<uint8_t>(max(0,static_cast<int>(log10f(step)*2.0f)+(s.modulation==RadioModulation::AM?6:0)));
+  frequencyCursorActive=false;
+}
+uint8_t frequencyCursorMaximum() {
+  const RadioSnapshot& s=radio.snapshot();const int offset=s.modulation==RadioModulation::FM?-2:6;
+  return static_cast<uint8_t>(max(0,static_cast<int>(log10f(max<uint32_t>(s.bandMaximumKHz,1))*2.0f)+offset));
+}
+bool tuneFrequencyDigit(int16_t delta) {
+  const RadioSnapshot& s=radio.snapshot();const uint32_t step=frequencyCursorStepKHz(frequencyCursorPos,s.modulation);
+  if(s.modulation==RadioModulation::LSB||s.modulation==RadioModulation::USB){
+    const int32_t hz=static_cast<int32_t>(step*1000UL);
+    const int32_t next=static_cast<int32_t>(radio.bfoOffsetHz())+static_cast<int32_t>(delta)*hz;
+    if(!radio.setBfoOffsetHz(static_cast<int16_t>(constrain(next,-16000,16000))))return false;
+    bfoSavePending=true;
+  }else{
+    const int64_t next=static_cast<int64_t>(s.frequencyKHz)+static_cast<int64_t>(delta)*step;
+    const uint32_t target=static_cast<uint32_t>(constrain(next,static_cast<int64_t>(s.bandMinimumKHz),static_cast<int64_t>(s.bandMaximumKHz)));
+    if(!radio.tune(target))return false;
+  }
+  display.notifyTuning();return true;
+}
+bool alignFrequencyCursor() {
+  const RadioSnapshot& s=radio.snapshot();const uint32_t step=frequencyCursorStepKHz(frequencyCursorPos,s.modulation);
+  if(s.modulation==RadioModulation::LSB||s.modulation==RadioModulation::USB){
+    const int32_t hz=static_cast<int32_t>(step*1000UL);
+    const int32_t combined=static_cast<int32_t>(s.frequencyKHz*1000UL)+radio.bfoOffsetHz();
+    const int32_t rem=((combined%hz)+hz)%hz;
+    return radio.setBfoOffsetHz(static_cast<int16_t>(radio.bfoOffsetHz()-rem));
+  }
+  return radio.tune(constrain(s.frequencyKHz-s.frequencyKHz%step,s.bandMinimumKHz,s.bandMaximumKHz));
 }
 uint16_t nextSpectrumPeak(const ScanService& scan, uint16_t current, int8_t direction) {
   const uint16_t count=scan.count();
@@ -332,7 +380,7 @@ void loop() {
         // adjustment always move one logical step per encoder detent.
         const int16_t rotationDelta = (menuOpen || bfoAdjustmentActive)
           ? (inputEvent.delta > 0 ? 1 : -1) : inputEvent.delta;
-        if (menuOpen) {
+        if(inputEvent.buttonHeld&&!menuOpen&&!bfoAdjustmentActive){syncFrequencyCursor();frequencyCursorPos=static_cast<uint8_t>(constrain(static_cast<int>(frequencyCursorPos)-rotationDelta,0,static_cast<int>(frequencyCursorMaximum())));frequencyCursorActive=true;} else if (menuOpen) {
           if(menuPage==23 && scanner.state()!=ScanService::State::Running && scanner.count()>0) {
             const uint16_t selected=nextSpectrumPeak(scanner,static_cast<uint16_t>(menuSelection),rotationDelta>0?1:-1);
             menuSelection=static_cast<uint8_t>(selected);
@@ -381,7 +429,7 @@ void loop() {
             bfoSavePending = true;
             Serial.printf("[BFO] offset=%d Hz\\n", static_cast<int>(radio.bfoOffsetHz()));
           }
-        } else if (radio.nextChannel(rotationDelta)) {
+        } else if(frequencyCursorActive){if(tuneFrequencyDigit(rotationDelta))Serial.printf("[FREQ CURSOR] pos=%u step=%lu kHz\\n",frequencyCursorPos,static_cast<unsigned long>(frequencyCursorStepKHz(frequencyCursorPos,radio.snapshot().modulation)));} else if (radio.nextChannel(rotationDelta)) {
           display.notifyTuning();
           Serial.printf("[INPUT] tune step %s -> %.1f MHz\n",
             rotationDelta > 0 ? "CW" : "CCW",
@@ -399,7 +447,7 @@ void loop() {
             bfoSavePending = false;
           }
           Serial.println("[BFO] adjustment finished; encoder returned to tuning");
-        } else if (!menuOpen) {
+        } else if(frequencyCursorActive){if(alignFrequencyCursor())display.notifyTuning();frequencyCursorActive=false;} else if (!menuOpen) {
           menuOpen = true;
           sliderAdjustmentActive = false;
           menuPage = 0;
@@ -799,6 +847,8 @@ void loop() {
     currentWifiIp = wifi.ipAddress();
     lastWifiDisplayRefreshMs = millis();
   }
+  syncFrequencyCursor();
+  display.setFrequencyCursor(frequencyCursorActive?static_cast<uint8_t>(frequencyCursorPos|0x80U):100);
   const MoonCalendar::Snapshot currentMoon = MoonCalendar::calculate(time(nullptr));
   display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal(), selectedMemorySlot, memories.count(), scanner.count(), scanner.capacity(), static_cast<uint8_t>(scanner.state()), static_cast<uint8_t>(seeker.state()), scanner.data());
   const uint32_t now=millis();
