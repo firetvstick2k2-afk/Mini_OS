@@ -175,6 +175,7 @@ private:
   uint8_t bandwidthChoice_ = 0;
   bool haveTextFlag_ = false;
   uint8_t lastTextFlag_ = 0;
+  char rawRadioText_[65] = {};
   RadioModulation modulation_ = RadioModulation::FM;
   uint32_t minimumFrequencyKHz_ = 87500;
   uint32_t maximumFrequencyKHz_ = 108000;
