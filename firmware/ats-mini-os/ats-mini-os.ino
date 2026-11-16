@@ -454,7 +454,7 @@ void loop() {
             bfoSavePending = false;
           }
           Serial.println("[BFO] adjustment finished; encoder returned to tuning");
-        } else if(frequencyCursorActive){if(alignFrequencyCursor())display.notifyTuning();frequencyCursorActive=false;} else if (!menuOpen) {
+        } else if(frequencyCursorActive){if(alignFrequencyCursor())display.notifyTuning();frequencyCursorActive=false;if(bfoSavePending){const bool saved=settingsStore.saveBfoOffsetHz(radio.bfoOffsetHz());Serial.printf("[SETTINGS] cursor BFO=%d Hz %s\\n",static_cast<int>(radio.bfoOffsetHz()),saved?"saved":"save failed");bfoSavePending=false;}} else if (!menuOpen) {
           menuOpen = true;
           sliderAdjustmentActive = false;
           menuPage = 0;
