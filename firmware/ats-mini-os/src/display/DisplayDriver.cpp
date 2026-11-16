@@ -500,6 +500,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   static const char* const fmLayoutItems[] = { "Zurück", "DAB Style", "TEF6686 -FM Version", "TEF6686 - Newsfeed" };
   static const char* const amLayoutItems[] = { "Zurück", "HJB", "Waterfall", "TinyRadio", "TEF6686 - KW/MW/LW" };
   static const char* const bfoItems[] = { "Zurück", "BFO einstellen" };
+  static const char* const patchProfileItems[] = { "Zurück", "Standard", "Experimental V1", "Experimental V2" };
   static const char* const radioItems[] = {
     "Zurück", "Modulation", "Band wählen", "Bandbreite", "Schrittweite",
     "Empfangseinstellungen", "SSB / BFO"
@@ -545,6 +546,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     case 11: items=radioSettingsItems; count=(modulation==RadioModulation::FM?10:14); title="EMPFANG"; break;
     case 25: items=receiverFeatureItems; count=sizeof(receiverFeatureItems)/sizeof(receiverFeatureItems[0]); title="RX / FM OPTIONEN"; break;
     case 12: items=bfoItems; count=sizeof(bfoItems)/sizeof(bfoItems[0]); title="SSB / BFO"; break;
+    case 27: items=patchProfileItems; count=sizeof(patchProfileItems)/sizeof(patchProfileItems[0]); title="DSP PATCH"; break;
     case 16:
       if (BandManager::current().type == RadioBandType::FM) { items=fmModulationItems; count=2; }
       else { items=amModulationItems; count=(frequencyKHz >= 1800 && frequencyKHz <= 30000) ? 4 : 2; }
