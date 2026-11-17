@@ -41,13 +41,32 @@ void WifiClient::begin() {
       ? static_cast<Mode>(savedMode) : Mode::AP_CONNECT;
   }
   if (newsService_) newsService_->setConfiguration(newsConfig_);
-  // Bring up the selected WiFi interface before opening the HTTP listener.
-  // WebServer::begin() must run after the network interface is configured.
-  BootDiagnostics::write("[WIFI][BOOT] applying configured WiFi mode");
+  // Keep the radio offline at boot. The saved operating mode is applied
+  // only when a layout or an online feature explicitly requests networking.
+  started_ = false;
+  apActive_ = false;
+  BootDiagnostics::printf("[WIFI][BOOT] deferred; configured_mode=%u free_heap=%u",
+    static_cast<unsigned>(mode_), static_cast<unsigned>(ESP.getFreeHeap()));
+}
+
+bool WifiClient::ensureStarted() {
+  if (started_) return true;
+  // OFF is a runtime state, not a permanent veto: a feature that genuinely
+  // requires networking may activate the saved/default network mode.
+  if (mode_ == Mode::OFF) mode_ = Mode::AP_CONNECT;
+  BootDiagnostics::write("[WIFI] on-demand activation requested");
   applyMode();
-  BootDiagnostics::printf("[WIFI][BOOT] WiFi mode applied ap_active=%s station_enabled=%s free_heap=%u", apActive_ ? "yes" : "no", stationEnabled() ? "yes" : "no", static_cast<unsigned>(ESP.getFreeHeap()));
+  started_ = true;
   startWebServer();
-  BootDiagnostics::printf("[WIFI][BOOT] setup web server started=%s port=80 free_heap=%u max_block=%u", serverStarted_ ? "yes" : "no", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
+  if (newsService_) {
+    const bool ok = newsService_->begin();
+    BootDiagnostics::printf("[NEWS] lazy worker start=%s", ok ? "success" : "failed");
+  }
+  if (weatherService_) {
+    const bool ok = weatherService_->begin();
+    BootDiagnostics::printf("[WEATHER] lazy worker start=%s", ok ? "success" : "failed");
+  }
+  return true;
 }
 
 void WifiClient::applyMode() {
@@ -87,11 +106,20 @@ void WifiClient::applyMode() {
 
 bool WifiClient::setMode(Mode mode) {
   if (static_cast<uint8_t>(mode) > static_cast<uint8_t>(Mode::SYNC_ONLY)) return false;
-  if (mode_ == mode) return true;
   if (preferencesReady_ &&
       preferences_.putUChar("wmode", static_cast<uint8_t>(mode)) != sizeof(uint8_t)) return false;
   mode_ = mode;
-  applyMode();
+  if (mode_ == Mode::OFF) {
+    if (serverStarted_) {
+      server_.stop();
+      serverStarted_ = false;
+    }
+    applyMode();
+    started_ = false;
+    return true;
+  }
+  if (started_) applyMode();
+  else return ensureStarted();
   return true;
 }
 
@@ -362,6 +390,7 @@ void WifiClient::connectNextNetwork() {
 }
 
 void WifiClient::update() {
+  if (!started_) return;
   if (serverStarted_ && mode_ != Mode::SYNC_ONLY) server_.handleClient();
   const wl_status_t status = WiFi.status();
   const uint32_t now = millis();
@@ -394,5 +423,5 @@ void WifiClient::update() {
 }
 
 bool WifiClient::connected() const {
-  return stationEnabled() && WiFi.status() == WL_CONNECTED;
+  return started_ && stationEnabled() && WiFi.status() == WL_CONNECTED;
 }
