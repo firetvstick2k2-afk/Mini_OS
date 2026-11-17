@@ -52,11 +52,7 @@ void formatRadioText(char* dst, size_t capacity, const char* src) {
 
 bool TunerDriver::begin(uint32_t initialFrequencyKHz) {
   ready_ = false;
-  haveTextFlag_ = false;
-  lastTextFlag_ = 0;
   lastPiCode_ = 0;
-  memset(rawRadioText_, 0, sizeof(rawRadioText_));
-  rdsDecoder_.reset();
   // Keep audio muted and the amplifier disabled while the tuner starts, to avoid
   // startup pops and to ensure a failed tuner initialization cannot leave audio live.
   pinMode(kAudioMutePin, OUTPUT);
@@ -330,10 +326,8 @@ bool TunerDriver::setBand(const RadioBandDefinition& band) {
   maximumFrequencyKHz_ = band.maximumKHz;
   stepKHz_ = band.stepKHz ? band.stepKHz : 1;
   modulation_ = band.modulation;
-  haveTextFlag_ = false;
   lastPiCode_ = 0;
-  memset(rawRadioText_, 0, sizeof(rawRadioText_));
-  rdsDecoder_.reset();
+  radio_.clearRadioTextBuffers();
 
   if (band.modulation == RadioModulation::FM) {
     static const uint16_t fmLow[] = {8750, 8790, 7600};
@@ -448,9 +442,7 @@ bool TunerDriver::tune(uint32_t frequencyKHz, const RadioBandDefinition& band) {
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz / 10UL));
   else
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz));
-  haveTextFlag_ = false;
-  memset(rawRadioText_, 0, sizeof(rawRadioText_));
-  rdsDecoder_.reset();
+  radio_.clearRadioTextBuffers();
   lastPiCode_ = 0;
   return true;
 }
@@ -461,9 +453,7 @@ bool TunerDriver::tune(uint32_t frequencyKHz) {
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz / 10UL));
   else
     radio_.setFrequency(static_cast<uint16_t>(frequencyKHz));
-  haveTextFlag_ = false;
-  memset(rawRadioText_, 0, sizeof(rawRadioText_));
-  rdsDecoder_.reset();
+  radio_.clearRadioTextBuffers();
   lastPiCode_ = 0;
   return true;
 }
@@ -489,139 +479,56 @@ void TunerDriver::refreshSignalQuality() {
 
 bool TunerDriver::pollRds(TunerRdsData& out) {
   out = TunerRdsData{};
-  if (!ready_) return false;
+  if (!ready_ || modulation_ != RadioModulation::FM) return false;
 
-  // Drain one complete SI4735 RDS FIFO cycle. A group can contain several
-  // independently updated fields, so accumulate changes across this poll.
+  // Keep the original ATS Mini Dev RDS path: read the SI4735 FIFO and use
+  // its native PS, RT, PI, PTY and Clock-Time helpers. No additional
+  // EON/ODA/RT+/PTYN or AF Method-B decoder is run here.
   static constexpr uint8_t kMaxGroupsPerPoll = 25;
   bool receivedAny = false;
   for (uint8_t i = 0; i < kMaxGroupsPerPoll; ++i) {
-    radio_.getRdsStatus(0, 0, 0);
+    radio_.getRdsStatus();
     const uint8_t fifoCount = radio_.getNumRdsFifoUsed();
     if (!fifoCount) break;
+
     receivedAny = true;
     const uint8_t group = radio_.getRdsGroupType();
 
-    // PI changes delimit a new programme service. Discard the previous
-    // service's assembled AF/EON/ODA/RT+ state before decoding this group.
-    if (radio_.getRdsNewBlockA()) {
-      const uint16_t pi = radio_.currentPiCode();
-      if (pi != 0) {
-        out.piValid = true;
-        out.piCode = pi;
-        if (lastPiCode_ != 0 && pi != lastPiCode_) {
-          rdsDecoder_.reset();
-          haveTextFlag_ = false;
-          lastTextFlag_ = 0;
-          memset(rawRadioText_, 0, sizeof(rawRadioText_));
-        }
-        lastPiCode_ = pi;
-      }
+    // PI is available in block A of every group. Clear only the old text
+    // assembly when the programme service changes.
+    const uint16_t pi = radio_.currentPiCode();
+    if (pi != 0) {
+      out.piValid = true;
+      out.piCode = pi;
+      if (lastPiCode_ != 0 && pi != lastPiCode_)
+        radio_.clearRadioTextBuffers();
+      lastPiCode_ = pi;
     }
-
-    if (radio_.getRdsNewBlockB()) {
-      const uint8_t version = radio_.getRdsVersionCode();
-      const uint16_t blockB = radio_.currentBlockB();
-      const uint16_t blockC = radio_.currentBlockC();
-      const uint16_t blockD = radio_.currentBlockD();
-
-      // Assemble RT directly from the received group blocks. This preserves
-      // the exact character offsets required by RT+ and avoids losing the
-      // first segment when the A/B flag changes.
-      if (group == 2) {
-        const uint8_t flag = static_cast<uint8_t>((blockB >> 4) & 0x01U);
-        if (!haveTextFlag_ || flag != lastTextFlag_) {
-          haveTextFlag_ = true;
-          lastTextFlag_ = flag;
-          memset(rawRadioText_, 0, sizeof(rawRadioText_));
-        }
-        const uint8_t segment = static_cast<uint8_t>(blockB & 0x0FU);
-        if (version == 0 && radio_.currentBlockCError() < 3 &&
-            radio_.currentBlockDError() < 3) {
-          const uint8_t offset = static_cast<uint8_t>(segment * 4U);
-          rawRadioText_[offset] = static_cast<char>(blockC >> 8);
-          rawRadioText_[offset + 1U] = static_cast<char>(blockC);
-          rawRadioText_[offset + 2U] = static_cast<char>(blockD >> 8);
-          rawRadioText_[offset + 3U] = static_cast<char>(blockD);
-        } else if (version == 1 && radio_.currentBlockDError() < 3) {
-          const uint8_t offset = static_cast<uint8_t>(segment * 2U);
-          rawRadioText_[offset] = static_cast<char>(blockD >> 8);
-          rawRadioText_[offset + 1U] = static_cast<char>(blockD);
-        }
-        rawRadioText_[64] = '\0';
-      }
-
-      RdsDecodedFields decoded;
-      rdsDecoder_.process(group, version, blockB, blockC, blockD,
-                          radio_.currentPiCode(), frequencyKHz(),
-                          radio_.currentBlockCError(), radio_.currentBlockDError(),
-                          rawRadioText_, decoded);
-
-      if (decoded.tpValid) { out.tpValid = true; out.tp = decoded.tp; }
-      if (decoded.ptyValid) { out.ptyValid = true; out.pty = decoded.pty; }
-      if (decoded.taValid) { out.taValid = true; out.ta = decoded.ta; }
-      if (decoded.linkageActuatorValid) {
-        out.linkageActuatorValid = true;
-        out.linkageActuator = decoded.linkageActuator;
-      }
-      if (decoded.msValid) { out.msValid = true; out.musicSpeech = decoded.musicSpeech; }
-      if (decoded.diValid) {
-        out.diValid = true;
-        out.decoderIdentification = decoded.decoderIdentification;
-      }
-      if (decoded.eccValid) { out.eccValid = true; out.eccCode = decoded.ecc; }
-      if (decoded.afUpdated) {
-        out.afUpdated = true;
-        out.afCount = decoded.afCount;
-        for (uint8_t af = 0; af < decoded.afCount; ++af) out.afKHz[af] = decoded.afKHz[af];
-      }
-      if (decoded.afMethodBUpdated) {
-        out.afMethodBUpdated = true;
-        out.afMethodBCount = decoded.afMethodBCount;
-        memcpy(out.afMethodBLists, decoded.afMethodBLists, sizeof(out.afMethodBLists));
-      }
-      if (decoded.eonUpdated) {
-        out.eonUpdated = true;
-        out.eon = decoded.eon;
-        out.eonCount = decoded.eonCount;
-        memcpy(out.eonNetworks, decoded.eonNetworks, sizeof(out.eonNetworks));
-      }
-      if (decoded.odaUpdated) {
-        out.odaUpdated = true;
-        out.odaAid = decoded.odaAid;
-        out.odaGroupType = decoded.odaGroupType;
-        out.odaGroupVersion = decoded.odaGroupVersion;
-      }
-      if (decoded.rtPlusUpdated) {
-        out.rtPlusUpdated = true;
-        out.rtPlusItemToggle = decoded.rtPlusItemToggle;
-        out.rtPlusItemRunning = decoded.rtPlusItemRunning;
-        out.rtPlus[0] = decoded.rtPlus[0];
-        out.rtPlus[1] = decoded.rtPlus[1];
-      }
-      if (decoded.ptynUpdated) {
-        out.ptynUpdated = true;
-        copyRdsText(out.ptyn, sizeof(out.ptyn), decoded.ptyn);
-      }
-    }
-
-    if (group == 4 && radio_.currentRdsClock(out.clockHour, out.clockMinute))
-      out.clockValid = true;
 
     if (group == 0) {
-      const char* ps = radio_.getRdsText0A();
+      const char* ps = radio_.getRdsStationName();
       if (ps) {
         copyRdsText(out.stationName, sizeof(out.stationName), ps);
         out.stationNameUpdated = true;
       }
     } else if (group == 2) {
-      formatRadioText(out.radioText, sizeof(out.radioText), rawRadioText_);
-      out.radioTextUpdated = true;
+      const char* rt = radio_.getRdsVersionCode()
+          ? radio_.getRdsText2B() : radio_.getRdsText2A();
+      if (rt) {
+        formatRadioText(out.radioText, sizeof(out.radioText), rt);
+        out.radioTextUpdated = true;
+      }
+    } else if (group == 1) {
+      out.pty = radio_.getRdsProgramTypeX();
+      out.ptyValid = true;
+    } else if (group == 4 && radio_.currentRdsClock(out.clockHour, out.clockMinute)) {
+      out.clockValid = true;
     }
 
-    // The count includes the group just read (AN332).
+    // As in ATS Mini Dev, the FIFO count includes the group just read.
     if (fifoCount == 1) break;
   }
+
   out.received = receivedAny;
   return receivedAny;
 }
