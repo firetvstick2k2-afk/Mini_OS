@@ -2813,3 +2813,34 @@ Prüfstatus:
 - Fix-Commit: `723fb5e48a8a9fd4f3d71646cdd97421c3831425`.
 - Status: Quelltext-Fix committed; noch kein neuer Compile-Lauf und kein Flash. Der Nutzer startet den manuellen Compile-only-Workflow.
 - Nächster Schritt nach erfolgreichem Compile: RDS-Vervollständigung anhand der offenen Punkte im RDS-Handover fortsetzen; insbesondere EON-/RT+-Validierung und hostseitige Decoder-Testvektoren. Dual RX und VFO A/B bleiben zuletzt.
+
+
+## Digitale Decoder – Portierungsstart (2026-11-17)
+
+Verbindliche Hardwareanforderung des Nutzers:
+- ATS Mini V4 bleibt vollständig unverändert. Keine Zusatzleitung, kein Mikrofon, kein Audio-Codec und kein sonstiger Umbau.
+- Als Hardware-Referenz gilt der vom Nutzer erfolgreich getestete H.J.-Berndt-Betrieb ohne zusätzliche Anschlüsse. Der vorhandene Audio-Aufnahmepfad des ATS Mini OS über GPIO11 ist beizubehalten.
+- Die bestehende CW-Aufnahme in `src/cw/CwDecoderService.cpp` tastet GPIO11 mit 4.000 Samples/s ab und verlangt aktuell WLAN AUS. Sie ist der vorhandene gemeinsame Audio-Einstiegspunkt; keine parallelen ADC-Sampler aufbauen.
+
+Quellenauswahl:
+- Primärquelle für RTTY und FT8/FT4: `joaquimorg/ham_decoder`, festgehaltener Upstream-Stand `13c8934b52e93728ee01f5efc85ce015f6fbdd2f` (MIT).
+- Das Projekt enthält RTTY Baudot/ITA2 für 45,45 / 50 / 75 Baud mit automatischer Polarität und AFC sowie FT8/FT4 auf Basis von `kgoba/ft8_lib` (MIT). Nur DSP-/Decoder-Code übernehmen; keine fremde Audio-Hardware, UI oder Board-Pinbelegung übernehmen.
+- H.J.-Berndt bleibt die praktische Hardware-Referenz des Nutzers, ist aber keine verfügbare offene Quellcodebasis für eine direkte Portierung.
+
+Erster Portierungsschritt:
+- `firmware/ats-mini-os/src/digital/rtty/RttyDecoder.h/.cpp` angelegt.
+- RTTY-DSP aus RX Analyzer übernommen, auf den vorhandenen 4-kHz-Sample-Stream parametriert und von dessen `config.h`, Audio-Hardware und UI entkoppelt.
+- Unterstützte API: Töne setzen/entsperren, Baudrate, Polarität (Auto/Normal/Reverse), Status und Textpuffer.
+- MIT-Lizenz unter `src/digital/rtty/LICENSE.md` beigelegt.
+- Noch keine Aufrufstelle, Menüseite oder Audio-Fan-out-Integration. Der Decoder ist daher noch keine nutzbare Gerätefunktion.
+
+Nächste Portierungsschritte:
+1. Gemeinsame Audio-Sample-Verteilung in den vorhandenen GPIO11-Capturepfad integrieren; CW darf dabei nicht regressieren.
+2. RTTY-Tonpaarerkennung bzw. bedienbare Mittenfrequenz/Shift-Einstellung ergänzen und 45,45 / 50 / 75 Baud testen.
+3. FT8/FT4 auf Basis von `ft8_lib` portieren. Dessen Monitor ist sample-rate-parametrierbar; 4 kHz wird als gemeinsamer Eingang geprüft, damit CW/RTTY/FT8 keinen konkurrierenden Sampler benötigen. Slot-Zeitbasis muss UTC-genau sein.
+4. Erst nach Host-Testvektoren und Compile die Decoder-Menü-/Displayintegration ergänzen.
+
+Prüfstatus:
+- RTTY-Dateien nach dem Anlegen erneut aus dem Zielbranch abgerufen und auf Inhalt/Lizenz geprüft.
+- Kein lokaler Compilerlauf, keine GitHub Actions und kein Flash gestartet.
+- Keine Gerätefunktion behauptet; Audiointegration und Hardwaretest stehen aus.
