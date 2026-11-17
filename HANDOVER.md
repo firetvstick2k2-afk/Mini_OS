@@ -2882,3 +2882,18 @@ Aktiver Branch: `dev/first-build-preparation`.
 - KISS FFT enthält jetzt sowohl COPYING als auch den vollständigen BSD-3-Clause-Lizenztext; ft8_lib behält seine MIT-Lizenz.
 - Statische Schnittstellenprüfung: ein einziger analogRead(kPin)-Aufruf im neuen Audio-Capture-Modul; CW und FTx verwenden die Callback-/Queue-Schnittstellen. Display-Header, Renderer und .ino-Aufruf enthalten die neue FTx-Schnittstelle.
 - Diese Prüfungen sind Quelltextprüfungen, kein Compilerlauf. Build, GitHub Actions und Flash bleiben unangetastet.
+
+
+
+## On-Demand-Dienste und Boot-Diagnose – 2026-11-17
+
+- WLAN wird in `WifiClient::begin()` nur noch konfiguriert; Funkinterface und Webserver starten erst bei `ensureStarted()`.
+- Automatischer WLAN-Bedarf: FM-Layout DAB Style (Station-Logos), TEF6686 Newsfeed, Wetterseite, WLAN-Einstellungsseite, EIBI-Download sowie gespeicherter SYNC_ONLY-Modus.
+- EIBI-Downloads warten nach dem Anfordern bis zu 60 Sekunden auf eine WLAN-Verbindung.
+- CW wird erst beim Öffnen der CW-Seite initialisiert. AudioCaptureService startet dabei ebenfalls erst bei Bedarf.
+- FT8/FT4-Worker und Audioaufnahme starten erst beim Aktivieren der FT8-/FT4-Seite.
+- Wenn WLAN vor CW/FT8 aktiv war, wird es für den Decoder vorübergehend abgeschaltet und beim Verlassen der Decoderseite wiederhergestellt. News-/Wetter-Worker werden bei erneutem WLAN-Start nicht doppelt angelegt.
+- Wetter-Worker-Start ist idempotent abgesichert.
+- Die layoutabhängige WLAN-Aktivierung erfolgt im ersten `loop()`-Durchlauf und nicht mehr in `setup()`; dadurch bleibt der Setup-Pfad schlanker und die vorhandenen First-Loop-Diagnosemarker können den Start eingrenzen.
+- Geänderte Dateien: `ats-mini-os.ino`, `WifiClient.h/.cpp`, `CwDecoderService.h/.cpp`, `FtxDecoderService.h/.cpp`, `WeatherService.cpp`.
+- **Prüfstatus:** Quelltext-/Schnittstellenprüfung durchgeführt; kein Compilerlauf, keine GitHub Action und kein Flash gestartet. Der nächste Build und die Geräteprüfung müssen insbesondere WLAN-Start aus DAB Style/Newsfeed, WLAN-Restore nach CW/FT8, CW-Einstieg ohne WLAN sowie EIBI-Verbindungswartezeit prüfen.
