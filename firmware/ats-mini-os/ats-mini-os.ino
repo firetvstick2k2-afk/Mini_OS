@@ -561,8 +561,7 @@ void loop() {
           for (uint8_t i = 0; i < kDecoderFrequencyPresetCount; ++i) {
             const DecoderFrequencyPreset& preset = kDecoderFrequencyPresets[i];
             if (preset.decoder != DecoderKind::None &&
-                preset.frequencyKHz == live.frequencyKHz &&
-                preset.modulation == live.modulation) {
+                preset.frequencyKHz == live.frequencyKHz) {
               matchingPreset = i;
               break;
             }
