@@ -16,6 +16,7 @@
 
 namespace {
 uint16_t BLACK=0x0000, WHITE=0xFFFF, GREEN=0x07E0, CYAN=0x07FF, DARK_GREEN=0x0320, YELLOW=0xFFE0, MUTED=0x7BEF, FREQ_COLOR=0x07E0, UNIT_COLOR=0x07E0, RDS_COLOR=0xFFFF;
+uint8_t ftxWaterfallBuffer[58 * 304];
 void applyThemePalette(uint8_t index) { const ThemePalette& p=ThemeManager::at(index); BLACK=p.background; WHITE=p.text; GREEN=p.accent; CYAN=p.secondary; DARK_GREEN=p.divider; YELLOW=p.warning; MUTED=p.muted; FREQ_COLOR=p.frequency; UNIT_COLOR=p.frequencyUnit; RDS_COLOR=p.radioText; }
 
 void germanAscii(const char* input, char* output, size_t capacity) {
@@ -861,16 +862,15 @@ void drawFtxDecoderPage(Canvas& c, const RadioSnapshot& state, uint8_t selection
     return;
   }
 
-  static uint8_t waterfall[58 * 304];
   uint16_t rows=0,bins=0;
-  const bool haveWaterfall=service->copyWaterfall(waterfall,58,304,rows,bins);
+  const bool haveWaterfall=service->copyWaterfall(ftxWaterfallBuffer,58,304,rows,bins);
   c.fillRect(8,34,304,60,0x0000);
   c.drawRect(8,34,304,60,frame);
   if (haveWaterfall && bins) {
     const uint16_t top=static_cast<uint16_t>(58-rows);
     for(uint16_t y=0;y<rows;++y) {
       for(uint16_t x=0;x<bins;++x) {
-        const uint8_t v=waterfall[static_cast<size_t>(y)*bins+x];
+        const uint8_t v=ftxWaterfallBuffer[static_cast<size_t>(y)*bins+x];
         const uint16_t color=v<132?0x0008:v<165?0x001F:v<195?0x07FF:v<225?0x07E0:v<245?0xFFE0:0xFFFF;
         c.drawPixel(8+x,35+top+y,color);
       }
