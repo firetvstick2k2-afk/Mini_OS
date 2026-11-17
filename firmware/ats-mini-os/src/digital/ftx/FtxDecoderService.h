@@ -12,7 +12,7 @@ public:
   static constexpr size_t kResultCapacity = FtxDecoder::kMaxResults;
 
   bool begin(AudioCaptureService& capture);
-  bool enter(FtxMode mode, bool wifiOff, bool utcSynchronized);
+  bool enter(FtxMode mode, bool wifiOff, bool utcSynchronized, AudioCaptureService& capture);
   void exit();
   bool active() const { return active_; }
   FtxMode mode() const { return mode_; }
