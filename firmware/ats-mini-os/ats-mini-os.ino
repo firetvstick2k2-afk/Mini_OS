@@ -157,8 +157,10 @@ void closeMenuToRadio(const char* reason) {
   Serial.printf("[MENU] returned to radio: %s\n", reason);
 }
 void suspendWifiForDecoder() {
-  wifiPausedForDecoder = !wifi.isOff();
-  if (wifiPausedForDecoder) wifi.suspend();
+  if (!wifiPausedForDecoder && !wifi.isOff()) {
+    wifiPausedForDecoder = true;
+    wifi.suspend();
+  }
 }
 void restoreWifiAfterDecoder() {
   if (!wifiPausedForDecoder) return;
