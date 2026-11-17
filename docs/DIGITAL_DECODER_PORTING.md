@@ -95,3 +95,8 @@ Es wurde noch kein Build oder Flash gestartet. Der RTTY-DSP-Kern ist noch nicht 
 - Die Wasserfall- und Decode-Anzeige ist integriert, aber noch nicht auf dem Gerät beurteilt. Sync-Score statt SNR ist ein bewusst gekennzeichneter Zwischenstand.
 - CW wurde auf den gemeinsamen Sampler umgestellt, aber das Verhalten wurde nach dieser Refaktorierung noch nicht kompiliert oder am Gerät getestet.
 - Kein Build, kein GitHub-Actions-Lauf und kein Flash wurden gestartet.
+
+
+### Zusätzliche Schutzmaßnahme
+
+Das gemeinsame Audio-Capture-Modul und der FTx-Start sind für LILYGO_SI473X deaktiviert, weil GPIO11 dort SPI-MOSI ist. Diese Portierung ist ausschließlich für den ATS-Mini-Audioeingang gedacht. KISS FFT enthält zusätzlich die Datei fft/COPYING und den vollständigen BSD-3-Clause-Lizenztext.
