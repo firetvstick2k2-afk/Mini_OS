@@ -2897,3 +2897,35 @@ Aktiver Branch: `dev/first-build-preparation`.
 - Die layoutabhängige WLAN-Aktivierung erfolgt im ersten `loop()`-Durchlauf und nicht mehr in `setup()`; dadurch bleibt der Setup-Pfad schlanker und die vorhandenen First-Loop-Diagnosemarker können den Start eingrenzen.
 - Geänderte Dateien: `ats-mini-os.ino`, `WifiClient.h/.cpp`, `CwDecoderService.h/.cpp`, `FtxDecoderService.h/.cpp`, `WeatherService.cpp`.
 - **Prüfstatus:** Quelltext-/Schnittstellenprüfung durchgeführt; kein Compilerlauf, keine GitHub Action und kein Flash gestartet. Der nächste Build und die Geräteprüfung müssen insbesondere WLAN-Start aus DAB Style/Newsfeed, WLAN-Restore nach CW/FT8, CW-Einstieg ohne WLAN sowie EIBI-Verbindungswartezeit prüfen.
+
+
+## RDS-Rückführung auf ATS-Mini-Dev-Grundumfang (2026-11-17)
+
+Der Nutzer hat festgelegt: Alles, was über den RDS-Funktionsumfang von `13HN2709/ats-mini-dev` hinausgeht, zunächst entfernen – außer eine bestehende Layout-/Systemfunktion benötigt es. Das Layout und sein bisheriger PS-/RT-Aufbau bleiben unverändert.
+
+Vergleich der Referenz `ats-mini/Station.cpp`:
+- ATS Mini Dev verwendet den SI4735-eigenen FIFO-/RDS-Pfad (`getRdsStatus()`, `getRdsStationName()`, `getRdsText2A/B()`, `getRdsPI()`, `getRdsProgramTypeX()`, `getRdsUTCEpoch()`).
+- Nachgewiesener Grundumfang: PS, RT, PI, PTY und Clock-Time (CT); PS und RT werden im vorhandenen Layout angezeigt.
+- Die Referenz enthält in `checkRds()` keine separate Decoderstufe für EON, ODA, RT+, PTYN oder AF Method B.
+
+Änderungen auf `dev/first-build-preparation`:
+- `TunerDriver::pollRds()` auf den nativen SI4735-RDS-FIFO-/Getter-Pfad zurückgeführt; PS, RT, PI, PTY und CT bleiben erhalten.
+- Eigene erweiterte Decoderverarbeitung und ihre großen temporären Datenstrukturen entfernt.
+- RDS-Datenvertrag und `RadioSnapshot` auf die benötigten Grundfelder reduziert.
+- `RadioCore` veröffentlicht weiterhin PI, PTY, CT, PS und RT; das Display-Layout wurde nicht verändert.
+- `src/rds/RdsDecoder.h/.cpp` entfernt.
+- Keine zusätzlichen RDS-Funktionen wie EON/ODA/RT+/PTYN/AF Method B verbleiben als aktive Verarbeitung.
+
+Commits:
+- `80854f3` Tuner-RDS-Datenvertrag reduzieren
+- `c9d7a59` nativen ATS-Mini-Dev-RDS-Pollpfad wiederherstellen
+- `3ccaa87` RadioCore auf Grundfelder reduzieren
+- `74c07d9` RadioSnapshot vereinfachen
+- `1342a58`, `0e1b779` erweiterte RdsDecoder-Dateien entfernen
+
+Prüfstatus:
+- Die Referenz `Station.cpp` wurde gelesen; die Grundfunktionen wurden gegen deren `checkRds()` abgeglichen.
+- Die geänderten Zieldateien werden nach dem Schreiben erneut aus GitHub abgerufen und auf verbliebene Decoder-/Erweiterungsreferenzen geprüft.
+- Kein Compilerlauf, keine GitHub Action und kein Flash gestartet. Der Nutzer startet Builds selbst.
+- Gerätediagnose ausschließlich über das interne BootDiagnostics-Log; der Nutzer kann keinen Serial Monitor verwenden. Niemals Serial-Monitor-Ausgaben anfordern.
+- Noch offen: statische Gesamtprüfung der RDS-Aufrufstellen und anschließender Compile-only-Build durch den Nutzer. Layout-/Gerätetest ist nicht erfolgt.
