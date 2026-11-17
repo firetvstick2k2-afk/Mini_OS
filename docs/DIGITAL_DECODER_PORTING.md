@@ -58,3 +58,11 @@ PSK31, SSTV und WEFAX bleiben nach RTTY und FT8/FT4. Vor jeder Übernahme sind b
 - [ ] Gerätetest durch den Nutzer
 
 Es wurde noch kein Build oder Flash gestartet. Der RTTY-DSP-Kern ist noch nicht mit der Gerätebedienung verbunden und somit noch keine verfügbare Funktion.
+
+## FT8/FT4 Bibliotheksimport (2026-11-17)
+
+- Die MIT-lizenzierte Originalbibliothek `kgoba/ft8_lib` wurde unter `src/digital/ftx/ft8_lib/` eingecheckt (Unterordner `ft8`, `common`, `fft` und Original-`LICENSE`).
+- `common/monitor.c` und `.h` verwenden lokal auflösbare relative Include-Pfade; alle weiteren Dateien bleiben zunächst möglichst unverändert.
+- **Stand:** Bibliotheksquellen importiert; noch kein ATS-Mini-Wrapper, keine gemeinsame Audio-Fan-out-Anbindung, keine Slot-Synchronisation, keine Decoder-UI und kein Build-/Hardwaretest. Nicht als funktionsfähig ausgeben.
+- **Nächster Schritt:** Include-/Link-Kompatibilität und vollständige Abhängigkeiten prüfen; anschließend FT8/FT4-RX-Service mit begrenztem Speicherbudget und Zeitfenstern auf Basis des vorhandenen GPIO11-Samplers integrieren. Den CW-Sampler nicht duplizieren.
+- **Lizenzprüfung:** Bei Distribution zusätzlich die Herkunft und Lizenzbedingungen des eingebetteten KissFFT-Codes nachvollziehbar dokumentieren.
