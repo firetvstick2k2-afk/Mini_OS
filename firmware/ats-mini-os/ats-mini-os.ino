@@ -555,7 +555,13 @@ void loop() {
           }
           Serial.println("[BFO] adjustment finished; encoder returned to tuning");
         } else if(frequencyCursorActive){if(alignFrequencyCursor())display.notifyTuning();frequencyCursorActive=false;if(bfoSavePending){const bool saved=settingsStore.saveBfoOffsetHz(radio.bfoOffsetHz());Serial.printf("[SETTINGS] cursor BFO=%d Hz %s\n",static_cast<int>(radio.bfoOffsetHz()),saved?"saved":"save failed");bfoSavePending=false;}} else if (!menuOpen) {
-          pendingTuneDelta = 0;
+          // A deliberate encoder click also commits an unfinished frequency selection.
+          if (pendingTuneDelta != 0) {
+            const int32_t commitDelta = pendingTuneDelta;
+            pendingTuneDelta = 0;
+            if (radio.nextChannel(static_cast<int16_t>(constrain(commitDelta, -32767, 32767))))
+              display.notifyTuning();
+          }
           int matchingPreset = -1;
           const RadioSnapshot& live = radio.snapshot();
           for (uint8_t i = 0; i < kDecoderFrequencyPresetCount; ++i) {
