@@ -4,46 +4,49 @@
 
 // Fixed receiver presets. SI4735 AM/SSB tuning is expressed in whole kHz;
 // decimal-kHz carriers are rounded to the nearest receiver kHz.
+enum class DecoderKind : uint8_t { None, CW, FT8, FT4 };
+
 struct DecoderFrequencyPreset {
   const char* label;
   uint32_t frequencyKHz;
   RadioModulation modulation;
   uint8_t bandwidthChoice;
+  DecoderKind decoder = DecoderKind::None;
 };
 
 static constexpr DecoderFrequencyPreset kDecoderFrequencyPresets[] = {
   // CW activity
-  {"CW 160m QRP", 1836, RadioModulation::USB, 0},
-  {"CW 80m QRP", 3560, RadioModulation::USB, 0},
-  {"CW 40m QRP", 7030, RadioModulation::USB, 0},
-  {"CW 30m QRP", 10116, RadioModulation::USB, 0},
-  {"CW 20m QRP", 14060, RadioModulation::USB, 0},
-  {"CW 17m", 18096, RadioModulation::USB, 0},
-  {"CW 15m", 21060, RadioModulation::USB, 0},
-  {"CW 12m", 24906, RadioModulation::USB, 0},
-  {"CW 10m", 28060, RadioModulation::USB, 0},
+  {"CW 160m QRP", 1836, RadioModulation::USB, 0, DecoderKind::CW},
+  {"CW 80m QRP", 3560, RadioModulation::USB, 0, DecoderKind::CW},
+  {"CW 40m QRP", 7030, RadioModulation::USB, 0, DecoderKind::CW},
+  {"CW 30m QRP", 10116, RadioModulation::USB, 0, DecoderKind::CW},
+  {"CW 20m QRP", 14060, RadioModulation::USB, 0, DecoderKind::CW},
+  {"CW 17m", 18096, RadioModulation::USB, 0, DecoderKind::CW},
+  {"CW 15m", 21060, RadioModulation::USB, 0, DecoderKind::CW},
+  {"CW 12m", 24906, RadioModulation::USB, 0, DecoderKind::CW},
+  {"CW 10m", 28060, RadioModulation::USB, 0, DecoderKind::CW},
 
   // FT8
-  {"FT8 160m", 1840, RadioModulation::USB, 4},
-  {"FT8 80m", 3573, RadioModulation::USB, 4},
-  {"FT8 60m", 5357, RadioModulation::USB, 4},
-  {"FT8 40m", 7074, RadioModulation::USB, 4},
-  {"FT8 30m", 10136, RadioModulation::USB, 4},
-  {"FT8 20m", 14074, RadioModulation::USB, 4},
-  {"FT8 17m", 18100, RadioModulation::USB, 4},
-  {"FT8 15m", 21074, RadioModulation::USB, 4},
-  {"FT8 12m", 24915, RadioModulation::USB, 4},
-  {"FT8 10m", 28074, RadioModulation::USB, 4},
+  {"FT8 160m", 1840, RadioModulation::USB, 4, DecoderKind::FT8},
+  {"FT8 80m", 3573, RadioModulation::USB, 4, DecoderKind::FT8},
+  {"FT8 60m", 5357, RadioModulation::USB, 4, DecoderKind::FT8},
+  {"FT8 40m", 7074, RadioModulation::USB, 4, DecoderKind::FT8},
+  {"FT8 30m", 10136, RadioModulation::USB, 4, DecoderKind::FT8},
+  {"FT8 20m", 14074, RadioModulation::USB, 4, DecoderKind::FT8},
+  {"FT8 17m", 18100, RadioModulation::USB, 4, DecoderKind::FT8},
+  {"FT8 15m", 21074, RadioModulation::USB, 4, DecoderKind::FT8},
+  {"FT8 12m", 24915, RadioModulation::USB, 4, DecoderKind::FT8},
+  {"FT8 10m", 28074, RadioModulation::USB, 4, DecoderKind::FT8},
 
   // FT4
-  {"FT4 80m", 3575, RadioModulation::USB, 4},
-  {"FT4 40m", 7048, RadioModulation::USB, 4},
-  {"FT4 30m", 10140, RadioModulation::USB, 4},
-  {"FT4 20m", 14080, RadioModulation::USB, 4},
-  {"FT4 17m", 18104, RadioModulation::USB, 4},
-  {"FT4 15m", 21140, RadioModulation::USB, 4},
-  {"FT4 12m", 24919, RadioModulation::USB, 4},
-  {"FT4 10m", 28180, RadioModulation::USB, 4},
+  {"FT4 80m", 3575, RadioModulation::USB, 4, DecoderKind::FT4},
+  {"FT4 40m", 7048, RadioModulation::USB, 4, DecoderKind::FT4},
+  {"FT4 30m", 10140, RadioModulation::USB, 4, DecoderKind::FT4},
+  {"FT4 20m", 14080, RadioModulation::USB, 4, DecoderKind::FT4},
+  {"FT4 17m", 18104, RadioModulation::USB, 4, DecoderKind::FT4},
+  {"FT4 15m", 21140, RadioModulation::USB, 4, DecoderKind::FT4},
+  {"FT4 12m", 24919, RadioModulation::USB, 4, DecoderKind::FT4},
+  {"FT4 10m", 28180, RadioModulation::USB, 4, DecoderKind::FT4},
 
   // RTTY
   {"RTTY 80m", 3580, RadioModulation::USB, 4},

@@ -2980,3 +2980,13 @@ Prüfstatus:
 - Commits: Testvektoren `3755982a8815d997cc331bfdb121e52d83829470`; Runner `f8451a5b0655100bbac1920efb40844769ff5c04`; Host-Test-Einstieg `88e712655c568258356d08c702ef9b4ce8095546`.
 - Automatische Audiofrequenzsuche ist im bestehenden Decoder bereits implementiert: `FtxDecoder::begin()` verwendet standardmäßig 250–1750 Hz und `decodeSlot()` ermittelt die Frequenz des gefundenen Signals. Das stimmt nicht den SI4735-RF-Empfang ab; die gewünschte FT8-/FT4-Bandfrequenz und USB bleiben manuell einzustellen.
 - Prüfstatus: Dateien wurden nach dem Commit erneut von GitHub abgerufen und ihre Inhalte geprüft. Der Host-Test wurde noch nicht ausgeführt; es wurde kein Compilerlauf, keine GitHub Action und kein Flash gestartet. Als nächster Schritt soll der Host-Testlauf ausgeführt und bei Fehlern gezielt korrigiert werden.
+
+
+## Arbeitsfortschritt – Decoder-Presets mit Direktstart und FT8-Diagnose (2026-11-17)
+
+- Decoder-Frequenz-Presets erhalten eine explizite Decoderart: `CW`, `FT8`, `FT4` oder `None` (reines Mithören). Die bestehenden CW-, FT8- und FT4-Presets sind entsprechend klassifiziert; andere Presets bleiben ohne Decoder.
+- Beim Drehen in der Decoder-Frequenzliste wird das markierte Preset sofort abgestimmt. BootDiagnostics protokolliert Presetname, Frequenz und Decoderart.
+- OK startet bei CW-, FT8- und FT4-Presets unmittelbar den zugeordneten Decoder. FT8/FT4 behalten die Voraussetzungen WLAN AUS und UTC synchronisiert. Bei fehlender Voraussetzung bleibt die Auswahl erhalten und der Startfehler wird protokolliert. Nicht klassifizierte Presets bleiben reine Mithörfrequenzen.
+- CW und FT8/FT4 stehen im Hauptmenü direkt hinter „Zurück“ nebeneinander; die übrigen Menüziele wurden passend verschoben.
+- FTX-Diagnosezähler erfassen Audio-Blöcke, Queue-Verluste, abgeschlossene Slots und Slots mit mindestens einem decodierten Ergebnis. Während FT8/FT4 aktiv ist, wird alle 15 Sekunden ein `[FTX][DIAG]`-Datensatz in BootDiagnostics ausgegeben.
+- Kein Hosttest, Firmwarebuild, GitHub-Actions-Workflow oder Flash wurde ausgeführt. Die Zähler müssen beim nächsten Gerätetest ausgewertet werden; sie belegen noch keine erfolgreiche HF-/Audio-Decodierung.

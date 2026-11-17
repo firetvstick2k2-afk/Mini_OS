@@ -487,10 +487,10 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   // Main-menu order follows ATS Mini Dev. The previously unsupported VHF spectrum
   // placeholder is now used for the FT8 / FT4 decoder. A trailing * remains an inert item.
   static const char* const mainItems[] = {
-    "Zurück", "Modulation", "Bänder", "Lautstärke", "Keypad", "DUAL RX*", "VFO A/B*",
-    "Frequenz*", "BFO", "STEP", "Suche", "Scannen", "Speicher", "Decoder-Frequenzen", "Rauschsperre",
-    "Bandbreite", "AGC/Dämpfung", "Auto-Lautstärke", "Soft-Mute", "Einstellungen",
-    "FT8 / FT4 Decoder", "ALL-Band Spektrum*", "Wetterbericht", "Mondkalender", "CW DECODER"
+    "Zurück", "CW DECODER", "FT8 / FT4 Decoder", "Modulation", "Bänder", "Lautstärke", "Keypad",
+    "DUAL RX*", "VFO A/B*", "Frequenz*", "BFO", "STEP", "Suche", "Scannen", "Speicher",
+    "Decoder-Frequenzen", "Rauschsperre", "Bandbreite", "AGC/Dämpfung", "Auto-Lautstärke",
+    "Soft-Mute", "Einstellungen", "ALL-Band Spektrum*", "Wetterbericht", "Mondkalender"
   };
   static const char* const volumeItems[] = {
     "Zurück", "Lautstärke", "Stumm (später)"

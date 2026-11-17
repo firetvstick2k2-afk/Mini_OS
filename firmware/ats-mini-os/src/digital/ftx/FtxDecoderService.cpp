@@ -59,6 +59,7 @@ bool FtxDecoderService::enter(FtxMode mode, bool wifiOff, bool utcSynchronized, 
     activeSlotStartUs_ = 0;
     lastBlockStartUs_ = 0;
     droppedBlocks_ = 0;
+    receivedBlocks_ = completedSlots_ = decodedSlots_ = 0;
     xSemaphoreTake(resultMutex_, portMAX_DELAY);
     memset(published_, 0, sizeof(published_));
     xSemaphoreGive(resultMutex_);
@@ -114,6 +115,7 @@ void FtxDecoderService::onAudioSamples(void* context, const int16_t* samples,
   memcpy(chunk.samples, samples, count * sizeof(int16_t));
   chunk.count = static_cast<uint8_t>(count);
   chunk.utcStartMicros = utcStartMicros;
+  ++self->receivedBlocks_;
   if (xQueueSend(self->queue_, &chunk, 0) != pdTRUE) ++self->droppedBlocks_;
 }
 
@@ -203,7 +205,9 @@ void FtxDecoderService::processChunk(const AudioChunk& chunk) {
 }
 
 void FtxDecoderService::decodeAndPublish() {
+  ++completedSlots_;
   decoder_.decodeSlot();
+  if (decoder_.resultCount() > 0) ++decodedSlots_;
   FtxDecodedMessage fresh[kResultCapacity]{};
   const size_t count = decoder_.resultCount() < kResultCapacity ?
     decoder_.resultCount() : kResultCapacity;

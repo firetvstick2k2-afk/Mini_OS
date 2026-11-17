@@ -18,6 +18,9 @@ public:
   FtxMode mode() const { return mode_; }
   bool copyWaterfall(uint8_t* out, uint16_t maxRows, uint16_t outBins, uint16_t& rows, uint16_t& bins);
   uint32_t droppedBlocks() const { return droppedBlocks_; }
+  uint32_t receivedBlocks() const { return receivedBlocks_; }
+  uint32_t completedSlots() const { return completedSlots_; }
+  uint32_t decodedSlots() const { return decodedSlots_; }
   size_t copyResults(FtxDecodedMessage* out, size_t capacity);
 
 private:
@@ -47,4 +50,7 @@ private:
   int64_t activeSlotStartUs_ = 0;
   int64_t lastBlockStartUs_ = 0;
   volatile uint32_t droppedBlocks_ = 0;
+  volatile uint32_t receivedBlocks_ = 0;
+  volatile uint32_t completedSlots_ = 0;
+  volatile uint32_t decodedSlots_ = 0;
 };

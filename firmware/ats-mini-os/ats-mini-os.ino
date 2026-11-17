@@ -83,6 +83,7 @@ RadioModulation cursorModulation = static_cast<RadioModulation>(0xFF);
 uint16_t cursorStepKHz = 0;
 uint8_t menuPage = 0;
 uint8_t menuSelection = 0;
+int16_t lastDecoderPreviewSelection = -1;
 FileManager::Entry fmEntries[FileManager::MAX_ENTRIES];
 char fmPath[96] = "/";
 char fmMessage[40] = "LittleFS bereit";
@@ -182,6 +183,35 @@ bool tuneDecoderPreset(uint8_t presetIndex) {
   Serial.printf("[DECODER FREQ] %s -> %lu kHz mode=%u\n",
     preset.label, static_cast<unsigned long>(preset.frequencyKHz),
     static_cast<unsigned>(preset.modulation));
+  return true;
+}
+bool startDecoderPreset(uint8_t presetIndex) {
+  if (presetIndex >= kDecoderFrequencyPresetCount) return false;
+  const DecoderFrequencyPreset& preset = kDecoderFrequencyPresets[presetIndex];
+  if (lastDecoderPreviewSelection != static_cast<int16_t>(presetIndex + 1) && !tuneDecoderPreset(presetIndex)) return false;
+  if (preset.decoder == DecoderKind::CW) {
+    suspendWifiForDecoder();
+    if (!cwDecoder.enter(audioCapture, wifi.isOff())) { restoreWifiAfterDecoder(); return false; }
+    menuOpen = false; menuPage = 21; menuSelection = 0; lastDecoderPreviewSelection = -1;
+    BootDiagnostics::printf("[DECODER] preset=%s kind=CW active", preset.label);
+    return true;
+  }
+  if (preset.decoder == DecoderKind::FT8 || preset.decoder == DecoderKind::FT4) {
+    const FtxMode mode = preset.decoder == DecoderKind::FT4 ? FtxMode::FT4 : FtxMode::FT8;
+    suspendWifiForDecoder();
+    if (!ftxDecoder.enter(mode, wifi.isOff(), systemClock.synchronized(), audioCapture)) {
+      restoreWifiAfterDecoder();
+      BootDiagnostics::printf("[DECODER] preset=%s kind=%s start failed wifiOff=%u utc=%u",
+        preset.label, mode == FtxMode::FT4 ? "FT4" : "FT8", wifi.isOff(), systemClock.synchronized());
+      return false;
+    }
+    menuOpen = false; menuPage = 28; menuSelection = mode == FtxMode::FT4 ? 1 : 0;
+    lastDecoderPreviewSelection = -1;
+    BootDiagnostics::printf("[DECODER] preset=%s kind=%s active", preset.label, mode == FtxMode::FT4 ? "FT4" : "FT8");
+    return true;
+  }
+  closeMenuToRadio("listen-only decoder frequency selected");
+  lastDecoderPreviewSelection = -1;
   return true;
 }
 uint32_t frequencyCursorStepKHz(uint8_t position, RadioModulation mode) {
@@ -427,6 +457,16 @@ void loop() {
             menuSelection=static_cast<uint8_t>(selected);
             if(scanner.point(selected).frequencyKHz && radio.tune(scanner.point(selected).frequencyKHz)) display.notifyTuning();
           }
+          else if(menuPage==26){
+            int16_t next = (static_cast<int16_t>(menuSelection) + rotationDelta) % (kDecoderFrequencyPresetCount + 1);
+            if (next < 0) next += kDecoderFrequencyPresetCount + 1;
+            menuSelection = static_cast<uint8_t>(next);
+            if (menuSelection > 0 && lastDecoderPreviewSelection != menuSelection && tuneDecoderPreset(static_cast<uint8_t>(menuSelection - 1))) {
+              lastDecoderPreviewSelection = menuSelection;
+              const DecoderFrequencyPreset& preset = kDecoderFrequencyPresets[menuSelection - 1];
+              BootDiagnostics::printf("[DECODER PREVIEW] %s %lu kHz kind=%u", preset.label, static_cast<unsigned long>(preset.frequencyKHz), static_cast<unsigned>(preset.decoder));
+            }
+          }
           else if(menuPage==22){if(memoryEditActive){const char* chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-.";const size_t n=strlen(chars);const char ch=memoryEditName[memoryEditCursor];const char* q=strchr(chars,ch?ch:'A');int pos=q?static_cast<int>(q-chars):0;pos=(pos+rotationDelta)%static_cast<int>(n);if(pos<0)pos+=static_cast<int>(n);memoryEditName[memoryEditCursor]=chars[pos];memoryEditName[memoryEditCursor+1]='\0';}else{int v=(int)selectedMemorySlot+rotationDelta;v%=MemoryService::kSlotCount;if(v<0)v+=MemoryService::kSlotCount;selectedMemorySlot=(uint8_t)v;}}
           else if(menuPage==21){ if(radio.nextChannel(rotationDelta)) display.notifyTuning(); }
           else if(menuPage==19){ frequencyKeypad.rotate(rotationDelta); }
@@ -496,11 +536,9 @@ void loop() {
           Serial.println("[MENU] opened");
         } else if (menuPage == 26) {
           if (menuSelection == 0) {
-            menuPage = 0; menuSelection = 13;
-          } else if (tuneDecoderPreset(static_cast<uint8_t>(menuSelection - 1))) {
-            closeMenuToRadio("decoder frequency selected");
-          } else {
-            Serial.printf("[DECODER FREQ] tuning failed for selection %u\n", static_cast<unsigned>(menuSelection));
+            lastDecoderPreviewSelection = -1; menuPage = 0; menuSelection = 15;
+          } else if (!startDecoderPreset(static_cast<uint8_t>(menuSelection - 1))) {
+            BootDiagnostics::printf("[DECODER] preset start rejected index=%u", static_cast<unsigned>(menuSelection - 1));
           }
         } else if (menuPage == 22) {
           if(memoryEditActive) {
@@ -553,8 +591,8 @@ void loop() {
             // ATS Mini Dev menu order is retained; the unsupported VHF spectrum slot now opens FT8/FT4.
             // Unsupported entries are marked with * in the renderer and stay inert.
             static const uint8_t targetPages[25] = {
-              255, 16, 8, 1, 19, 255, 255, 255, 12, 9, 24,
-              23, 22, 26, 25, 7, 11, 11, 11, 5, 28, 255, 18, 20, 21
+              255, 21, 28, 16, 8, 1, 19, 255, 255, 255, 12, 9, 24,
+              23, 22, 26, 25, 7, 11, 11, 11, 5, 255, 18, 20
             };
             const uint8_t selectedMainItem = menuSelection;
             const uint8_t targetPage = targetPages[selectedMainItem];
@@ -988,6 +1026,14 @@ void loop() {
     Serial.printf("[RDS] available=%s PI=%04X PTY=%u PS=\"%s\" RT=\"%s\"\n",
       s.rdsAvailable?"yes":"no",static_cast<unsigned>(s.piCode),
       static_cast<unsigned>(s.pty),s.stationName,s.radioText);
+  }
+  static uint32_t lastFtxDiagnosticMs = 0;
+  if (ftxDecoder.active() && millis() - lastFtxDiagnosticMs >= 15000) {
+    lastFtxDiagnosticMs = millis();
+    BootDiagnostics::printf("[FTX][DIAG] mode=%s audio_blocks=%lu dropped=%lu slots=%lu decoded_slots=%lu wifi_off=%u utc_sync=%u heap=%u",
+      ftxDecoder.mode() == FtxMode::FT4 ? "FT4" : "FT8", static_cast<unsigned long>(ftxDecoder.receivedBlocks()),
+      static_cast<unsigned long>(ftxDecoder.droppedBlocks()), static_cast<unsigned long>(ftxDecoder.completedSlots()),
+      static_cast<unsigned long>(ftxDecoder.decodedSlots()), wifi.isOff(), systemClock.synchronized(), static_cast<unsigned>(ESP.getFreeHeap()));
   }
   delay(2);
 }
