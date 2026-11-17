@@ -5,6 +5,7 @@
 #include "../ft8/debug.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 static float hann_i(int i, int N)
 {
@@ -131,6 +132,7 @@ void monitor_reset(monitor_t* me)
 {
     me->wf.num_blocks = 0;
     me->max_mag = -120.0f;
+    if (me->last_frame) memset(me->last_frame, 0, me->nfft * sizeof(me->last_frame[0]));
 }
 
 // Compute FFT magnitudes (log wf) for a frame in the signal and update waterfall data
