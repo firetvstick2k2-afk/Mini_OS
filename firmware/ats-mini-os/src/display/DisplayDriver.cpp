@@ -896,8 +896,8 @@ void drawFtxDecoderPage(Canvas& c, const RadioSnapshot& state, uint8_t selection
     if(messages[i].slotUtc && gmtime_r(&messages[i].slotUtc,&utc))
       snprintf(timeText,sizeof(timeText),"%02d:%02dZ",utc.tm_hour,utc.tm_min);
     char meta[48];
-    snprintf(meta,sizeof(meta),"%s  %.0fHz  SYNC %u",timeText,
-      messages[i].audioFrequencyHz,static_cast<unsigned>(messages[i].syncScore));
+    snprintf(meta,sizeof(meta),"%s  %.0fHz  SNR %+.0fdB",timeText,
+      messages[i].audioFrequencyHz,messages[i].snrDb);
     c.setTextColor(0x07E0,navy);
     c.drawString(meta,10,y);
     c.setTextColor(0xFFFF,navy);
