@@ -12,6 +12,7 @@
 #include "../cw/CwDecoderService.h"
 #include <LittleFS.h>
 #include <math.h>
+#include <time.h>
 
 namespace {
 uint16_t BLACK=0x0000, WHITE=0xFFFF, GREEN=0x07E0, CYAN=0x07FF, DARK_GREEN=0x0320, YELLOW=0xFFE0, MUTED=0x7BEF, FREQ_COLOR=0x07E0, UNIT_COLOR=0x07E0, RDS_COLOR=0xFFFF;
@@ -824,6 +825,96 @@ void drawLegacyCWPage(Canvas& c,const RadioSnapshot& state,bool blocked,const ch
   const uint16_t led=signal?green:red;if((millis()/350)&1)c.fillCircle(296,20,5,led);else c.drawCircle(296,20,5,led);c.setTextDatum(MR_DATUM);c.setTextColor(signal?green:red,blueA);c.setFont(&lgfx::fonts::Font0);c.drawString(signal?"SIGNAL OK":"NO SIGNAL",284,20);c.setTextDatum(MC_DATUM);c.setTextColor(0xBDF7,navy);c.drawString("CLICK: EXIT  |  ROTATE: TUNE/BFO",160,163);
 }
 
+
+template <typename Canvas>
+void drawFtxDecoderPage(Canvas& c, const RadioSnapshot& state, uint8_t selection,
+                        FtxDecoderService* service, bool wifiOff, bool utcSynced) {
+  constexpr uint16_t navy=0x0008, blue=0x0359, frame=0x047D;
+  c.fillScreen(navy);
+  const bool ft4 = selection == 1;
+  c.fillRect(8,5,304,25,blue);
+  c.drawRect(8,5,304,25,frame);
+  c.setTextDatum(ML_DATUM);
+  c.setTextColor(0xFFFF,blue);
+  c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  char header[48];
+  if (state.modulation == RadioModulation::FM)
+    snprintf(header,sizeof(header),"%s  %.2f MHz",ft4?"FT4":"FT8",state.frequencyKHz/1000.0f);
+  else
+    snprintf(header,sizeof(header),"%s  %lu kHz",ft4?"FT4":"FT8",static_cast<unsigned long>(state.frequencyKHz));
+  c.drawString(header,14,11);
+
+  if (!wifiOff || !utcSynced || !service || !service->active()) {
+    c.setTextDatum(MC_DATUM);
+    c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+    c.setTextColor(0xFFE0,navy);
+    const char* message = !wifiOff ? "PLEASE TURN WIFI / AP OFF" :
+      !utcSynced ? "UTC TIME NOT SYNCHRONIZED" :
+      !service ? "FTX SERVICE UNAVAILABLE" : "DECODER NOT STARTED";
+    c.drawString(message,160,76);
+    c.setFont(&lgfx::fonts::Font0);
+    c.setTextColor(0xFFFF,navy);
+    c.drawString(!utcSynced ? "Connect Wi-Fi first to obtain UTC time" :
+      "Select FT8/FT4 and click to start",160,99);
+    c.setTextColor(0x07E0,navy);
+    c.drawString("ROTATE: FT8 / FT4   CLICK: START   LONG: EXIT",160,151);
+    return;
+  }
+
+  static uint8_t waterfall[58 * 304];
+  uint16_t rows=0,bins=0;
+  const bool haveWaterfall=service->copyWaterfall(waterfall,58,304,rows,bins);
+  c.fillRect(8,34,304,60,0x0000);
+  c.drawRect(8,34,304,60,frame);
+  if (haveWaterfall && bins) {
+    const uint16_t top=static_cast<uint16_t>(58-rows);
+    for(uint16_t y=0;y<rows;++y) {
+      for(uint16_t x=0;x<bins;++x) {
+        const uint8_t v=waterfall[static_cast<size_t>(y)*bins+x];
+        const uint16_t color=v<132?0x0008:v<165?0x001F:v<195?0x07FF:v<225?0x07E0:v<245?0xFFE0:0xFFFF;
+        c.drawPixel(8+x,35+top+y,color);
+      }
+    }
+  } else {
+    c.setTextDatum(MC_DATUM);
+    c.setTextColor(0x7BEF,0x0000);
+    c.setFont(&lgfx::fonts::Font0);
+    c.drawString("WAITING FOR UTC SLOT / AUDIO",160,62);
+  }
+  c.setTextDatum(TL_DATUM);
+  c.setTextColor(0x7BEF,navy);
+  c.setFont(&lgfx::fonts::Font0);
+  c.drawString("250 Hz",8,96);
+  c.drawString("1750 Hz",274,96);
+
+  FtxDecodedMessage messages[FtxDecoderService::kResultCapacity]{};
+  const size_t count=service->copyResults(messages,FtxDecoderService::kResultCapacity);
+  for(size_t i=0;i<count && i<2;++i) {
+    const int y=107+static_cast<int>(i)*25;
+    struct tm utc{};
+    char timeText[16]="--:--Z";
+    if(messages[i].slotUtc && gmtime_r(&messages[i].slotUtc,&utc))
+      snprintf(timeText,sizeof(timeText),"%02d:%02dZ",utc.tm_hour,utc.tm_min);
+    char meta[48];
+    snprintf(meta,sizeof(meta),"%s  %.0fHz  SYNC %u",timeText,
+      messages[i].audioFrequencyHz,static_cast<unsigned>(messages[i].syncScore));
+    c.setTextColor(0x07E0,navy);
+    c.drawString(meta,10,y);
+    c.setTextColor(0xFFFF,navy);
+    char textLine[36];
+    strncpy(textLine,messages[i].text,sizeof(textLine)-1);
+    textLine[sizeof(textLine)-1]=0;
+    c.drawString(textLine,10,y+10);
+  }
+  if(!count) {
+    c.setTextColor(0xBDF7,navy);
+    c.drawString("No decoded messages in the latest slot",10,116);
+  }
+  c.setTextDatum(MC_DATUM);
+  c.setTextColor(0x7BEF,navy);
+  c.drawString("ROTATE: FT8 / FT4   CLICK: START   LONG: EXIT",160,164);
+}
+
 bool DisplayDriver::begin(uint8_t initialBrightness) {
 #if !defined(LILYGO_SI473X)
   // ATS Mini V4 has a separate backlight MOSFET on GPIO38; panel brightness
@@ -894,7 +985,7 @@ void DisplayDriver::setAmLayout(uint8_t mode) {
 void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConnected,
                            const char* lastInputEvent,uint32_t inputEventCount,
                            StationLogoClient* logoClient, bool menuOpen,
-                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading, const NewsService::Snapshot* newsSnapshot, uint8_t wifiMode, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const FrequencyKeypad::View* keypadView, const MoonCalendar::Snapshot* moonSnapshot, bool cwWifiBlocked, const char* cwText, bool cwSignal, uint8_t memorySlot, uint8_t memoryCount, uint16_t scanCount, uint16_t scanCapacity, uint8_t scanState, uint8_t seekState, const ScanService::Point* scanPoints, bool memoryEditActive, const char* memoryEditName, uint8_t memoryEditCursor) {
+                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading, const NewsService::Snapshot* newsSnapshot, uint8_t wifiMode, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const FrequencyKeypad::View* keypadView, const MoonCalendar::Snapshot* moonSnapshot, bool cwWifiBlocked, const char* cwText, bool cwSignal, uint8_t memorySlot, uint8_t memoryCount, uint16_t scanCount, uint16_t scanCapacity, uint8_t scanState, uint8_t seekState, const ScanService::Point* scanPoints, bool memoryEditActive, const char* memoryEditName, uint8_t memoryEditCursor, FtxDecoderService* ftxService, bool ftxWifiOff, bool ftxUtcSynchronized) {
   if(!ready_)return;
   const uint32_t now=millis();
   const bool returningToRadio = !menuOpen && lastMenuOpen_;
@@ -905,7 +996,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   if (returningToRadio) lastGeneration_ = UINT32_MAX;
   // Redraw the file manager promptly while the encoder is moving; this also
   // keeps the selection frame visually attached to the active row.
-  const uint32_t redrawInterval = menuOpen ? ((menuPage==21 || menuPage==23 || menuPage==24) ? 100 : ((menuPage==6 || menuPage==19 || menuPage==22 || menuPage==26) ? 20 : 500)) : 40;
+  const uint32_t redrawInterval = menuOpen ? ((menuPage==21 || menuPage==23 || menuPage==24 || menuPage==28) ? 100 : ((menuPage==6 || menuPage==19 || menuPage==22 || menuPage==26) ? 20 : 500)) : 40;
   if(!returningToRadio && s.generation==lastGeneration_ && now-lastDrawMs_<redrawInterval && !menuStateChanged)return;
   lastGeneration_=s.generation;
   lastDrawMs_=now;
@@ -922,6 +1013,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
     if(menuPage==26){if(useSprite_){sprite_.fillSprite(BLACK);drawDecoderFrequencyPage(sprite_,menuSelection);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawDecoderFrequencyPage(device_,menuSelection);}return;}
     if(menuPage==22 || menuPage==23 || menuPage==24){if(useSprite_){sprite_.fillSprite(BLACK);drawRadioUtilityPage(sprite_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawRadioUtilityPage(device_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);}return;}
     if(menuPage==21){if(useSprite_){sprite_.fillSprite(BLACK);drawLegacyCWPage(sprite_,s,cwWifiBlocked,cwText,cwSignal);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawLegacyCWPage(device_,s,cwWifiBlocked,cwText,cwSignal);}return;}
+    if(menuPage==28){if(useSprite_){sprite_.fillSprite(BLACK);drawFtxDecoderPage(sprite_,s,menuSelection,ftxService,ftxWifiOff,ftxUtcSynchronized);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFtxDecoderPage(device_,s,menuSelection,ftxService,ftxWifiOff,ftxUtcSynchronized);}return;}
     if(menuPage==19 && keypadView){if(useSprite_){sprite_.fillSprite(BLACK);drawFrequencyKeypad(sprite_,*keypadView);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFrequencyKeypad(device_,*keypadView);}return;}
     if(menuPage==6){if(useSprite_){sprite_.fillSprite(BLACK);drawFileMenu(sprite_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFileMenu(device_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);}return;}
     if (useSprite_) {
