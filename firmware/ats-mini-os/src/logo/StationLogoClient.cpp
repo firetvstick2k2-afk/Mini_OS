@@ -150,6 +150,41 @@ bool StationLogoClient::storeLogoInRam(const String& logo, const char* key, cons
   Serial.printf("[LOGO] RAM logo loaded from %s (%u bytes)\n",source?source:"unknown",static_cast<unsigned>(logo.length()));
   return true;
 }
+bool StationLogoClient::hasLocalLogo(const RadioSnapshot& state) {
+  if (!state.piCode || !StorageDiscovery::ready()) return false;
+  char pi[5];
+  snprintf(pi, sizeof(pi), "%04X", static_cast<unsigned>(state.piCode));
+  const char* directories[] = {"/logos", "/"};
+  for (const char* directoryPath : directories) {
+    File directory = LittleFS.open(directoryPath);
+    if (!directory || !directory.isDirectory()) {
+      if (directory) directory.close();
+      continue;
+    }
+    File entry = directory.openNextFile();
+    while (entry) {
+      bool match = false;
+      if (!entry.isDirectory() && entry.size() > 0 && entry.size() <= kMaxLogoBytes) {
+        String filename = entry.path();
+        const int slash = filename.lastIndexOf('/');
+        if (slash >= 0) filename = filename.substring(slash + 1);
+        filename.toUpperCase();
+        const bool supported = filename.endsWith(".PNG") ||
+          filename.endsWith(".JPG") || filename.endsWith(".JPEG");
+        match = supported && filename.indexOf(pi) >= 0;
+      }
+      entry.close();
+      if (match) {
+        directory.close();
+        return true;
+      }
+      entry = directory.openNextFile();
+    }
+    directory.close();
+  }
+  return false;
+}
+
 void StationLogoClient::update(const RadioSnapshot& state, bool wifiConnected) {
   (void)wifiConnected;
   if (!state.piCode || busy_) return;
