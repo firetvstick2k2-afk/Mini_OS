@@ -42,13 +42,14 @@ bool FtxDecoderService::begin(AudioCaptureService& capture) {
   return true;
 }
 
-bool FtxDecoderService::enter(FtxMode mode, bool wifiOff, bool utcSynchronized) {
+bool FtxDecoderService::enter(FtxMode mode, bool wifiOff, bool utcSynchronized, AudioCaptureService& capture) {
   exit();
 #if defined(LILYGO_SI473X)
   (void)mode; (void)wifiOff; (void)utcSynchronized;
   return false; // This board profile uses GPIO11 for SPI and has no ATS Mini audio input.
 #else
-  if (!initialized_ || !capture_ || !wifiOff || !utcSynchronized) return false;
+  if (!wifiOff || !utcSynchronized) return false;
+  if (!capture.begin() || !begin(capture)) return false;
 
   xSemaphoreTake(engineMutex_, portMAX_DELAY);
   const bool ready = decoder_.begin(mode);
