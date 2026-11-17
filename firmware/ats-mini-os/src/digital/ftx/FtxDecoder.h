@@ -34,6 +34,12 @@ public:
   uint32_t samplesPerSymbol() const { return static_cast<uint32_t>(monitor_.block_size); }
   uint32_t symbolsCollected() const { return static_cast<uint32_t>(monitor_.wf.num_blocks); }
   float maxMagnitudeDb() const { return monitor_.max_mag; }
+  size_t pendingFrameSamples() const { return frameFill_; }
+  int waterfallBlocks() const { return monitor_.wf.num_blocks; }
+  int waterfallMaxBlocks() const { return monitor_.wf.max_blocks; }
+  int fftBlockSize() const { return monitor_.block_size; }
+  bool initialized() const { return initialized_; }
+  bool collecting() const { return collecting_; }
   bool copyWaterfall(uint8_t* out, uint16_t maxRows, uint16_t outBins, uint16_t& rows, uint16_t& bins) const;
 
 private:
