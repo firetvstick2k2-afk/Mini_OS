@@ -255,9 +255,7 @@ void fmChoose(uint8_t visual){ if(visual==0){ if(fmMode==3)return; fmParent(); r
 
 void setup() {
   Serial.begin(SERIAL_BAUD); delay(250); performance.begin();
-  if (!audioCapture.begin()) Serial.println("[AUDIO] shared GPIO11 sampler unavailable");
-  if (!cwDecoder.begin(audioCapture)) Serial.println("[CW] decoder initialization failed");
-  if (!ftxDecoder.begin(audioCapture)) Serial.println("[FTX] decoder service initialization failed");
+  // Audio capture and digital decoder workers are initialized only on demand.
   systemClock.begin();
   const bool storageReady = StorageDiscovery::begin();
   const bool settingsReady = settingsStore.begin();
@@ -353,30 +351,10 @@ void setup() {
   wifi.setWeatherService(&weatherService);
   BootDiagnostics::printf("[BOOT][STAGE] before wifi.begin free_heap=%u max_block=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
   wifi.begin();
-  BootDiagnostics::printf("[BOOT][STAGE] after wifi.begin free_heap=%u max_block=%u min_free=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
-  // Start both background services for the diagnostic test. The previous
-  // combined run reset during overlapping HTTPS activity; the bounded RSS
-  // stream parser and LittleFS headline cache are now in place, so capture
-  // both workers' startup and heap impact rather than hiding the interaction.
-  BootDiagnostics::printf("[NEWS] before begin free_heap=%u max_block=%u min_free=%u",
-    static_cast<unsigned>(ESP.getFreeHeap()),
-    static_cast<unsigned>(ESP.getMaxAllocHeap()),
-    static_cast<unsigned>(ESP.getMinFreeHeap()));
-  const bool newsStarted = newsService.begin();
-  BootDiagnostics::printf("[NEWS] background worker start result=%s",
-    newsStarted ? "success" : "failed");
-  BootDiagnostics::printf("[NEWS] after begin free_heap=%u max_block=%u min_free=%u",
-    static_cast<unsigned>(ESP.getFreeHeap()),
-    static_cast<unsigned>(ESP.getMaxAllocHeap()),
-    static_cast<unsigned>(ESP.getMinFreeHeap()));
-
-  // Start Weather as well; BootDiagnostics records both services so their
-  // network activity and memory use can be compared in the next device log.
-  const bool weatherStarted = weatherService.begin();
-  BootDiagnostics::printf("[WEATHER] background worker start result=%s postal='%s'",
-    weatherStarted ? "success" : "failed", weatherService.postalCode().c_str());
-  BootDiagnostics::printf("[BOOT][STAGE] after weatherService.begin free_heap=%u max_block=%u min_free=%u",
-    static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
+  BootDiagnostics::printf("[BOOT][STAGE] after wifi.begin (deferred) free_heap=%u max_block=%u min_free=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
+  // DAB Style and the TEF Newsfeed layout use online station/content services.
+  // Activate networking automatically only when one of these layouts is selected.
+  if (display.fmLayout() == 0 || display.fmLayout() == 3) wifi.ensureStarted();
   BootDiagnostics::printf("[BOOT][STAGE] setup complete free_heap=%u max_block=%u min_free=%u loop_stack_high_water=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()), static_cast<unsigned>(uxTaskGetStackHighWaterMark(nullptr)));
   Serial.printf("CPU profile: %s\n",performance.profileName());
 }
@@ -518,11 +496,11 @@ void loop() {
         } else if (menuPage == 28) {
           const FtxMode selectedMode = menuSelection == 1 ? FtxMode::FT4 : FtxMode::FT8;
           const bool entered = ftxDecoder.enter(selectedMode,
-            wifi.mode() == WifiClient::Mode::OFF, systemClock.synchronized());
+            wifi.isOff(), systemClock.synchronized(), audioCapture);
           Serial.printf("[FTX] %s %s (Wi-Fi off=%d, UTC sync=%d)\\n",
             selectedMode == FtxMode::FT4 ? "FT4" : "FT8",
             entered ? "active" : "not started",
-            wifi.mode() == WifiClient::Mode::OFF, systemClock.synchronized());
+            wifi.isOff(), systemClock.synchronized());
         } else if (menuPage == 21) {
           cwDecoder.exit(); menuPage = 0; menuSelection = 23;
           Serial.println("[CW] decoder page closed");
@@ -556,7 +534,7 @@ void loop() {
               menuPage = targetPage;
               if (menuPage == 19) frequencyKeypad.open(radio.snapshot());
               else if (menuPage == 21) {
-                const bool entered = cwDecoder.enter(wifi.mode() == WifiClient::Mode::OFF);
+                const bool entered = cwDecoder.enter(audioCapture, wifi.isOff());
                 if (!entered && !cwDecoder.wifiBlocked()) Serial.println("[CW] audio sampler unavailable");
                 else Serial.printf("[CW] decoder %s; Wi-Fi mode=%u\n", entered ? "active" : "blocked (turn Wi-Fi OFF)", static_cast<unsigned>(wifi.mode()));
               }
@@ -592,6 +570,7 @@ void loop() {
         } else if (menuPage == 14 && menuSelection > 0) {
           const uint8_t layout = menuSelection == 1 ? 0 : (menuSelection == 2 ? 2 : 3);
           display.setFmLayout(layout);
+          if (layout == 0 || layout == 3) wifi.ensureStarted();
           const bool saved = settingsStore.saveDisplayFmLayout(layout);
           Serial.printf("[SETTINGS] FM layout=%s %s\n",
             layout == 3 ? "TEF6686 - Newsfeed" : (layout == 2 ? "TEF6686 -FM Version" : "DAB Style"), saved ? "saved" : "save failed");
@@ -620,6 +599,7 @@ void loop() {
             Serial.println("[SETTINGS] Boot-Log konnte nicht gespeichert werden");
           }
         } else if (menuPage == 5 && menuSelection == 9) {
+          wifi.ensureStarted();
           menuPage = 4;
           menuSelection = static_cast<uint8_t>(wifi.mode()) + 1;
         } else if (menuPage == 4 && menuSelection == 0) {
@@ -633,6 +613,7 @@ void loop() {
             Serial.println("[WIFI] operating mode could not be saved");
           }
         } else if (menuPage == 5 && menuSelection == 8) {
+          wifi.ensureStarted();
           const bool started = eibi.beginDownload(wifi.connected() && wifi.dataServicesAllowed());
           Serial.printf("[EIBI] download request %s: %s\n", started ? "accepted" : "rejected", eibi.statusText());
           closeMenuToRadio("EiBi schedule download");
