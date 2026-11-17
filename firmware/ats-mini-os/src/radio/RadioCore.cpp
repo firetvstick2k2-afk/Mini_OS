@@ -15,8 +15,8 @@ void clearRdsSnapshot(RadioSnapshot& s) {
   s.rdsAvailable = false;
   s.rdsClockValid = false;
   s.rdsClockHour = s.rdsClockMinute = 0;
-  s.stationName[0] = '\\0';
-  s.radioText[0] = '\\0';
+  s.stationName[0] = '\0';
+  s.radioText[0] = '\0';
 }
 
 void publishBand(RadioSnapshot& snapshot, const RadioBandDefinition& band) {
