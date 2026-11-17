@@ -20,9 +20,9 @@ bool CwDecoderService::enter(AudioCaptureService& capture, bool wifiOff) {
   active_ = false;
   return false;
 #else
-  if (!capture.begin() || !begin(capture)) return false;
   wifiBlocked_ = !wifiOff;
   if (wifiBlocked_) { active_ = false; return false; }
+  if (!capture.begin() || !begin(capture)) return false;
 
   xSemaphoreTake(mutex_, portMAX_DELAY);
   decoder_.reset();
