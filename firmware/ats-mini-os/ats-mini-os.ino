@@ -435,7 +435,7 @@ void loop() {
               ((menuPage == 14) ? 4 : (menuPage == 15) ? 5 :
               menuPage == 10 ? 4 : menuPage == 11 ?
               (radio.snapshot().modulation == RadioModulation::FM ? 10 : 14) :
-              menuPage == 3 ? 8 : menuPage == 27 ? 4 :
+              menuPage == 3 ? 8 : menuPage == 28 ? 2 : menuPage == 27 ? 4 :
               menuPage == 12 ? 2 : menuPage == 16 ?
               (radio.canUseModulation(RadioModulation::USB) ? 4 : 2) :
               menuPage == 7 ? radio.bandwidthChoiceCount()+1 :
@@ -506,6 +506,14 @@ void loop() {
           }
         } else if (menuPage == 24) {
           if(seeker.state()==SeekService::State::Running) seeker.stop(); else seeker.start(radio,1,12);
+        } else if (menuPage == 28) {
+          const FtxMode selectedMode = menuSelection == 1 ? FtxMode::FT4 : FtxMode::FT8;
+          const bool entered = ftxDecoder.enter(selectedMode,
+            wifi.mode() == WifiClient::Mode::OFF, systemClock.synchronized());
+          Serial.printf("[FTX] %s %s (Wi-Fi off=%d, UTC sync=%d)\\n",
+            selectedMode == FtxMode::FT4 ? "FT4" : "FT8",
+            entered ? "active" : "not started",
+            wifi.mode() == WifiClient::Mode::OFF, systemClock.synchronized());
         } else if (menuPage == 21) {
           cwDecoder.exit(); menuPage = 0; menuSelection = 23;
           Serial.println("[CW] decoder page closed");
@@ -526,7 +534,7 @@ void loop() {
             // Unsupported entries are marked with * in the renderer and stay inert.
             static const uint8_t targetPages[25] = {
               255, 16, 8, 1, 19, 255, 255, 255, 12, 9, 24,
-              23, 22, 26, 25, 7, 11, 11, 11, 5, 255, 255, 18, 20, 21
+              23, 22, 26, 25, 7, 11, 11, 11, 5, 28, 255, 18, 20, 21
             };
             const uint8_t selectedMainItem = menuSelection;
             const uint8_t targetPage = targetPages[selectedMainItem];
@@ -841,6 +849,7 @@ void loop() {
           else if (menuPage == 23) { scanner.stop(radio); menuPage=0; menuSelection=11; }
           else if (menuPage == 24) { seeker.stop(); menuPage=0; menuSelection=10; }
           else if (menuPage == 21) { cwDecoder.exit(); menuPage=0; menuSelection=23; }
+          else if (menuPage == 28) { ftxDecoder.exit(); menuPage=0; menuSelection=20; }
           else if (sliderAdjustmentActive) {
             closeMenuToRadio("slider adjustment finished with long press");
           } else if (menuPage == 6 && fmMode == 4) {
@@ -903,7 +912,7 @@ void loop() {
   syncFrequencyCursor();
   display.setFrequencyCursor(frequencyCursorActive?static_cast<uint8_t>(frequencyCursorPos|0x80U):100);
   const MoonCalendar::Snapshot currentMoon = MoonCalendar::calculate(time(nullptr));
-  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal(), selectedMemorySlot, memories.count(), scanner.count(), scanner.capacity(), static_cast<uint8_t>(scanner.state()), static_cast<uint8_t>(seeker.state()), scanner.data(), memoryEditActive, memoryEditName, memoryEditCursor);
+  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal(), selectedMemorySlot, memories.count(), scanner.count(), scanner.capacity(), static_cast<uint8_t>(scanner.state()), static_cast<uint8_t>(seeker.state()), scanner.data(), memoryEditActive, memoryEditName, memoryEditCursor, &ftxDecoder, wifi.mode() == WifiClient::Mode::OFF, systemClock.synchronized());
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
     lastStatusMs=now; const RadioSnapshot& s=radio.snapshot();
