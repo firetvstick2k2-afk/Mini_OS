@@ -55,7 +55,7 @@ PSK31, SSTV und WEFAX bleiben nach RTTY und FT8/FT4. Vor jeder Übernahme sind b
 - [ ] Host-Testvektoren für RTTY und FT8/FT4
 - [x] Erste FT8/FT4-Menü- und Displayseite mit Wasserfall
 - [ ] RTTY-Audio-Service und Decoder-UI
-- [ ] SNR-Schätzung und Anzeige
+- [x] Erste SNR-Schätzung und Anzeige (Gerätevalidierung offen)
 - [ ] Compile-only-Build durch den Nutzer
 - [ ] Gerätetest durch den Nutzer
 
@@ -86,13 +86,13 @@ Es wurde noch kein Build oder Flash gestartet. Der RTTY-DSP-Kern ist noch nicht 
 - FFT-Ein- und Ausgabepuffer liegen im Heap, nicht als große VLAs auf dem Sampler-Task-Stack. Die FFT-Historie wird am Slotanfang zurückgesetzt.
 - `FtxDecoderService` verlangt für den Start WLAN AUS und eine zuvor synchronisierte UTC-Systemzeit. Es gibt noch keinen persistenten Callsign-Hash-Cache.
 - Main-Menüpunkt 20 öffnet die neue Seite 28 „FT8 / FT4 Decoder“. Drehen wählt FT8/FT4, kurzer Druck startet den gewählten Modus, langer Druck beendet ihn.
-- Die Seite zeigt den Wasserfall und bis zu zwei dekodierte Meldungen mit UTC-Minute, Audiofrequenz und Sync-Score. Der angezeigte Sync-Score ist ausdrücklich **keine SNR-Messung**; eine belastbare SNR-Schätzung ist noch offen.
+- Die Seite zeigt den Wasserfall und bis zu zwei dekodierte Meldungen mit UTC-Minute, Audiofrequenz und geschätztem SNR. Die SNR-Schätzung verwendet die rekonstruierten FT8-/FT4-Tonfolgen und den medianen Wasserfall-Rauschpegel, normiert auf 2.500 Hz (gleiche Referenzbandbreite wie WSJT-X). Sie ist aus der offenen RX-Analyzer-Implementierung übernommen, aber am ATS Mini noch nicht validiert.
 
 ### Noch offen / nicht verifiziert
 
 - Der RTTY-DSP-Kern liegt weiterhin separat unter `src/digital/rtty/`; er ist noch nicht an den gemeinsamen Audio-Bus oder eine Bedienseite angebunden.
 - 4-kHz-Sample-Rate, Audio-Passband, Empfangsempfindlichkeit und tatsächliche FT8-/FT4-Decodierleistung müssen am unveränderten ATS Mini V4 mit realen Signalen geprüft werden. Die Portierung ist noch nicht als funktionierende Funkgerätefunktion bestätigt.
-- Die Wasserfall- und Decode-Anzeige ist integriert, aber noch nicht auf dem Gerät beurteilt. Sync-Score statt SNR ist ein bewusst gekennzeichneter Zwischenstand.
+- Die Wasserfall- und Decode-Anzeige ist integriert, aber noch nicht auf dem Gerät beurteilt. Die SNR-Schätzung und Kalibrierung müssen am ATS Mini mit bekannten Testsignalen überprüft werden; der Sync-Score bleibt zusätzlich intern verfügbar.
 - CW wurde auf den gemeinsamen Sampler umgestellt, aber das Verhalten wurde nach dieser Refaktorierung noch nicht kompiliert oder am Gerät getestet.
 - Kein Build, kein GitHub-Actions-Lauf und kein Flash wurden gestartet.
 
