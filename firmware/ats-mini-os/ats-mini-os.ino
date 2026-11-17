@@ -988,7 +988,8 @@ void loop() {
     audioWaterfall.end();
     BootDiagnostics::write("[WATERFALL][STOP] layout inactive");
   }
-  const bool waterfallVisible = !menuOpen && liveWaterfallSelected && audioWaterfall.active();
+  const bool legacyWaterfallVisible = !menuOpen && currentSnapshot.modulation != RadioModulation::FM && display.amLayout() == 4;
+  const bool waterfallVisible = !menuOpen && ((liveWaterfallSelected && audioWaterfall.active()) || legacyWaterfallVisible);
   performance.setWaterfallActive(waterfallVisible);
   static char logoCheckedKey[40] = {};
   static bool currentLogoIsLocal = false;
