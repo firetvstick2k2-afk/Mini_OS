@@ -8,7 +8,7 @@ public:
   static constexpr uint8_t kPin = 11;
   static constexpr uint32_t kSampleRate = 4000;
   static constexpr size_t kBlockSamples = 24;
-  using Consumer = void (*)(void* context, const int16_t* samples, size_t count);
+  using Consumer = void (*)(void* context, const int16_t* samples, size_t count, int64_t utcStartMicros);
 
   bool begin();
   bool subscribe(void* context, Consumer consumer);
