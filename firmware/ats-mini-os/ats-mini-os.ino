@@ -493,7 +493,7 @@ void loop() {
           } else {
             const int16_t itemCount = menuPage == 0 ? 25 : menuPage == 26 ? (kDecoderFrequencyPresetCount + 1) : menuPage == 25 ? 19 : menuPage == 22 ? MemoryService::kSlotCount : menuPage == 18 ? 2 : menuPage == 20 ? 1 :
               menuPage == 2 ? 4 : menuPage == 4 ? 6 : menuPage == 5 ? 11 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
-              ((menuPage == 14) ? 4 : (menuPage == 15) ? 5 :
+              ((menuPage == 14) ? 5 : (menuPage == 15) ? 6 :
               menuPage == 10 ? 4 : menuPage == 11 ?
               (radio.snapshot().modulation == RadioModulation::FM ? 10 : 14) :
               menuPage == 3 ? 8 : menuPage == 28 ? 2 : menuPage == 27 ? 4 :
