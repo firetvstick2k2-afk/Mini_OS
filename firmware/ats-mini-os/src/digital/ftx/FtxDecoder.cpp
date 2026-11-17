@@ -104,7 +104,7 @@ size_t FtxDecoder::decodeSlot() {
   hashIf.lookup_hash = &FtxDecoder::lookupHash;
   hashIf.save_hash = &FtxDecoder::saveHash;
 
-  for (int i = found - 1; i >= 0 && resultCount_ < kMaxResults; --i) {
+  for (int i = 0; i < found && resultCount_ < kMaxResults; ++i) {
     ftx_message_t message{};
     ftx_decode_status_t status{};
     if (!ftx_decode_candidate(&monitor_.wf, &candidates[i],
