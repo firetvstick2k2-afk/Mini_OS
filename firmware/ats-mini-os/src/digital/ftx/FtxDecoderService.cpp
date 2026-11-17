@@ -207,3 +207,13 @@ void FtxDecoderService::decodeAndPublish() {
   memcpy(published_, fresh, sizeof(published_));
   xSemaphoreGive(resultMutex_);
 }
+
+bool FtxDecoderService::copyWaterfall(uint8_t* out, uint16_t maxRows, uint16_t outBins,
+                                      uint16_t& rows, uint16_t& bins) {
+  rows = bins = 0;
+  if (!active_ || !engineMutex_ ||
+      xSemaphoreTake(engineMutex_, pdMS_TO_TICKS(5)) != pdTRUE) return false;
+  const bool copied = decoder_.copyWaterfall(out, maxRows, outBins, rows, bins);
+  xSemaphoreGive(engineMutex_);
+  return copied;
+}
