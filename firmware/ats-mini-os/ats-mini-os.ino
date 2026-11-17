@@ -366,15 +366,23 @@ void setup() {
   BootDiagnostics::printf("[BOOT][STAGE] before wifi.begin free_heap=%u max_block=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
   wifi.begin();
   BootDiagnostics::printf("[BOOT][STAGE] after wifi.begin (deferred) free_heap=%u max_block=%u min_free=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
-  // DAB Style and the TEF Newsfeed layout use online station/content services.
-  // Activate networking automatically only when one of these layouts is selected.
-  if (display.fmLayout() == 0 || display.fmLayout() == 3 || wifi.mode() == WifiClient::Mode::SYNC_ONLY) wifi.ensureStarted();
+  // Layout-dependent networking is requested at the start of loop(), not during setup.
   BootDiagnostics::printf("[BOOT][STAGE] setup complete free_heap=%u max_block=%u min_free=%u loop_stack_high_water=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()), static_cast<unsigned>(uxTaskGetStackHighWaterMark(nullptr)));
   Serial.printf("CPU profile: %s\n",performance.profileName());
 }
 void loop() {
   static bool firstLoopDiagnostics = true;
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] entered first loop");
+  static bool layoutNetworkInitialized = false;
+  if (!layoutNetworkInitialized) {
+    layoutNetworkInitialized = true;
+    if (display.fmLayout() == 0 || display.fmLayout() == 3 ||
+        wifi.mode() == WifiClient::Mode::SYNC_ONLY) {
+      BootDiagnostics::write("[LOOP][TRACE] selected layout/time-sync requires Wi-Fi");
+      wifi.ensureStarted();
+      BootDiagnostics::write("[LOOP][TRACE] on-demand Wi-Fi startup returned");
+    }
+  }
   performance.update();
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] performance.update done");
   wifi.update();
