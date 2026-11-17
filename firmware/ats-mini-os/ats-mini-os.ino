@@ -336,7 +336,7 @@ void setup() {
   const uint8_t savedBrightness = settingsStore.displayBrightness(180);
   const uint8_t savedTheme = settingsStore.displayTheme(0);
   const uint8_t savedFmLayout = settingsStore.displayFmLayout(0);
-  const uint8_t savedAmLayout = settingsStore.displayAmLayout(0);
+  const uint8_t savedAmLayout = settingsStore.displayAmLayout(9);
   const uint8_t savedCpuProfile = settingsStore.cpuProfile(0);
   const uint8_t savedPatchProfile = settingsStore.patchProfile(0);
   performance.setProfile(static_cast<CpuProfile>(savedCpuProfile));
