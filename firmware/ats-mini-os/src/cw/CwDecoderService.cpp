@@ -73,7 +73,8 @@ void CwDecoderService::update() {
   signal_ = lastToneMs_ && millis() - lastToneMs_ < 1200;
 }
 
-void CwDecoderService::onAudioSamples(void* context, const int16_t* samples, size_t count) {
+void CwDecoderService::onAudioSamples(void* context, const int16_t* samples, size_t count, int64_t utcStartMicros) {
+  (void)utcStartMicros;
   if (!context) return;
   static_cast<CwDecoderService*>(context)->consumeSamples(samples, count);
 }
