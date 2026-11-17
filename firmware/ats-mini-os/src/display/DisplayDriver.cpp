@@ -609,7 +609,9 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   }
   if ((page == 14 || page == 15) && selection > 0) {
     // Keep the currently selected layout marked, as in the Dev menu.
-    const bool active = page == 14 ? (selection-1 == layoutMode) :
+    const bool active = page == 14 ?
+      ((selection == 1 && layoutMode == 0) || (selection == 2 && layoutMode == 2) ||
+       (selection == 3 && layoutMode == 3) || (selection == 4 && layoutMode == 4)) :
       ((selection == 1 && layoutMode == 1) || (selection == 2 && layoutMode == 4) ||
        (selection == 3 && layoutMode == 7) || (selection == 4 && layoutMode == 8) ||
        (selection == 5 && layoutMode == 9));
