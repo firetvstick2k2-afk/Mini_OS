@@ -27,6 +27,7 @@
 #include "src/settings/SettingsStore.h"
 #include "src/menus/MenuSSB.h"
 #include "src/tuner/SsbPatchManager.h"
+#include "src/audio/AudioCaptureService.h"
 #include "src/cw/CwDecoderService.h"
 
 namespace {
@@ -51,6 +52,7 @@ bool brightnessSavePending = false;
 bool themeSavePending = false;
 EncoderInput encoder;
 FrequencyKeypad frequencyKeypad;
+AudioCaptureService audioCapture;
 CwDecoderService cwDecoder;
 WifiClient wifi;
 NewsService newsService;
@@ -251,7 +253,8 @@ void fmChoose(uint8_t visual){ if(visual==0){ if(fmMode==3)return; fmParent(); r
 
 void setup() {
   Serial.begin(SERIAL_BAUD); delay(250); performance.begin();
-  cwDecoder.begin();
+  if (!audioCapture.begin()) Serial.println("[AUDIO] shared GPIO11 sampler unavailable");
+  if (!cwDecoder.begin(audioCapture)) Serial.println("[CW] decoder initialization failed");
   systemClock.begin();
   const bool storageReady = StorageDiscovery::begin();
   const bool settingsReady = settingsStore.begin();
