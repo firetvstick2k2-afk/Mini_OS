@@ -956,7 +956,9 @@ void loop() {
       display.fmLayout() == 0 && currentLogoKey[0] && !currentLogoIsLocal) {
     wifi.ensureStarted();
   }
-  stationLogoClient.update(currentSnapshot, wifi.connected() && wifi.dataServicesAllowed());
+  if (!menuOpen && currentSnapshot.modulation == RadioModulation::FM && display.fmLayout() == 0) {
+    stationLogoClient.update(currentSnapshot, wifi.connected() && wifi.dataServicesAllowed());
+  }
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] stationLogoClient.update done");
   const NewsService::Snapshot currentNews = newsService.snapshot();
   const WeatherService::Snapshot currentWeather = weatherService.snapshot();
