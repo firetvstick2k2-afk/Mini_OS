@@ -539,7 +539,7 @@ void loop() {
         } else if(frequencyCursorActive){if(tuneFrequencyDigit(rotationDelta))Serial.printf("[FREQ CURSOR] pos=%u step=%lu kHz\n",frequencyCursorPos,static_cast<unsigned long>(frequencyCursorStepKHz(frequencyCursorPos,radio.snapshot().modulation)));} else {
           pendingTuneDelta = constrain(pendingTuneDelta + rotationDelta, -32767, 32767);
           pendingTuneChangedAtMs = millis();
-          Serial.printf("[INPUT] tune queued delta=%ld; waiting %lu ms\\n",
+          Serial.printf("[INPUT] tune queued delta=%ld; waiting %lu ms\n",
             static_cast<long>(pendingTuneDelta), static_cast<unsigned long>(kEncoderTuneSettleMs));
         }
         break;
@@ -625,7 +625,7 @@ void loop() {
           const bool entered = ftxDecoder.enter(selectedMode,
             wifi.isOff(), systemClock.synchronized(), audioCapture);
           if (!entered) restoreWifiAfterDecoder();
-          Serial.printf("[FTX] %s %s (Wi-Fi off=%d, UTC sync=%d)\\n",
+          Serial.printf("[FTX] %s %s (Wi-Fi off=%d, UTC sync=%d)\n",
             selectedMode == FtxMode::FT4 ? "FT4" : "FT8",
             entered ? "active" : "not started",
             wifi.isOff(), systemClock.synchronized());
@@ -1024,7 +1024,7 @@ void loop() {
     pendingTuneDelta = 0;
     if (radio.nextChannel(static_cast<int16_t>(constrain(settledDelta, -32767, 32767)))) {
       display.notifyTuning();
-      Serial.printf("[INPUT] settled tune delta=%ld -> %.1f MHz\\n",
+      Serial.printf("[INPUT] settled tune delta=%ld -> %.1f MHz\n",
         static_cast<long>(settledDelta), radio.snapshot().frequencyKHz / 1000.0f);
     }
   }
