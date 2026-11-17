@@ -262,7 +262,7 @@ public:
 private:
   Device device_;
   uint8_t fmLayout_ = 0; // 0 = DAB Style, 1 = HJB, 2 = TEF6686 FM, 3 = TEF6686 Newsfeed
-  uint8_t amLayout_ = 0; // Independent LW/MW/KW layout selection.
+  uint8_t amLayout_ = 9; // Default to the live LW/MW/KW waterfall.
   AudioWaterfallService* audioWaterfall_ = nullptr;
   uint8_t brightness_ = 180;
   uint8_t frequencyCursor_ = 100;
