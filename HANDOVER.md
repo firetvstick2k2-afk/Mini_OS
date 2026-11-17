@@ -2948,3 +2948,13 @@ Prüfstatus:
 - Die vorhandenen PS-/RT-/PI-/PTY-/CT-Funktionen wurden nicht entfernt. Keine Änderungen an Bootablauf, Display-Layouts, WLAN oder Radioinitialisierung in diesem Schritt.
 - Statische Prüfung auf Quelltextebene; kein Build, keine GitHub Action und kein Flash. Der Nutzer kann keinen Serial Monitor verwenden; Fehlerdiagnose ausschließlich über das interne BootDiagnostics-Log.
 - Der Reset ist durch diese Bereinigung nicht als behoben nachgewiesen. Da die Erweiterungsdecoder bereits nicht mehr aktiv waren, ist eine direkte Reset-Ursache dadurch unwahrscheinlich; der nächste Diagnosepunkt bleibt der Ablauf unmittelbar nach `encoder.update()` bzw. innerhalb von `radio.update()`.
+
+
+## Boot-Reset-Diagnose – Marker vor radio.update (2026-11-17)
+
+- Ausgangspunkt laut internem BootDiagnostics-Log: Setup und erster Loop werden erreicht; der letzte sichtbare Marker ist `[LOOP][TRACE] encoder.update done`. Der bereits vorhandene Marker nach `radio.update()` fehlt. Damit liegt der Abbruch zeitlich zwischen Encoder-Ende und dem Marker nach Radio-Update; die genaue Ursache ist noch nicht bewiesen.
+- In `firmware/ats-mini-os/ats-mini-os.ino` wurde unmittelbar vor `radio.update()` ein zusätzlicher einmaliger First-Loop-Marker `[LOOP][TRACE] before radio.update` eingefügt. Der vorhandene Marker `radio.update done` bleibt unverändert.
+- Zweck: Unterscheiden, ob der Neustart bereits vor dem Aufruf oder während/infolge von `radio.update()` auftritt. Erst anhand des nächsten internen Logs wird entschieden, ob die nächste Stufe in `RadioCore::update()` oder bei nachfolgenden Loop-Funktionen liegt.
+- Code-Commit: `e30f80c85b827e29cc2a9346d70be6045b743727`.
+- Keine Layout-, RDS-, WLAN-, Tuner-Konfigurations- oder Hardwareänderung. Keine zusätzliche periodische Log-Ausgabe.
+- Kein Build, keine GitHub Action und kein Flash gestartet. Nutzer startet den Compile-only-Build selbst; Diagnose ausschließlich über internes BootDiagnostics-Log, kein Serial Monitor.
