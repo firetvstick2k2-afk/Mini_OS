@@ -606,7 +606,7 @@ void loop() {
         } else if (menuPage == 14 && menuSelection > 0) {
           const uint8_t layout = menuSelection == 1 ? 0 : (menuSelection == 2 ? 2 : 3);
           display.setFmLayout(layout);
-          if (layout == 0 || layout == 3) wifi.ensureStarted();
+          if (layout == 3) wifi.ensureStarted();
           const bool saved = settingsStore.saveDisplayFmLayout(layout);
           Serial.printf("[SETTINGS] FM layout=%s %s\n",
             layout == 3 ? "TEF6686 - Newsfeed" : (layout == 2 ? "TEF6686 -FM Version" : "DAB Style"), saved ? "saved" : "save failed");
