@@ -921,6 +921,7 @@ void loop() {
         break;
     }
   }
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] before radio.update");
   radio.update();
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] radio.update done");
   scanner.tick(radio);
