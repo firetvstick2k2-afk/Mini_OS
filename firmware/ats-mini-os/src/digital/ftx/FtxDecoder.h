@@ -9,6 +9,7 @@ enum class FtxMode : uint8_t { FT8 = 0, FT4 = 1 };
 struct FtxDecodedMessage {
   char text[FTX_MAX_MESSAGE_LENGTH + 1] = {};
   float audioFrequencyHz = 0.0f;
+  float snrDb = -30.0f;
   uint16_t syncScore = 0;
   int ldpcErrors = 0;
   time_t slotUtc = 0;
