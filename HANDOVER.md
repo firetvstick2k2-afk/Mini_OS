@@ -2968,3 +2968,15 @@ Prüfstatus:
 - Die geänderte Zeile wurde anschließend erneut aus dem Branch abgerufen und verifiziert.
 - Keine weiteren RDS-Änderungen, keine Layout-/Boot-/WLAN-/Hardwareänderungen.
 - Noch kein erneuter Build gestartet; der Nutzer startet den nächsten Compile-only-Lauf. Kein Flash. Gerätefehlerdiagnose weiterhin ausschließlich über internes BootDiagnostics-Log, niemals Serial Monitor.
+
+
+## FT8/FT4 – Host-Testvektoren für den integrierten Decoder (2026-11-17)
+
+- Neue Testdatei `firmware/ats-mini-os/tests/ftx_decoder_vectors.cpp`: erzeugt gültige FT8- und FT4-Testnachrichten mit der mitgelieferten Encoderbibliothek, moduliert GFSK-Signale, mischt reproduzierbares Rauschen hinzu und wandelt die Samples in den 12-Bit-ADC-Bereich um.
+- Die Vektoren durchlaufen direkt `FtxDecoder::begin()`, `startSlot()`, `pushSamples()` und `decodeSlot()`; Einspeisung erfolgt in 24-Sample-Blöcken bei 4 kHz wie beim gemeinsamen GPIO11-Capturepfad.
+- Abgedeckt sind erfolgreiche FT8- und FT4-Decodierung sowie je ein reiner Rausch-Slot, der keine Falschmeldung erzeugen darf.
+- Neuer Runner `tests/run_ftx_host_tests.sh` kompiliert den tatsächlich eingebundenen FtxDecoder zusammen mit ft8_lib/KISS FFT nativ für den Host und führt die Vektoren aus.
+- `tests/run_host_tests.sh` verweist jetzt auf diesen aktiven FTX-Testlauf; der vorherige Eintrag referenzierte noch den bereits entfernten RdsDecoder-Test.
+- Commits: Testvektoren `3755982a8815d997cc331bfdb121e52d83829470`; Runner `f8451a5b0655100bbac1920efb40844769ff5c04`; Host-Test-Einstieg `88e712655c568258356d08c702ef9b4ce8095546`.
+- Automatische Audiofrequenzsuche ist im bestehenden Decoder bereits implementiert: `FtxDecoder::begin()` verwendet standardmäßig 250–1750 Hz und `decodeSlot()` ermittelt die Frequenz des gefundenen Signals. Das stimmt nicht den SI4735-RF-Empfang ab; die gewünschte FT8-/FT4-Bandfrequenz und USB bleiben manuell einzustellen.
+- Prüfstatus: Dateien wurden nach dem Commit erneut von GitHub abgerufen und ihre Inhalte geprüft. Der Host-Test wurde noch nicht ausgeführt; es wurde kein Compilerlauf, keine GitHub Action und kein Flash gestartet. Als nächster Schritt soll der Host-Testlauf ausgeführt und bei Fehlern gezielt korrigiert werden.
