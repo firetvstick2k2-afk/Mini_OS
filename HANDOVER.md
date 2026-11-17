@@ -2929,3 +2929,11 @@ Prüfstatus:
 - Kein Compilerlauf, keine GitHub Action und kein Flash gestartet. Der Nutzer startet Builds selbst.
 - Gerätediagnose ausschließlich über das interne BootDiagnostics-Log; der Nutzer kann keinen Serial Monitor verwenden. Niemals Serial-Monitor-Ausgaben anfordern.
 - Noch offen: statische Gesamtprüfung der RDS-Aufrufstellen und anschließender Compile-only-Build durch den Nutzer. Layout-/Gerätetest ist nicht erfolgt.
+
+
+### RDS-Rückführung – Nachkorrekturen und Verifikation (2026-11-17)
+
+- Die Snapshot-Reset-Zeichenketten wurden auf korrekte C-Nullterminierung geprüft und korrigiert (Commit `3f58dc3`).
+- PTY wird wie im ATS-Mini-Dev-`checkRds()` aus dem aktuellen RDS-Block gelesen (Commit `9087b3a`).
+- Die geänderten RDS-Verträge, `TunerDriver::pollRds()`, `RadioCore` und `RadioSnapshot` wurden erneut aus dem Branch abgerufen. Statische Prüfung bestätigt: keine Referenzen auf `RdsDecoder`, `RdsDecodedFields`, EON, ODA, RT+, PTYN oder AF Method B in diesen RDS-Pfaden; PS-/RT-Felder für das vorhandene Layout sind vorhanden.
+- Dies ist eine Quelltext-/Schnittstellenprüfung, kein Compilerlauf. Build, GitHub Actions und Flash wurden nicht gestartet.
