@@ -82,7 +82,9 @@ void monitor_init(monitor_t* me, const monitor_config_t* cfg)
     size_t fft_work_size = 0;
     kiss_fftr_alloc(me->nfft, 0, 0, &fft_work_size);
     me->fft_work = malloc(fft_work_size);
+    if (!me->fft_work) return;
     me->fft_cfg = kiss_fftr_alloc(me->nfft, 0, me->fft_work, &fft_work_size);
+    if (!me->fft_cfg) return;
 
     LOG(LOG_INFO, "N_FFT = %d\n", me->nfft);
     LOG(LOG_DEBUG, "FFT work area = %zu\n", fft_work_size);
@@ -107,6 +109,7 @@ void monitor_init(monitor_t* me, const monitor_config_t* cfg)
     const int num_bins = me->max_bin - me->min_bin;
 
     waterfall_init(&me->wf, max_blocks, num_bins, cfg->time_osr, cfg->freq_osr);
+    if (!me->wf.mag) return;
     me->wf.protocol = cfg->protocol;
 
     me->symbol_period = symbol_period;
