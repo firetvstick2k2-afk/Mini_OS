@@ -1,6 +1,7 @@
 #include "AudioCaptureService.h"
 
 #include <esp_timer.h>
+#include <sys/time.h>
 #include <math.h>
 
 bool AudioCaptureService::begin() {
@@ -86,9 +87,14 @@ void AudioCaptureService::sampleTask() {
     samples[count++] = static_cast<int16_t>(value);
 
     if (count >= kBlockSamples) {
+      timeval wallTime{};
+      gettimeofday(&wallTime, nullptr);
+      const int64_t utcEndMicros = static_cast<int64_t>(wallTime.tv_sec) * 1000000LL + wallTime.tv_usec;
+      const int64_t utcStartMicros = utcEndMicros -
+        static_cast<int64_t>((count - 1) * 1000000ULL / kSampleRate);
       const size_t consumers = snapshotSubscribers(active, kMaxSubscribers);
       for (size_t i = 0; i < consumers; ++i) {
-        active[i].consumer(active[i].context, samples, count);
+        active[i].consumer(active[i].context, samples, count, utcStartMicros);
       }
       count = 0;
     }
