@@ -1030,10 +1030,19 @@ void loop() {
   static uint32_t lastFtxDiagnosticMs = 0;
   if (ftxDecoder.active() && millis() - lastFtxDiagnosticMs >= 15000) {
     lastFtxDiagnosticMs = millis();
-    BootDiagnostics::printf("[FTX][DIAG] mode=%s audio_blocks=%lu dropped=%lu slots=%lu decoded_slots=%lu wifi_off=%u utc_sync=%u heap=%u",
-      ftxDecoder.mode() == FtxMode::FT4 ? "FT4" : "FT8", static_cast<unsigned long>(ftxDecoder.receivedBlocks()),
+    BootDiagnostics::printf("[FTX][DIAG] mode=%s audio_blocks=%lu chunks=%lu dropped=%lu slots=%lu decoded_slots=%lu starts=%lu start_ok=%lu start_fail=%lu boundaries=%lu gaps=%lu collecting=%u wf_blocks=%lu/%lu frame_fill=%lu block_size=%lu last_chunk_start=%lld last_chunk_end=%lld last_delta=%lld next_boundary=%lld wifi_off=%u utc_sync=%u heap=%u",
+      ftxDecoder.mode() == FtxMode::FT4 ? "FT4" : "FT8",
+      static_cast<unsigned long>(ftxDecoder.receivedBlocks()), static_cast<unsigned long>(ftxDecoder.chunksProcessed()),
       static_cast<unsigned long>(ftxDecoder.droppedBlocks()), static_cast<unsigned long>(ftxDecoder.completedSlots()),
-      static_cast<unsigned long>(ftxDecoder.decodedSlots()), wifi.isOff(), systemClock.synchronized(), static_cast<unsigned>(ESP.getFreeHeap()));
+      static_cast<unsigned long>(ftxDecoder.decodedSlots()), static_cast<unsigned long>(ftxDecoder.slotStartAttempts()),
+      static_cast<unsigned long>(ftxDecoder.slotStartSuccesses()), static_cast<unsigned long>(ftxDecoder.slotStartFailures()),
+      static_cast<unsigned long>(ftxDecoder.boundaryHits()), static_cast<unsigned long>(ftxDecoder.timestampGaps()),
+      ftxDecoder.decoderCollecting() ? 1U : 0U, static_cast<unsigned long>(ftxDecoder.decoderBlocks()),
+      static_cast<unsigned long>(ftxDecoder.decoderMaxBlocks()), static_cast<unsigned long>(ftxDecoder.decoderFrameFill()),
+      static_cast<unsigned long>(ftxDecoder.decoderBlockSize()), static_cast<long long>(ftxDecoder.lastChunkStartUs()),
+      static_cast<long long>(ftxDecoder.lastChunkEndUs()), static_cast<long long>(ftxDecoder.lastChunkDeltaUs()),
+      static_cast<long long>(ftxDecoder.lastBoundaryUs()), wifi.isOff(), systemClock.synchronized(),
+      static_cast<unsigned>(ESP.getFreeHeap()));
   }
   delay(2);
 }
