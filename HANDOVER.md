@@ -2990,3 +2990,5 @@ Prüfstatus:
 - CW und FT8/FT4 stehen im Hauptmenü direkt hinter „Zurück“ nebeneinander; die übrigen Menüziele wurden passend verschoben.
 - FTX-Diagnosezähler erfassen Audio-Blöcke, Queue-Verluste, abgeschlossene Slots und Slots mit mindestens einem decodierten Ergebnis. Während FT8/FT4 aktiv ist, wird alle 15 Sekunden ein `[FTX][DIAG]`-Datensatz in BootDiagnostics ausgegeben.
 - Kein Hosttest, Firmwarebuild, GitHub-Actions-Workflow oder Flash wurde ausgeführt. Die Zähler müssen beim nächsten Gerätetest ausgewertet werden; sie belegen noch keine erfolgreiche HF-/Audio-Decodierung.
+
+- Nach dem Commit wurde der Decoder-Übergang nochmals mit dem Display-Renderer abgeglichen: Decoderseiten 21/28 werden nur im geöffneten Menü-/Decoderzustand gerendert. Der Direktstart hält deshalb `menuOpen` aktiv und wechselt nur die Seite; damit bleibt die Decoderansicht sichtbar. Diese Korrektur ist im Folgecommit enthalten.

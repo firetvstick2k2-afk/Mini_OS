@@ -192,7 +192,7 @@ bool startDecoderPreset(uint8_t presetIndex) {
   if (preset.decoder == DecoderKind::CW) {
     suspendWifiForDecoder();
     if (!cwDecoder.enter(audioCapture, wifi.isOff())) { restoreWifiAfterDecoder(); return false; }
-    menuOpen = false; menuPage = 21; menuSelection = 0; lastDecoderPreviewSelection = -1;
+    menuOpen = true; menuPage = 21; menuSelection = 0; lastDecoderPreviewSelection = -1;
     BootDiagnostics::printf("[DECODER] preset=%s kind=CW active", preset.label);
     return true;
   }
@@ -205,7 +205,7 @@ bool startDecoderPreset(uint8_t presetIndex) {
         preset.label, mode == FtxMode::FT4 ? "FT4" : "FT8", wifi.isOff(), systemClock.synchronized());
       return false;
     }
-    menuOpen = false; menuPage = 28; menuSelection = mode == FtxMode::FT4 ? 1 : 0;
+    menuOpen = true; menuPage = 28; menuSelection = mode == FtxMode::FT4 ? 1 : 0;
     lastDecoderPreviewSelection = -1;
     BootDiagnostics::printf("[DECODER] preset=%s kind=%s active", preset.label, mode == FtxMode::FT4 ? "FT4" : "FT8");
     return true;
