@@ -14,6 +14,7 @@
 #include "../input/FrequencyKeypad.h"
 #include "../radio/ScanService.h"
 #include "../digital/ftx/FtxDecoderService.h"
+#include "../audio/AudioWaterfallService.h"
 
 #if !defined(LILYGO_SI473X)
 #include <esp_rom_gpio.h>
@@ -250,6 +251,7 @@ public:
   void setFmLayout(uint8_t mode);
   uint8_t amLayout() const { return amLayout_; }
   void setAmLayout(uint8_t mode);
+  void setAudioWaterfall(AudioWaterfallService* service) { audioWaterfall_ = service; lastGeneration_ = UINT32_MAX; }
   uint8_t brightness() const { return brightness_; }
   void setBrightness(uint8_t value);
   uint8_t themeIndex() const { return themeIndex_; }
@@ -259,7 +261,8 @@ public:
 private:
   Device device_;
   uint8_t fmLayout_ = 0; // 0 = DAB Style, 1 = HJB, 2 = TEF6686 FM, 3 = TEF6686 Newsfeed
-  uint8_t amLayout_ = 0; // 0 = Standard, 1 = HJB, 2-7 = ATS Mini DEV layouts
+  uint8_t amLayout_ = 0; // Independent LW/MW/KW layout selection.
+  AudioWaterfallService* audioWaterfall_ = nullptr;
   uint8_t brightness_ = 180;
   uint8_t frequencyCursor_ = 100;
   uint8_t themeIndex_ = 0;
