@@ -72,22 +72,33 @@ bool SettingsStore::saveDisplayTheme(uint8_t theme) {
 uint8_t SettingsStore::displayFmLayout(uint8_t fallback) {
   if (!ready_) return fallback;
   const uint8_t saved = preferences_.getUChar(kDisplayFmLayoutKey, fallback);
-  return saved <= 3 ? saved : fallback;
+  return saved <= 4 ? saved : fallback;
 }
 
 bool SettingsStore::saveDisplayFmLayout(uint8_t layout) {
-  return ready_ && layout <= 3 &&
+  return ready_ && layout <= 4 &&
          preferences_.putUChar(kDisplayFmLayoutKey, layout) == sizeof(uint8_t);
 }
 
 uint8_t SettingsStore::displayAmLayout(uint8_t fallback) {
   if (!ready_) return fallback;
-  const uint8_t saved = preferences_.getUChar(kDisplayAmLayoutKey, fallback);
-  return saved <= 8 ? saved : fallback;
+  uint8_t saved = preferences_.getUChar(kDisplayAmLayoutKey, fallback);
+
+  // One-time migration: installations that previously stored the legacy
+  // decoder waterfall as their default now start with the live waterfall.
+  // The legacy layout remains selectable and can still be saved afterwards.
+  if (!preferences_.getBool(kDisplayAmLayoutMigratedKey, false)) {
+    if (saved == 4) {
+      saved = 9;
+      preferences_.putUChar(kDisplayAmLayoutKey, saved);
+    }
+    preferences_.putBool(kDisplayAmLayoutMigratedKey, true);
+  }
+  return saved <= 9 ? saved : fallback;
 }
 
 bool SettingsStore::saveDisplayAmLayout(uint8_t layout) {
-  return ready_ && layout <= 8 &&
+  return ready_ && layout <= 9 &&
          preferences_.putUChar(kDisplayAmLayoutKey, layout) == sizeof(uint8_t);
 }
 

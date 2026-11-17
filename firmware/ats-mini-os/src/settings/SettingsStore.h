@@ -22,7 +22,7 @@ public:
   bool saveDisplayTheme(uint8_t theme);
   uint8_t displayFmLayout(uint8_t fallback = 0);
   bool saveDisplayFmLayout(uint8_t layout);
-  uint8_t displayAmLayout(uint8_t fallback = 0);
+  uint8_t displayAmLayout(uint8_t fallback = 9);
   bool saveDisplayAmLayout(uint8_t layout);
   bool agcAutomatic(bool fallback = true);
   bool saveAgcAutomatic(bool automatic);
@@ -62,6 +62,7 @@ private:
   static constexpr char kDisplayThemeKey[] = "disp_theme";
   static constexpr char kDisplayFmLayoutKey[] = "disp_fm";
   static constexpr char kDisplayAmLayoutKey[] = "disp_am";
+  static constexpr char kDisplayAmLayoutMigratedKey[] = "am_wf_v1";
   static constexpr char kAgcAutomaticKey[] = "rx_agc_auto";
   static constexpr char kAgcGainIndexKey[] = "rx_agc_idx";
   static constexpr char kSoftMuteKey[] = "rx_softmute";

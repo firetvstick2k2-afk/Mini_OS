@@ -28,6 +28,7 @@
 #include "src/menus/MenuSSB.h"
 #include "src/tuner/SsbPatchManager.h"
 #include "src/audio/AudioCaptureService.h"
+#include "src/audio/AudioWaterfallService.h"
 #include "src/cw/CwDecoderService.h"
 #include "src/digital/ftx/FtxDecoderService.h"
 
@@ -54,6 +55,7 @@ bool themeSavePending = false;
 EncoderInput encoder;
 FrequencyKeypad frequencyKeypad;
 AudioCaptureService audioCapture;
+AudioWaterfallService audioWaterfall;
 CwDecoderService cwDecoder;
 FtxDecoderService ftxDecoder;
 WifiClient wifi;
@@ -334,7 +336,7 @@ void setup() {
   const uint8_t savedBrightness = settingsStore.displayBrightness(180);
   const uint8_t savedTheme = settingsStore.displayTheme(0);
   const uint8_t savedFmLayout = settingsStore.displayFmLayout(0);
-  const uint8_t savedAmLayout = settingsStore.displayAmLayout(0);
+  const uint8_t savedAmLayout = settingsStore.displayAmLayout(9);
   const uint8_t savedCpuProfile = settingsStore.cpuProfile(0);
   const uint8_t savedPatchProfile = settingsStore.patchProfile(0);
   performance.setProfile(static_cast<CpuProfile>(savedCpuProfile));
@@ -342,6 +344,7 @@ void setup() {
     display.setTheme(savedTheme);
     display.setFmLayout(savedFmLayout);
     display.setAmLayout(savedAmLayout);
+    display.setAudioWaterfall(&audioWaterfall);
     Serial.printf("[DISPLAY] first UI initialized; brightness=%u/255\n",
       static_cast<unsigned>(display.brightness()));
   }
@@ -633,27 +636,27 @@ void loop() {
           menuSelection = 9;
         } else if (menuPage == 13 && menuSelection == 1) {
           menuPage = 14;
-          menuSelection = display.fmLayout() == 2 ? 2 : 1;
+          menuSelection = display.fmLayout() == 4 ? 4 : (display.fmLayout() == 3 ? 3 : (display.fmLayout() == 2 ? 2 : 1));
         } else if (menuPage == 13 && menuSelection == 2) {
           menuPage = 15;
-           menuSelection = display.amLayout() == 4 ? 2 : (display.amLayout() == 7 ? 3 : (display.amLayout() == 8 ? 4 : 1));
+           menuSelection = display.amLayout() == 9 ? 5 : (display.amLayout() == 4 ? 2 : (display.amLayout() == 7 ? 3 : (display.amLayout() == 8 ? 4 : 1)));
         } else if ((menuPage == 14 || menuPage == 15) && menuSelection == 0) {
           const bool returningFromFm = menuPage == 14;
           menuPage = 5;
           menuSelection = returningFromFm ? 5 : 6;
         } else if (menuPage == 14 && menuSelection > 0) {
-          const uint8_t layout = menuSelection == 1 ? 0 : (menuSelection == 2 ? 2 : 3);
+          const uint8_t layout = menuSelection == 1 ? 0 : (menuSelection == 2 ? 2 : (menuSelection == 3 ? 3 : 4));
           display.setFmLayout(layout);
           if (layout == 3) wifi.ensureStarted();
           const bool saved = settingsStore.saveDisplayFmLayout(layout);
           Serial.printf("[SETTINGS] FM layout=%s %s\n",
-            layout == 3 ? "TEF6686 - Newsfeed" : (layout == 2 ? "TEF6686 -FM Version" : "DAB Style"), saved ? "saved" : "save failed");
+            layout == 4 ? "Waterfall Live" : (layout == 3 ? "TEF6686 - Newsfeed" : (layout == 2 ? "TEF6686 -FM Version" : "DAB Style")), saved ? "saved" : "save failed");
           closeMenuToRadio("FM layout selected");
         } else if (menuPage == 15 && menuSelection > 0) {
           // Preserve the legacy layout IDs and include the independent TEF6686 SW renderer.
-          static const uint8_t layoutIds[] = { 1, 4, 7, 8 };
+          static const uint8_t layoutIds[] = { 1, 4, 7, 8, 9 };
           static const char* const layoutNames[] = {
-            "HJB", "Decoder / Wasserfall", "TinyRadio", "TEF6686 - KW/MW/LW"
+            "HJB", "Decoder / Wasserfall", "TinyRadio", "TEF6686 - KW/MW/LW", "Waterfall Live"
           };
           const uint8_t index = static_cast<uint8_t>(menuSelection - 1);
           if (index < sizeof(layoutIds) / sizeof(layoutIds[0])) {
@@ -971,7 +974,22 @@ void loop() {
   cwDecoder.update();
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] cwDecoder.update done");
   const RadioSnapshot& currentSnapshot = radio.snapshot();
-  const bool waterfallVisible = !menuOpen && currentSnapshot.modulation != RadioModulation::FM && display.amLayout() == 4;
+  const bool liveWaterfallSelected = currentSnapshot.modulation == RadioModulation::FM
+    ? display.fmLayout() == 4 : display.amLayout() == 9;
+  if (!menuOpen && liveWaterfallSelected) {
+    if (!audioWaterfall.active()) {
+      if (!audioWaterfall.begin(audioCapture))
+        BootDiagnostics::write("[WATERFALL][START_FAIL] audio capture / FFT unavailable");
+      else
+        BootDiagnostics::write("[WATERFALL][START] continuous audio FFT active");
+    }
+    audioWaterfall.poll();
+  } else if (audioWaterfall.active()) {
+    audioWaterfall.end();
+    BootDiagnostics::write("[WATERFALL][STOP] layout inactive");
+  }
+  const bool legacyWaterfallVisible = !menuOpen && currentSnapshot.modulation != RadioModulation::FM && display.amLayout() == 4;
+  const bool waterfallVisible = !menuOpen && ((liveWaterfallSelected && audioWaterfall.active()) || legacyWaterfallVisible);
   performance.setWaterfallActive(waterfallVisible);
   static char logoCheckedKey[40] = {};
   static bool currentLogoIsLocal = false;
