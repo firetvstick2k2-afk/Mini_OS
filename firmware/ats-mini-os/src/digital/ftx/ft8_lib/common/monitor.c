@@ -73,6 +73,8 @@ void monitor_init(monitor_t* me, const monitor_config_t* cfg)
         // me->window[i] = (i < len_window) ? hann_i(i, len_window) : 0;
     }
     me->last_frame = (float*)calloc(me->nfft, sizeof(me->last_frame[0]));
+    me->timedata = (kiss_fft_scalar*)malloc(me->nfft * sizeof(me->timedata[0]));
+    me->freqdata = (kiss_fft_cpx*)malloc((me->nfft / 2 + 1) * sizeof(me->freqdata[0]));
 
     LOG(LOG_INFO, "Block size = %d\n", me->block_size);
     LOG(LOG_INFO, "Subblock size = %d\n", me->subblock_size);
@@ -118,6 +120,8 @@ void monitor_free(monitor_t* me)
     free(me->fft_work);
     free(me->last_frame);
     free(me->window);
+    free(me->timedata);
+    free(me->freqdata);
 }
 
 void monitor_reset(monitor_t* me)
@@ -139,8 +143,7 @@ void monitor_process(monitor_t* me, const float* frame)
     // Loop over block subdivisions
     for (int time_sub = 0; time_sub < me->wf.time_osr; ++time_sub)
     {
-        kiss_fft_scalar timedata[me->nfft];
-        kiss_fft_cpx freqdata[me->nfft / 2 + 1];
+        if (!me->timedata || !me->freqdata || !me->last_frame || !me->window) return;
 
         // Shift the new data into analysis frame
         for (int pos = 0; pos < me->nfft - me->subblock_size; ++pos)
@@ -156,9 +159,9 @@ void monitor_process(monitor_t* me, const float* frame)
         // Do DFT of windowed analysis frame
         for (int pos = 0; pos < me->nfft; ++pos)
         {
-            timedata[pos] = me->window[pos] * me->last_frame[pos];
+            me->timedata[pos] = me->window[pos] * me->last_frame[pos];
         }
-        kiss_fftr(me->fft_cfg, timedata, freqdata);
+        kiss_fftr(me->fft_cfg, me->timedata, me->freqdata);
 
         // Loop over possible frequency OSR offsets
         for (int freq_sub = 0; freq_sub < me->wf.freq_osr; ++freq_sub)
@@ -166,7 +169,7 @@ void monitor_process(monitor_t* me, const float* frame)
             for (int bin = me->min_bin; bin < me->max_bin; ++bin)
             {
                 int src_bin = (bin * me->wf.freq_osr) + freq_sub;
-                float mag2 = (freqdata[src_bin].i * freqdata[src_bin].i) + (freqdata[src_bin].r * freqdata[src_bin].r);
+                float mag2 = (me->freqdata[src_bin].i * freqdata[src_bin].i) + (me->freqdata[src_bin].r * freqdata[src_bin].r);
                 float db = 10.0f * log10f(1E-12f + mag2);
 
 #ifdef WATERFALL_USE_PHASE
