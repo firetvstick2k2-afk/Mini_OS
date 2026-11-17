@@ -2844,3 +2844,33 @@ Prüfstatus:
 - RTTY-Dateien nach dem Anlegen erneut aus dem Zielbranch abgerufen und auf Inhalt/Lizenz geprüft.
 - Kein lokaler Compilerlauf, keine GitHub Actions und kein Flash gestartet.
 - Keine Gerätefunktion behauptet; Audiointegration und Hardwaretest stehen aus.
+
+
+## Digitale Decoder – Implementierungsstand 2026-11-17
+
+Aktiver Branch: `dev/first-build-preparation`.
+
+- `src/audio/AudioCaptureService.h/.cpp` übernimmt als einziger GPIO11-Sampler die 4-kHz-Aufnahme und verteilt 24-Sample-Blöcke an registrierte Decoder. Die Blöcke erhalten UTC-Zeitstempel.
+- `CwDecoderService` nutzt jetzt diesen gemeinsamen Sampler; der bisherige separate ADC-Task wurde entfernt.
+- `src/digital/ftx/ft8_lib/` enthält die benötigten FT8-/FT4-Quellen aus `joaquimorg/ham_decoder` (Revision `13c8934b52e93728ee01f5efc85ce015f6fbdd2f`), MIT-Lizenz und separate BSD-3-Clause-Kennzeichnung für KISS FFT.
+- `FtxDecoder` und `FtxDecoderService` verarbeiten FT8- und FT4-Slots aus dem gemeinsamen Sample-Stream. Der FTX-Worker läuft auf Core 1; die zeitkritische ADC-Aufnahme bleibt davon getrennt. Start erfordert WLAN AUS und synchronisierte UTC-Zeit.
+- Main-Menüpunkt 20 wurde vom bisher nicht implementierten „VHF Spektrum*“ auf „FT8 / FT4 Decoder“ gelegt. Seite 28: Drehen wählt FT8/FT4, kurzer Druck startet, langer Druck beendet. Die Seite rendert Wasserfall und bis zu zwei Decode-Ergebnisse (UTC-Minute, Audiofrequenz, Sync-Score).
+- Sync-Score ist **nicht** SNR. Eine belastbare SNR-Schätzung ist noch offen.
+- RTTY liegt weiterhin nur als separater DSP-Kern vor; Audio-Bus-Anbindung und UI fehlen.
+
+### Geänderte / hinzugefügte Dateien
+
+- `src/audio/AudioCaptureService.h/.cpp`
+- `src/cw/CwDecoderService.h/.cpp` (Refaktorierung auf gemeinsamen Sample-Bus)
+- `src/digital/ftx/FtxDecoder.h/.cpp`
+- `src/digital/ftx/FtxDecoderService.h/.cpp`
+- `src/digital/ftx/ft8_lib/**` (FT8/FT4 und KISS FFT)
+- `src/display/DisplayDriver.h/.cpp` (neue Decoderseite)
+- `ats-mini-os.ino` (Initialisierung, Menü und Encoderbedienung)
+- `docs/DIGITAL_DECODER_PORTING.md`
+
+### Prüfstatus und nächste Schritte
+
+- GitHub-Dateien wurden nach den Änderungen erneut abgerufen und die Schnittstellen auf Konsistenz geprüft.
+- Es wurde **kein Build und kein Flash** gestartet. CW-Refaktorierung, FFT/LDPC-Last, 4-kHz-Audio-Passband und FT8-/FT4-Empfang sind deshalb noch nicht verifiziert.
+- Als Nächstes: statische Prüfung der kompletten geänderten Schnittstellen, RTTY an den gemeinsamen Audio-Bus anbinden und SNR-Schätzung ergänzen. Danach Compile-only-Build durch den Nutzer und anschließender Gerätetest.
