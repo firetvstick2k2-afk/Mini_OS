@@ -58,6 +58,8 @@ CwDecoderService cwDecoder;
 FtxDecoderService ftxDecoder;
 WifiClient wifi;
 bool wifiPausedForDecoder = false;
+bool eibiDownloadPending = false;
+uint32_t eibiDownloadRequestedAtMs = 0;
 NewsService newsService;
 WeatherService weatherService;
 StationLogoClient stationLogoClient;
@@ -376,6 +378,17 @@ void loop() {
   performance.update();
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] performance.update done");
   wifi.update();
+  if (eibiDownloadPending && wifi.connected() && wifi.dataServicesAllowed()) {
+    const bool started = eibi.beginDownload(true);
+    if (started) {
+      eibiDownloadPending = false;
+      Serial.println("[EIBI] deferred download started after Wi-Fi connection");
+    }
+  }
+  if (eibiDownloadPending && millis() - eibiDownloadRequestedAtMs >= 60000) {
+    eibiDownloadPending = false;
+    Serial.println("[EIBI] download cancelled: Wi-Fi connection timeout");
+  }
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] wifi.update done");
   newsService.update(wifi.connected() && wifi.dataServicesAllowed());
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] newsService.update done");
@@ -631,8 +644,15 @@ void loop() {
           }
         } else if (menuPage == 5 && menuSelection == 8) {
           wifi.ensureStarted();
-          const bool started = eibi.beginDownload(wifi.connected() && wifi.dataServicesAllowed());
-          Serial.printf("[EIBI] download request %s: %s\n", started ? "accepted" : "rejected", eibi.statusText());
+          eibiDownloadPending = true;
+          eibiDownloadRequestedAtMs = millis();
+          if (wifi.connected() && wifi.dataServicesAllowed()) {
+            const bool started = eibi.beginDownload(true);
+            eibiDownloadPending = !started;
+            Serial.printf("[EIBI] download request %s: %s\n", started ? "accepted" : "waiting", eibi.statusText());
+          } else {
+            Serial.println("[EIBI] Wi-Fi started; waiting for router connection before download");
+          }
           closeMenuToRadio("EiBi schedule download");
         } else if (menuPage == 5 && menuSelection == 2) {
           menuPage = 17;
