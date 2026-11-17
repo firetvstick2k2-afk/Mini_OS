@@ -12,7 +12,7 @@ bool CwDecoderService::begin(AudioCaptureService& capture) {
   return true;
 }
 
-bool CwDecoderService::enter(bool wifiOff) {
+bool CwDecoderService::enter(AudioCaptureService& capture, bool wifiOff) {
   exit();
 #if defined(LILYGO_SI473X)
   (void)wifiOff;
@@ -20,7 +20,7 @@ bool CwDecoderService::enter(bool wifiOff) {
   active_ = false;
   return false;
 #else
-  if (!initialized_ || !capture_) return false;
+  if (!capture.begin() || !begin(capture)) return false;
   wifiBlocked_ = !wifiOff;
   if (wifiBlocked_) { active_ = false; return false; }
 
