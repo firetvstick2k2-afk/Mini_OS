@@ -49,11 +49,13 @@ PSK31, SSTV und WEFAX bleiben nach RTTY und FT8/FT4. Vor jeder Übernahme sind b
 
 - [x] Quellenauswahl und Lizenzprüfung
 - [x] RTTY-DSP-Kern auf 4 kHz portiert
-- [ ] Gemeinsamer Audio-Fan-out mit CW
+- [x] Gemeinsamer GPIO11-Audio-Fan-out mit CW
 - [ ] RTTY-Tonerkennung und Bedienung
-- [ ] FT8/FT4-Bibliothek und Slot-Decoder portiert
+- [x] FT8/FT4-Bibliothek und Slot-Decoder-Grundlage portiert
 - [ ] Host-Testvektoren für RTTY und FT8/FT4
-- [ ] Menü- und Displayintegration
+- [x] Erste FT8/FT4-Menü- und Displayseite mit Wasserfall
+- [ ] RTTY-Audio-Service und Decoder-UI
+- [ ] SNR-Schätzung und Anzeige
 - [ ] Compile-only-Build durch den Nutzer
 - [ ] Gerätetest durch den Nutzer
 
@@ -66,3 +68,30 @@ Es wurde noch kein Build oder Flash gestartet. Der RTTY-DSP-Kern ist noch nicht 
 - **Stand:** Bibliotheksquellen importiert; noch kein ATS-Mini-Wrapper, keine gemeinsame Audio-Fan-out-Anbindung, keine Slot-Synchronisation, keine Decoder-UI und kein Build-/Hardwaretest. Nicht als funktionsfähig ausgeben.
 - **Nächster Schritt:** Include-/Link-Kompatibilität und vollständige Abhängigkeiten prüfen; anschließend FT8/FT4-RX-Service mit begrenztem Speicherbudget und Zeitfenstern auf Basis des vorhandenen GPIO11-Samplers integrieren. Den CW-Sampler nicht duplizieren.
 - **Lizenzprüfung:** Bei Distribution zusätzlich die Herkunft und Lizenzbedingungen des eingebetteten KissFFT-Codes nachvollziehbar dokumentieren.
+
+
+## Implementierter Zwischenstand – 2026-11-17
+
+### Gemeinsame Audioaufnahme
+
+- `src/audio/AudioCaptureService.h/.cpp` ist jetzt der einzige GPIO11-ADC-Sampler (4.000 Samples/s, 24 Samples pro Block).
+- Der Sampler veröffentlicht jeden Block an registrierte Verbraucher und versieht ihn mit einem UTC-Zeitstempel des ersten Samples.
+- `CwDecoderService` wurde auf diesen Bus umgestellt. Der bisherige separate CW-ADC-Task wurde entfernt; CW bleibt Verbraucher desselben Audioeingangs.
+- `FtxDecoderService` erhält Blöcke über eine FreeRTOS-Queue und verarbeitet sie auf Core 1. Der ADC-Task wird dadurch nicht mit FFT-/LDPC-Decodierung blockiert.
+
+### FT8 / FT4
+
+- `ft8_lib` wurde aus `joaquimorg/ham_decoder`, Upstream-Revision `13c8934b52e93728ee01f5efc85ce015f6fbdd2f`, übernommen. Die MIT-Lizenz liegt bei; KISS FFT ist separat als BSD-3-Clause gekennzeichnet.
+- `FtxDecoder` verarbeitet den vorhandenen 4-kHz-Sample-Stream in FT8- (15 s) und FT4-Slots (7,5 s). Die Slotgrenzen werden anhand der UTC-Zeitstempel auf Samplegrenzen ausgerichtet.
+- FFT-Ein- und Ausgabepuffer liegen im Heap, nicht als große VLAs auf dem Sampler-Task-Stack. Die FFT-Historie wird am Slotanfang zurückgesetzt.
+- `FtxDecoderService` verlangt für den Start WLAN AUS und eine zuvor synchronisierte UTC-Systemzeit. Es gibt noch keinen persistenten Callsign-Hash-Cache.
+- Main-Menüpunkt 20 öffnet die neue Seite 28 „FT8 / FT4 Decoder“. Drehen wählt FT8/FT4, kurzer Druck startet den gewählten Modus, langer Druck beendet ihn.
+- Die Seite zeigt den Wasserfall und bis zu zwei dekodierte Meldungen mit UTC-Minute, Audiofrequenz und Sync-Score. Der angezeigte Sync-Score ist ausdrücklich **keine SNR-Messung**; eine belastbare SNR-Schätzung ist noch offen.
+
+### Noch offen / nicht verifiziert
+
+- Der RTTY-DSP-Kern liegt weiterhin separat unter `src/digital/rtty/`; er ist noch nicht an den gemeinsamen Audio-Bus oder eine Bedienseite angebunden.
+- 4-kHz-Sample-Rate, Audio-Passband, Empfangsempfindlichkeit und tatsächliche FT8-/FT4-Decodierleistung müssen am unveränderten ATS Mini V4 mit realen Signalen geprüft werden. Die Portierung ist noch nicht als funktionierende Funkgerätefunktion bestätigt.
+- Die Wasserfall- und Decode-Anzeige ist integriert, aber noch nicht auf dem Gerät beurteilt. Sync-Score statt SNR ist ein bewusst gekennzeichneter Zwischenstand.
+- CW wurde auf den gemeinsamen Sampler umgestellt, aber das Verhalten wurde nach dieser Refaktorierung noch nicht kompiliert oder am Gerät getestet.
+- Kein Build, kein GitHub-Actions-Lauf und kein Flash wurden gestartet.
