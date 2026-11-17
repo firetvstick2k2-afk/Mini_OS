@@ -6,99 +6,105 @@
 #include "DisplayStatusBar.h"
 
 namespace LiveWaterfallLayout {
-constexpr uint16_t BG = 0x0008;
-constexpr uint16_t BLUE = 0x0359;
-constexpr uint16_t FRAME = 0x047D;
-constexpr uint16_t TEXT = 0xFFFF;
-constexpr uint16_t GREEN = 0x07E0;
-constexpr uint16_t CYAN = 0x07FF;
-constexpr uint16_t YELLOW = 0xFFE0;
-constexpr uint16_t RED = 0xF800;
-constexpr uint16_t MUTED = 0x7BEF;
-
-inline uint16_t colorFor(uint8_t value) {
-  return value < 132 ? 0x0008 :
-         value < 165 ? 0x001F :
-         value < 195 ? CYAN :
-         value < 225 ? GREEN :
-         value < 245 ? YELLOW : TEXT;
-}
+constexpr uint16_t BG=0x0000, WHITE=0xFFFF, GREEN=0x07E0, CYAN=0x07FF;
+constexpr uint16_t YELLOW=0xFFE0, RED=0xF800, BLUE=0x001F, GREY=0x7BEF;
 
 template <typename Canvas>
-void draw(Canvas& c, const RadioSnapshot& s, bool radioReady, bool wifi,
+void draw(Canvas& d, const RadioSnapshot& s, bool ready, bool wifi,
           AudioWaterfallService* waterfall, bool fm) {
-  constexpr int left = 8, width = 304, top = 43, height = 82;
-  constexpr uint16_t bins = 300, rowsMax = 80;
-  static uint8_t pixels[rowsMax * bins];
+  d.fillScreen(BG);
+  drawNetworkBatteryStatus(d, wifi, 8);
 
-  c.fillScreen(BG);
-  drawNetworkBatteryStatus(c, wifi);
-  c.setTextDatum(MC_DATUM);
-  c.setTextColor(GREEN, BG);
-  c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
-  c.drawString(fm ? "UKW / FM LIVE WATERFALL" : "LW / MW / KW LIVE WATERFALL", 160, 4);
+  // Keep the established ATS Mini Waterfall layout geometry: selector tiles
+  // on the left, centered frequency, station row and the original 280x26 panel.
+  const char* band = fm ? "VHF" : (s.bandName[0] ? s.bandName : "ALL");
+  const char* mode = fm ? "FM" :
+    (s.modulation == RadioModulation::AM ? "AM" :
+     s.modulation == RadioModulation::USB ? "USB" : "LSB");
+  const char* unit = fm ? "MHz" : "kHz";
 
-  char frequency[28];
+  d.setFont(&lgfx::fonts::Font0);
+  d.setTextDatum(MC_DATUM);
+  d.setTextColor(CYAN, BG);
+  d.drawRect(8,24,42,18,CYAN);
+  d.drawString(band,29,33);
+  d.drawRect(8,46,42,18,CYAN);
+  d.drawString(mode,29,55);
+  d.drawRect(8,68,42,18,CYAN);
+  d.drawString(unit,29,77);
+
+  char frequency[24];
   if (fm) {
-    snprintf(frequency, sizeof(frequency), "%.2f MHz", s.frequencyKHz / 1000.0f);
+    snprintf(frequency,sizeof(frequency),"%.2f",s.frequencyKHz/1000.0f);
   } else if (s.modulation == RadioModulation::USB || s.modulation == RadioModulation::LSB) {
-    snprintf(frequency, sizeof(frequency), "%lu.%03lu kHz",
-      static_cast<unsigned long>(s.frequencyKHz),
-      static_cast<unsigned long>(static_cast<uint32_t>(abs(s.bfoOffsetHz)) % 1000));
+    const int64_t tunedHz=static_cast<int64_t>(s.frequencyKHz)*1000LL+s.bfoOffsetHz;
+    const uint32_t safeHz=static_cast<uint32_t>(tunedHz<0?0:tunedHz);
+    snprintf(frequency,sizeof(frequency),"%lu.%03lu",
+      static_cast<unsigned long>(safeHz/1000UL),
+      static_cast<unsigned long>(safeHz%1000UL));
   } else {
-    snprintf(frequency, sizeof(frequency), "%lu kHz", static_cast<unsigned long>(s.frequencyKHz));
+    snprintf(frequency,sizeof(frequency),"%lu",static_cast<unsigned long>(s.frequencyKHz));
   }
-  c.setFont(&lgfx::fonts::Font7);
-  c.setTextColor(GREEN, BG);
-  c.setTextSize(0.72f);
-  c.drawString(frequency, 160, 21);
-  c.setTextSize(1.0f);
+  d.setTextColor(WHITE,BG);
+  d.setTextDatum(MC_DATUM);
+  d.setFont(&lgfx::fonts::Font7);
+  d.setTextSize(fm ? 0.86f : 0.78f);
+  d.drawString(frequency,180,55);
+  d.setTextSize(1.0f);
+  d.setTextDatum(TL_DATUM);
 
-  c.drawRect(left, top, width, height, FRAME);
-  c.fillRect(left + 1, top + 1, width - 2, height - 2, 0x0000);
-  uint16_t rows = 0, outBins = 0;
-  const bool haveData = waterfall && waterfall->active() &&
-    waterfall->copyWaterfall(pixels, rowsMax, bins, rows, outBins);
-  if (haveData && outBins) {
-    const uint16_t yOffset = static_cast<uint16_t>(rowsMax - rows);
-    for (uint16_t y = 0; y < rows; ++y) {
-      for (uint16_t x = 0; x < outBins; ++x) {
-        c.drawPixel(left + 2 + x, top + 1 + yOffset + y,
-          colorFor(pixels[static_cast<size_t>(y) * outBins + x]));
+  const char* station=s.stationName[0]?s.stationName:(ready?"":"RADIO OFFLINE");
+  d.setTextDatum(TC_DATUM);
+  d.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  d.setTextColor(GREEN,BG);
+  if(station && *station) d.drawString(station,160,91);
+
+  constexpr int wfX=20, wfY=132, wfW=280, wfH=26;
+  constexpr uint16_t rowsMax=23, bins=278;
+  static uint8_t waterfallPixels[rowsMax*bins];
+  d.drawRect(wfX,wfY,wfW,wfH,WHITE);
+  d.drawFastHLine(wfX+1,wfY+1,wfW-2,WHITE);
+  uint16_t rows=0,outBins=0;
+  const bool haveData=waterfall && waterfall->active() &&
+    waterfall->copyWaterfall(waterfallPixels,rowsMax,bins,rows,outBins);
+  if(haveData && outBins) {
+    const uint16_t top=static_cast<uint16_t>(rowsMax-rows);
+    for(uint16_t y=0;y<rows;++y) {
+      for(uint16_t x=0;x<outBins;++x) {
+        const uint8_t v=waterfallPixels[static_cast<size_t>(y)*outBins+x];
+        const uint16_t color=v<132?0x0008:v<165?BLUE:v<195?CYAN:v<225?GREEN:v<245?YELLOW:WHITE;
+        d.drawPixel(wfX+1+x,wfY+2+top+y,color);
       }
     }
   } else {
-    c.setTextDatum(MC_DATUM);
-    c.setFont(&lgfx::fonts::Font0);
-    c.setTextColor(YELLOW, 0x0000);
-    c.drawString("AUDIO WATERFALL NOT AVAILABLE", 160, top + 34);
+    d.setTextDatum(MC_DATUM);
+    d.setFont(&lgfx::fonts::Font0);
+    d.setTextColor(YELLOW,BG);
+    d.drawString("WAITING FOR AUDIO",160,wfY+8);
   }
 
-  c.setTextDatum(TL_DATUM);
-  c.setFont(&lgfx::fonts::Font0);
-  c.setTextColor(MUTED, BG);
-  c.drawString("100 Hz", left, 128);
-  c.drawRightString("1900 Hz", left + width, 128);
-
-  const char* mode = fm ? (s.stereo ? "FM STEREO" : "FM MONO") :
-    (s.modulation == RadioModulation::AM ? "AM" :
-     s.modulation == RadioModulation::USB ? "USB" : "LSB");
-  c.setTextColor(CYAN, BG);
-  c.drawString(mode, 10, 145);
-  if (s.rssi >= 0) {
-    char signal[20];
-    snprintf(signal, sizeof(signal), "RSSI %d", s.rssi);
-    c.setTextColor(GREEN, BG);
-    c.drawRightString(signal, 310, 145);
-  }
-  c.setTextDatum(MC_DATUM);
-  c.setTextColor(TEXT, BG);
-  c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
-  if (fm) {
-    const char* station = s.stationName[0] ? s.stationName : (radioReady ? "NO RDS" : "RADIO OFFLINE");
-    c.drawString(station, 160, 158);
+  d.setTextDatum(TL_DATUM);
+  d.setFont(&lgfx::fonts::Font0);
+  d.setTextColor(GREY,BG);
+  if(fm) {
+    d.drawString("100 Hz",20,115);
+    d.drawRightString("1900 Hz",300,115);
   } else {
-    c.drawString(radioReady ? "LIVE AUDIO SPECTRUM" : "RADIO OFFLINE", 160, 158);
+    d.drawString("100 Hz",20,115);
+    d.drawRightString("1900 Hz",300,115);
   }
+  if(s.rssi>=0) {
+    char signal[18];
+    snprintf(signal,sizeof(signal),"RSSI %d",s.rssi);
+    d.setTextColor(WHITE,BG);
+    d.drawString(signal,8,101);
+  }
+  d.setTextDatum(TL_DATUM);
+}
+inline void drawFm(auto& d,const RadioSnapshot& s,bool ready,bool wifi,AudioWaterfallService* w) {
+  draw(d,s,ready,wifi,w,true);
+}
+inline void drawAm(auto& d,const RadioSnapshot& s,bool ready,bool wifi,AudioWaterfallService* w) {
+  draw(d,s,ready,wifi,w,false);
 }
 } // namespace LiveWaterfallLayout
