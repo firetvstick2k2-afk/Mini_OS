@@ -1,6 +1,7 @@
 #include "FtxDecoderService.h"
 
 #include <string.h>
+#include "../../system/BootDiagnostics.h"
 
 namespace {
 constexpr size_t kAudioQueueDepth = 160;
@@ -60,6 +61,9 @@ bool FtxDecoderService::enter(FtxMode mode, bool wifiOff, bool utcSynchronized, 
     lastBlockStartUs_ = 0;
     droppedBlocks_ = 0;
     receivedBlocks_ = completedSlots_ = decodedSlots_ = 0;
+    slotStartAttempts_ = slotStartSuccesses_ = slotStartFailures_ = 0;
+    boundaryHits_ = timestampGaps_ = chunksProcessed_ = 0;
+    lastChunkStartUs_ = lastChunkEndUs_ = lastBoundaryUs_ = lastChunkDeltaUs_ = 0;
     xSemaphoreTake(resultMutex_, portMAX_DELAY);
     memset(published_, 0, sizeof(published_));
     xSemaphoreGive(resultMutex_);
@@ -149,6 +153,7 @@ void FtxDecoderService::processChunk(const AudioChunk& chunk) {
 
   const int64_t currentSlotStart = (chunkStart / slotLengthUs) * slotLengthUs;
   const int64_t nextBoundary = currentSlotStart + slotLengthUs;
+  lastBoundaryUs_ = nextBoundary;
 
   if (collecting_ && activeSlotStartUs_ == currentSlotStart) {
     if (chunkEnd >= nextBoundary) {
@@ -161,7 +166,12 @@ void FtxDecoderService::processChunk(const AudioChunk& chunk) {
       collecting_ = false;
       activeSlotStartUs_ = 0;
 
-      if (decoder_.startSlot(static_cast<time_t>(nextBoundary / 1000000LL))) {
+      ++slotStartAttempts_;
+      const bool nextStarted = decoder_.startSlot(static_cast<time_t>(nextBoundary / 1000000LL));
+      if (nextStarted) {
+        ++slotStartSuccesses_;
+        BootDiagnostics::printf("[FTX][SLOT][START] mode=%s utc=%lld source=boundary-split",
+          mode_ == FtxMode::FT4 ? "FT4" : "FT8", static_cast<long long>(nextBoundary / 1000000LL));
         activeSlotStartUs_ = nextBoundary;
         collecting_ = true;
         if (before < chunk.count) {
