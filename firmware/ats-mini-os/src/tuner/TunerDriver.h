@@ -2,7 +2,6 @@
 #include <Arduino.h>
 #include <SI4735.h>
 #include "../radio/BandManager.h"
-#include "../rds/RdsDecoder.h"
 
 // Thin adapter: PU2CLR keeps the individual RT buffer-clear helpers protected.
 class TunerSI4735 : public SI4735 {
@@ -98,44 +97,14 @@ struct TunerRdsData {
   bool received = false;
   bool piValid = false;
   bool ptyValid = false;
-  bool eccValid = false;
-  bool tpValid = false;
-  bool taValid = false;
-  bool linkageActuatorValid = false;
-  bool linkageActuator = false;
-  bool msValid = false;
-  bool diValid = false;
-  bool afUpdated = false;
-  bool afMethodBUpdated = false;
-  bool tp = false;
-  bool ta = false;
-  bool musicSpeech = false;
-  bool decoderIdentification = false;
   bool stationNameUpdated = false;
   bool radioTextUpdated = false;
-  bool eonUpdated = false;
-  bool odaUpdated = false;
-  bool rtPlusUpdated = false;
-  bool ptynUpdated = false;
-  uint16_t odaAid = 0;
-  uint8_t odaGroupType = 0xFF, odaGroupVersion = 0xFF;
-  RdsEonNetwork eon;
-  uint8_t eonCount = 0;
-  RdsEonNetwork eonNetworks[RDS_MAX_EON_NETWORKS] = {};
-  uint8_t afMethodBCount = 0;
-  RdsAfMethodBList afMethodBLists[RDS_MAX_AF_METHOD_B_LISTS] = {};
-  RdsRtPlusTag rtPlus[2];
-  bool rtPlusItemToggle = false, rtPlusItemRunning = false;
+  bool clockValid = false;
   uint16_t piCode = 0;
   uint8_t pty = 0;
-  uint8_t eccCode = 0;
-  uint8_t afCount = 0;
-  uint32_t afKHz[25] = {};
-  bool clockValid = false;
   uint8_t clockHour = 0;
   uint8_t clockMinute = 0;
   char stationName[9] = {};
-  char ptyn[9] = {};
   char radioText[65] = {};
 };
 
@@ -193,7 +162,6 @@ private:
   static constexpr uint32_t kMinFrequencyKHz = 64000;
   static constexpr uint32_t kMaxFrequencyKHz = 108000;
   TunerSI4735 radio_;
-  RdsDecoder rdsDecoder_;
   bool ready_ = false;
   bool ssbPatchLoaded_ = false;
   bool amPatchLoaded_ = false;
@@ -213,10 +181,7 @@ private:
   int16_t bfoOffsetHz_ = 0;
   uint8_t ssbBandwidthChoice_ = 4;
   uint8_t bandwidthChoice_ = 0;
-  bool haveTextFlag_ = false;
-  uint8_t lastTextFlag_ = 0;
   uint16_t lastPiCode_ = 0;
-  char rawRadioText_[65] = {};
   RadioModulation modulation_ = RadioModulation::FM;
   uint32_t minimumFrequencyKHz_ = 87500;
   uint32_t maximumFrequencyKHz_ = 108000;
