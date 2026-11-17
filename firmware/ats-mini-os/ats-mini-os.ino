@@ -89,6 +89,8 @@ uint16_t cursorStepKHz = 0;
 uint8_t menuPage = 0;
 uint8_t menuSelection = 0;
 int16_t lastDecoderPreviewSelection = -1;
+int16_t pendingDecoderPreview = -1;
+uint32_t pendingDecoderPreviewChangedAtMs = 0;
 
 static constexpr uint8_t kDecoderCategoryCount = 11;
 static constexpr uint8_t kDecoderCategoryStart[kDecoderCategoryCount] = {0, 9, 19, 27, 32, 41, 46, 52, 60, 67, 72};
@@ -482,8 +484,15 @@ void loop() {
             int16_t next = (static_cast<int16_t>(menuSelection) + rotationDelta) % itemCount;
             if (next < 0) next += itemCount;
             menuSelection = static_cast<uint8_t>(next);
-            // Browsing categories only changes the highlighted preset. The radio is
-            // tuned once, on confirmation, so scrolling stays responsive.
+            // Queue a real radio preview after the encoder has been idle.
+            // Scrolling remains display-only until the 2-second settle expires.
+            if (menuSelection == 0) {
+              pendingDecoderPreview = -1;
+            } else {
+              pendingDecoderPreview = static_cast<int16_t>(
+                kDecoderCategoryStart[category] + menuSelection - 1);
+              pendingDecoderPreviewChangedAtMs = millis();
+            }
             lastDecoderPreviewSelection = -1;
           }
           else if(menuPage==22){if(memoryEditActive){const char* chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-.";const size_t n=strlen(chars);const char ch=memoryEditName[memoryEditCursor];const char* q=strchr(chars,ch?ch:'A');int pos=q?static_cast<int>(q-chars):0;pos=(pos+rotationDelta)%static_cast<int>(n);if(pos<0)pos+=static_cast<int>(n);memoryEditName[memoryEditCursor]=chars[pos];memoryEditName[memoryEditCursor+1]='\0';}else{int v=(int)selectedMemorySlot+rotationDelta;v%=MemoryService::kSlotCount;if(v<0)v+=MemoryService::kSlotCount;selectedMemorySlot=(uint8_t)v;}}
@@ -589,9 +598,11 @@ void loop() {
           if (menuSelection == 0) {
             menuPage = 26;
             menuSelection = static_cast<uint8_t>(category + 1);
+            pendingDecoderPreview = -1;
             lastDecoderPreviewSelection = -1;
           } else {
             const uint8_t presetIndex = static_cast<uint8_t>(kDecoderCategoryStart[category] + menuSelection - 1);
+            pendingDecoderPreview = -1;
             if (!startDecoderPreset(presetIndex))
               BootDiagnostics::printf("[DECODER] preset start rejected index=%u", static_cast<unsigned>(presetIndex));
           }
@@ -1024,6 +1035,21 @@ void loop() {
       display.notifyTuning();
       Serial.printf("[INPUT] settled tune delta=%ld -> %.1f MHz\n",
         static_cast<long>(settledDelta), radio.snapshot().frequencyKHz / 1000.0f);
+    }
+  }
+  if (menuOpen && decoderCategoryForPage(menuPage) >= 0 &&
+      pendingDecoderPreview >= 0 &&
+      millis() - pendingDecoderPreviewChangedAtMs >= kEncoderTuneSettleMs) {
+    const uint8_t presetIndex = static_cast<uint8_t>(pendingDecoderPreview);
+    pendingDecoderPreview = -1;
+    if (tuneDecoderPreset(presetIndex)) {
+      lastDecoderPreviewSelection = static_cast<int16_t>(presetIndex + 1);
+      Serial.printf("[DECODER PREVIEW] settled index=%u; decoder remains closed\n",
+        static_cast<unsigned>(presetIndex));
+    } else {
+      lastDecoderPreviewSelection = -1;
+      Serial.printf("[DECODER PREVIEW] tune failed index=%u\n",
+        static_cast<unsigned>(presetIndex));
     }
   }
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] radio.update done");
