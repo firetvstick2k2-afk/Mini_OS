@@ -1009,7 +1009,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   // keeps the selection frame visually attached to the active row.
   const bool liveWaterfallLayout = (s.modulation == RadioModulation::FM && fmLayout_ == 4) ||
     (s.modulation != RadioModulation::FM && amLayout_ == 9);
-  const uint32_t redrawInterval = menuOpen ? ((menuPage==21 || menuPage==23 || menuPage==24 || menuPage==28) ? 100 : ((menuPage==6 || menuPage==19 || menuPage==22 || menuPage==26) ? 20 : 500)) : (liveWaterfallLayout ? 120 : 40);
+  const uint32_t redrawInterval = menuOpen ? ((menuPage==21 || menuPage==23 || menuPage==24 || menuPage==28) ? 100 : ((menuPage==6 || menuPage==19 || menuPage==22 || menuPage==26 || (menuPage>=30 && menuPage<=40)) ? 20 : 500)) : (liveWaterfallLayout ? 120 : 40);
   if(!returningToRadio && s.generation==lastGeneration_ && now-lastDrawMs_<redrawInterval && !menuStateChanged)return;
   lastGeneration_=s.generation;
   lastDrawMs_=now;
