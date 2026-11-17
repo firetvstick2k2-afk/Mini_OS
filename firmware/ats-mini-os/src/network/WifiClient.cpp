@@ -49,6 +49,20 @@ void WifiClient::begin() {
     static_cast<unsigned>(mode_), static_cast<unsigned>(ESP.getFreeHeap()));
 }
 
+void WifiClient::suspend() {
+  if (!started_) return;
+  BootDiagnostics::write("[WIFI] temporarily suspended for digital decoder");
+  if (serverStarted_) {
+    server_.stop();
+    serverStarted_ = false;
+  }
+  WiFi.softAPdisconnect(false);
+  WiFi.disconnect(false, false);
+  WiFi.mode(WIFI_OFF);
+  apActive_ = false;
+  started_ = false;
+}
+
 bool WifiClient::ensureStarted() {
   if (started_) return true;
   // OFF is a runtime state, not a permanent veto: a feature that genuinely
