@@ -20,7 +20,7 @@ public:
   int wpm() const { return wpm_; }
 
 private:
-  static void onAudioSamples(void* context, const int16_t* samples, size_t count);
+  static void onAudioSamples(void* context, const int16_t* samples, size_t count, int64_t utcStartMicros);
   void consumeSamples(const int16_t* samples, size_t count);
 
   static constexpr uint32_t kSampleRate = AudioCaptureService::kSampleRate;
