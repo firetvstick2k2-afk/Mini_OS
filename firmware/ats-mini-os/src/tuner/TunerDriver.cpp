@@ -505,6 +505,9 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
       lastPiCode_ = pi;
     }
 
+    out.pty = radio_.getRdsProgramTypeX();
+    out.ptyValid = true;
+
     if (group == 0) {
       const char* ps = radio_.getRdsStationName();
       if (ps) {
@@ -518,9 +521,6 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
         formatRadioText(out.radioText, sizeof(out.radioText), rt);
         out.radioTextUpdated = true;
       }
-    } else if (group == 1) {
-      out.pty = radio_.getRdsProgramTypeX();
-      out.ptyValid = true;
     } else if (group == 4 && radio_.currentRdsClock(out.clockHour, out.clockMinute)) {
       out.clockValid = true;
     }
