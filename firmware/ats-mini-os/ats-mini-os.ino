@@ -532,6 +532,7 @@ void loop() {
                 static_cast<unsigned>(selectedMainItem));
             } else {
               menuPage = targetPage;
+              if (menuPage == 18) wifi.ensureStarted();
               if (menuPage == 19) frequencyKeypad.open(radio.snapshot());
               else if (menuPage == 21) {
                 const bool entered = cwDecoder.enter(audioCapture, wifi.isOff());
