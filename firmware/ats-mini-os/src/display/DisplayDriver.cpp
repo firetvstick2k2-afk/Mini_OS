@@ -952,8 +952,6 @@ bool DisplayDriver::begin(uint8_t initialBrightness) {
   Serial.printf("[DISPLAY] ready, panel ID=0x%06lX, size=%ldx%ld\n",
     static_cast<unsigned long>(device_.getDisplayId()),
     static_cast<long>(device_.width()),static_cast<long>(device_.height()));
-  fmLayout_ = 0;
-  amLayout_ = 0;
   Serial.println("[DISPLAY] active layouts: FM DAB/TEF; LW/MW/KW HJB/Waterfall/TinyRadio");
   return true;
 }
