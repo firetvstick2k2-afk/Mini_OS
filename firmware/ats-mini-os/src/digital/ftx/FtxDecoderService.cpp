@@ -17,7 +17,14 @@ bool FtxDecoderService::begin(AudioCaptureService& capture) {
   queue_ = xQueueCreate(kAudioQueueDepth, sizeof(AudioChunk));
   engineMutex_ = xSemaphoreCreateMutex();
   resultMutex_ = xSemaphoreCreateMutex();
-  if (!queue_ || !engineMutex_ || !resultMutex_) return false;
+  if (!queue_ || !engineMutex_ || !resultMutex_) {
+    if (queue_) vQueueDelete(queue_);
+    if (engineMutex_) vSemaphoreDelete(engineMutex_);
+    if (resultMutex_) vSemaphoreDelete(resultMutex_);
+    queue_ = nullptr;
+    engineMutex_ = resultMutex_ = nullptr;
+    return false;
+  }
 
   capture_ = &capture;
   if (xTaskCreatePinnedToCore(taskEntry, "ftx-decoder", kWorkerStackBytes,
@@ -47,12 +54,9 @@ bool FtxDecoderService::enter(FtxMode mode, bool wifiOff, bool utcSynchronized) 
     activeSlotStartUs_ = 0;
     lastBlockStartUs_ = 0;
     droppedBlocks_ = 0;
+    xSemaphoreTake(resultMutex_, portMAX_DELAY);
     memset(published_, 0, sizeof(published_));
-    if (resultMutex_) {
-      xSemaphoreTake(resultMutex_, portMAX_DELAY);
-      memset(published_, 0, sizeof(published_));
-      xSemaphoreGive(resultMutex_);
-    }
+    xSemaphoreGive(resultMutex_);
     xQueueReset(queue_);
   }
   xSemaphoreGive(engineMutex_);
@@ -149,14 +153,16 @@ void FtxDecoderService::processChunk(const AudioChunk& chunk) {
       collecting_ = false;
       activeSlotStartUs_ = 0;
 
-      if (before < chunk.count && decoder_.startSlot(static_cast<time_t>(nextBoundary / 1000000LL))) {
+      if (decoder_.startSlot(static_cast<time_t>(nextBoundary / 1000000LL))) {
         activeSlotStartUs_ = nextBoundary;
         collecting_ = true;
-        decoder_.pushSamples(chunk.samples + before, chunk.count - before);
-        if (decoder_.slotReady()) {
-          decodeAndPublish();
-          collecting_ = false;
-          activeSlotStartUs_ = 0;
+        if (before < chunk.count) {
+          decoder_.pushSamples(chunk.samples + before, chunk.count - before);
+          if (decoder_.slotReady()) {
+            decodeAndPublish();
+            collecting_ = false;
+            activeSlotStartUs_ = 0;
+          }
         }
       }
       return;
