@@ -2937,3 +2937,14 @@ Prüfstatus:
 - PTY wird wie im ATS-Mini-Dev-`checkRds()` aus dem aktuellen RDS-Block gelesen (Commit `9087b3a`).
 - Die geänderten RDS-Verträge, `TunerDriver::pollRds()`, `RadioCore` und `RadioSnapshot` wurden erneut aus dem Branch abgerufen. Statische Prüfung bestätigt: keine Referenzen auf `RdsDecoder`, `RdsDecodedFields`, EON, ODA, RT+, PTYN oder AF Method B in diesen RDS-Pfaden; PS-/RT-Felder für das vorhandene Layout sind vorhanden.
 - Dies ist eine Quelltext-/Schnittstellenprüfung, kein Compilerlauf. Build, GitHub Actions und Flash wurden nicht gestartet.
+
+
+## RDS-Aufräumprüfung – 2026-11-17
+
+- Der aktive RDS-Pfad ist bereits auf den ATS-Mini-Dev-Grundumfang reduziert: PS, RT, PI, PTY und CT. `TunerDriver::pollRds()` nutzt den nativen SI4735-FIFO-Pfad; `RadioCore` veröffentlicht nur die für Grundfunktionen und Layout benötigten Felder. Keine Layoutdatei wurde geändert.
+- Bei der Gesamtprüfung wurde eine verwaiste Testdatei `firmware/ats-mini-os/tests/rds_decoder_vectors.cpp` gefunden. Sie inkludierte den bereits entfernten `src/rds/RdsDecoder.h` und testete ausschließlich die ausgebauten Erweiterungen (EON/ODA/RT+/PTYN/AF). Die Testdatei wurde entfernt.
+- Commit der Entfernung: `1ac79057b5c2d80b6b5fdfebd544f502c3b4476c`.
+- Es wurden keine weiteren aktiven RDS-Erweiterungsdecoder in der aktuellen Quellstruktur gefunden. CT-spezifische Block-/Fehler-Getter bleiben erhalten, da sie für die RDS-Uhrzeit gebraucht werden.
+- Die vorhandenen PS-/RT-/PI-/PTY-/CT-Funktionen wurden nicht entfernt. Keine Änderungen an Bootablauf, Display-Layouts, WLAN oder Radioinitialisierung in diesem Schritt.
+- Statische Prüfung auf Quelltextebene; kein Build, keine GitHub Action und kein Flash. Der Nutzer kann keinen Serial Monitor verwenden; Fehlerdiagnose ausschließlich über das interne BootDiagnostics-Log.
+- Der Reset ist durch diese Bereinigung nicht als behoben nachgewiesen. Da die Erweiterungsdecoder bereits nicht mehr aktiv waren, ist eine direkte Reset-Ursache dadurch unwahrscheinlich; der nächste Diagnosepunkt bleibt der Ablauf unmittelbar nach `encoder.update()` bzw. innerhalb von `radio.update()`.
