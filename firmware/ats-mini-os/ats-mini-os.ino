@@ -530,7 +530,7 @@ void loop() {
           }
         } else if ((menuPage==5 && menuSelection==4)) {fmOpen();
         } else if (menuPage == 0) {
-            // ATS Mini Dev main-menu order and labels are preserved exactly.
+            // ATS Mini Dev menu order is retained; the unsupported VHF spectrum slot now opens FT8/FT4.
             // Unsupported entries are marked with * in the renderer and stay inert.
             static const uint8_t targetPages[25] = {
               255, 16, 8, 1, 19, 255, 255, 255, 12, 9, 24,
