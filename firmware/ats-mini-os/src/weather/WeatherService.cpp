@@ -65,6 +65,10 @@ const char* weatherDescription(uint8_t code) {
 
 bool WeatherService::begin() {
   BootDiagnostics::write("[WEATHER] begin entered");
+  if (taskHandle_) {
+    BootDiagnostics::write("[WEATHER] worker already running");
+    return true;
+  }
   loadSettings();
   Snapshot initial;
   publish(initial);
