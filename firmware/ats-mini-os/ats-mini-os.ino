@@ -29,6 +29,7 @@
 #include "src/tuner/SsbPatchManager.h"
 #include "src/audio/AudioCaptureService.h"
 #include "src/cw/CwDecoderService.h"
+#include "src/digital/ftx/FtxDecoderService.h"
 
 namespace {
 constexpr uint32_t SERIAL_BAUD = 115200;
@@ -54,6 +55,7 @@ EncoderInput encoder;
 FrequencyKeypad frequencyKeypad;
 AudioCaptureService audioCapture;
 CwDecoderService cwDecoder;
+FtxDecoderService ftxDecoder;
 WifiClient wifi;
 NewsService newsService;
 WeatherService weatherService;
@@ -255,6 +257,7 @@ void setup() {
   Serial.begin(SERIAL_BAUD); delay(250); performance.begin();
   if (!audioCapture.begin()) Serial.println("[AUDIO] shared GPIO11 sampler unavailable");
   if (!cwDecoder.begin(audioCapture)) Serial.println("[CW] decoder initialization failed");
+  if (!ftxDecoder.begin(audioCapture)) Serial.println("[FTX] decoder service initialization failed");
   systemClock.begin();
   const bool storageReady = StorageDiscovery::begin();
   const bool settingsReady = settingsStore.begin();
