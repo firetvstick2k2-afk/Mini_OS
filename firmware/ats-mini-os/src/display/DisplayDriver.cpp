@@ -502,6 +502,11 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   static const char* const layoutGroupItems[] = { "Zurück", "UKW / FM", "LW / MW / KW" };
   static const char* const fmLayoutItems[] = { "Zurück", "DAB Style", "TEF6686 -FM Version", "TEF6686 - Newsfeed", "Waterfall Live" };
   static const char* const amLayoutItems[] = { "Zurück", "HJB", "Waterfall", "TinyRadio", "TEF6686 - KW/MW/LW", "Waterfall Live" };
+  static const char* const decoderCategoryItems[] = {
+    "Zurück", "CW", "FT8", "FT4", "RTTY", "DWD / Pinneberg",
+    "NCDXF Beacons", "Zeitzeichen", "Kurzwellen-Rundfunk", "SSB QSO",
+    "Signal-/Datenfunk", "CB-Funk"
+  };
   static const char* const bfoItems[] = { "Zurück", "BFO einstellen" };
   static const char* const patchProfileItems[] = { "Zurück", "Standard", "Experimental V1", "Experimental V2" };
   static const char* const radioItems[] = {
@@ -531,6 +536,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   uint8_t count = sizeof(mainItems) / sizeof(mainItems[0]);
   const char* title = "HAUPTMENÜ";
   switch (page) {
+    case 26: items=decoderCategoryItems; count=sizeof(decoderCategoryItems)/sizeof(decoderCategoryItems[0]); title="DECODER-KATEGORIEN"; break;
     case 1: items=volumeItems; count=sizeof(volumeItems)/sizeof(volumeItems[0]); title="AUDIO"; break;
     case 2: items=displayItems; count=sizeof(displayItems)/sizeof(displayItems[0]); title="ANZEIGE"; break;
     case 13: items=layoutGroupItems; count=sizeof(layoutGroupItems)/sizeof(layoutGroupItems[0]); title="LAYOUT GRUPPE"; break;
@@ -789,32 +795,35 @@ void drawRadioUtilityPage(Canvas& c,uint8_t page,uint8_t selection,const RadioSn
 }
 
 template <typename Canvas>
-void drawDecoderFrequencyPage(Canvas& c,uint8_t selection) {
+void drawDecoderFrequencyPage(Canvas& c,uint8_t category,uint8_t selection) {
   constexpr uint16_t navy=0x0008, blue=0x001F, cyan=0x07FF, green=0x07E0, white=0xFFFF, yellow=0xFFE0;
+  static constexpr uint8_t starts[]={0,9,19,27,32,41,46,52,60,67,72};
+  static constexpr uint8_t sizes[]={9,10,8,5,9,5,6,8,7,5,2};
+  static const char* const titles[]={"CW FREQUENZEN","FT8 FREQUENZEN","FT4 FREQUENZEN","RTTY FREQUENZEN",
+    "DWD / PINNEBERG","NCDXF BEACONS","ZEITZEICHEN","KURZWELLEN-RUNDFUNK","SSB QSO","SIGNAL / DATENFUNK","CB-FUNK"};
   c.fillScreen(navy); c.drawRect(5,5,310,160,blue);
   c.setTextDatum(MC_DATUM); c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
-  c.setTextColor(cyan,navy); c.drawString("DECODER FREQUENZEN",160,18);
-  const uint8_t total=static_cast<uint8_t>(kDecoderFrequencyPresetCount+1);
+  c.setTextColor(cyan,navy); c.drawString(titles[category],160,18);
   char line[64];
   if(selection==0) {
     c.setTextColor(yellow,navy); c.drawString("ZURUECK",160,72);
     c.setTextColor(white,navy); c.setFont(&lgfx::fonts::FreeSans9pt7b);
-    c.drawString("Zur Hauptmenuebene",160,101);
+    c.drawString("Zur Kategorieauswahl",160,101);
   } else {
-    const DecoderFrequencyPreset& preset=kDecoderFrequencyPresets[selection-1];
+    const DecoderFrequencyPreset& preset=kDecoderFrequencyPresets[starts[category]+selection-1];
     c.setTextColor(green,navy); c.drawString(preset.label,160,58);
     c.setTextColor(white,navy); c.setFont(&lgfx::fonts::FreeSans9pt7b);
-    snprintf(line,sizeof(line),"%lu kHz  |  %s",
-      static_cast<unsigned long>(preset.frequencyKHz),
+    snprintf(line,sizeof(line),"%lu kHz  |  %s",static_cast<unsigned long>(preset.frequencyKHz),
       preset.modulation==RadioModulation::USB?"USB":preset.modulation==RadioModulation::LSB?"LSB":"AM");
     c.drawString(line,160,88);
-    const char* note=(selection>=33 && selection<=38)?"DWD PINNEBERG / RTTY F1B 50 BAUD":
-      (selection>=39 && selection<=40?"CB-DATENKANAL":"Empfangsfrequenz / Betriebsart");
-    c.setTextColor(yellow,navy); c.setFont(&lgfx::fonts::Font0); c.drawString(note,160,113);
+    const char* decoder=preset.decoder==DecoderKind::CW?"CW DECODER":
+      preset.decoder==DecoderKind::FT8?"FT8 DECODER":
+      preset.decoder==DecoderKind::FT4?"FT4 DECODER":"NUR EMPFANG / KEIN SPEZIALDECODER";
+    c.setTextColor(yellow,navy); c.setFont(&lgfx::fonts::Font0); c.drawString(decoder,160,113);
   }
-  snprintf(line,sizeof(line),"%02u / %02u",static_cast<unsigned>(selection+1),static_cast<unsigned>(total));
+  snprintf(line,sizeof(line),"%02u / %02u",static_cast<unsigned>(selection+1),static_cast<unsigned>(sizes[category]+1));
   c.setTextColor(cyan,navy); c.setFont(&lgfx::fonts::Font0); c.drawString(line,160,137);
-  c.drawString("DREHEN: AUSWAEHLEN  |  KLICK: TUNEN",160,157);
+  c.drawString("DREHEN: AUSWAEHLEN  |  KLICK: START / TUNEN",160,157);
   c.setTextDatum(TL_DATUM); c.setFont(&lgfx::fonts::Font0);
 }
 
@@ -1014,7 +1023,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   lastMenuTheme_=themeIndex_;
   lastMenuBootLogEnabled_=bootLogEnabled;
   if (menuOpen) {
-    if(menuPage==26){if(useSprite_){sprite_.fillSprite(BLACK);drawDecoderFrequencyPage(sprite_,menuSelection);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawDecoderFrequencyPage(device_,menuSelection);}return;}
+    if(menuPage>=30 && menuPage<=40){const uint8_t category=static_cast<uint8_t>(menuPage-30);if(useSprite_){sprite_.fillSprite(BLACK);drawDecoderFrequencyPage(sprite_,category,menuSelection);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawDecoderFrequencyPage(device_,category,menuSelection);}return;}
     if(menuPage==22 || menuPage==23 || menuPage==24){if(useSprite_){sprite_.fillSprite(BLACK);drawRadioUtilityPage(sprite_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawRadioUtilityPage(device_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);}return;}
     if(menuPage==21){if(useSprite_){sprite_.fillSprite(BLACK);drawLegacyCWPage(sprite_,s,cwWifiBlocked,cwText,cwSignal);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawLegacyCWPage(device_,s,cwWifiBlocked,cwText,cwSignal);}return;}
     if(menuPage==28){if(useSprite_){sprite_.fillSprite(BLACK);drawFtxDecoderPage(sprite_,s,menuSelection,ftxService,ftxWifiOff,ftxUtcSynchronized);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFtxDecoderPage(device_,s,menuSelection,ftxService,ftxWifiOff,ftxUtcSynchronized);}return;}
