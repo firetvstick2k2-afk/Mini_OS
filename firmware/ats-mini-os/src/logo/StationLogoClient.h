@@ -9,6 +9,7 @@ class StationLogoClient {
 public:
   bool begin();
   void update(const RadioSnapshot& state, bool wifiConnected);
+  bool hasLocalLogo(const RadioSnapshot& state);
   bool lockLogo(const char* cacheKey, const uint8_t*& data, size_t& length, bool& isJpg);
   bool isLookupPending(const char* cacheKey) const;
   void unlockLogo();
