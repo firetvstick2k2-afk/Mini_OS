@@ -43,8 +43,8 @@ bool FtxDecoderService::begin(AudioCaptureService& capture) {
 }
 
 bool FtxDecoderService::enter(FtxMode mode, bool wifiOff, bool utcSynchronized) {
-  if (!initialized_ || !capture_ || !wifiOff || !utcSynchronized) return false;
   exit();
+  if (!initialized_ || !capture_ || !wifiOff || !utcSynchronized) return false;
 
   xSemaphoreTake(engineMutex_, portMAX_DELAY);
   const bool ready = decoder_.begin(mode);
