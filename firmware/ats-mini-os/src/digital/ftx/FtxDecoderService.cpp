@@ -3,7 +3,7 @@
 #include <string.h>
 
 namespace {
-constexpr size_t kAudioQueueDepth = 80;
+constexpr size_t kAudioQueueDepth = 160;
 constexpr uint32_t kWorkerStackBytes = 8192;
 constexpr UBaseType_t kWorkerPriority = 2;
 constexpr BaseType_t kWorkerCore = 1;
