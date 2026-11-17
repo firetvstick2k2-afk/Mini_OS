@@ -169,12 +169,12 @@ void monitor_process(monitor_t* me, const float* frame)
             for (int bin = me->min_bin; bin < me->max_bin; ++bin)
             {
                 int src_bin = (bin * me->wf.freq_osr) + freq_sub;
-                float mag2 = (me->freqdata[src_bin].i * freqdata[src_bin].i) + (me->freqdata[src_bin].r * freqdata[src_bin].r);
+                float mag2 = (me->freqdata[src_bin].i * me->freqdata[src_bin].i) + (me->freqdata[src_bin].r * me->freqdata[src_bin].r);
                 float db = 10.0f * log10f(1E-12f + mag2);
 
 #ifdef WATERFALL_USE_PHASE
                 // Save the magnitude in dB and phase in radians
-                float phase = atan2f(freqdata[src_bin].i, freqdata[src_bin].r);
+                float phase = atan2f(me->freqdata[src_bin].i, me->freqdata[src_bin].r);
                 me->wf.mag[offset].mag = db;
                 me->wf.mag[offset].phase = phase;
 #else
