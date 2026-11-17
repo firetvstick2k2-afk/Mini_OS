@@ -483,8 +483,8 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
   const int h = canvas.height();
   if (page == 18) { drawWeatherScreen(canvas, weatherSnapshot, selection); return; }
   if (page == 20) { drawMoonScreen(canvas, moonSnapshot); return; }
-  // Main-menu labels intentionally match ATS Mini Dev verbatim.
-  // A trailing * marks entries that are not implemented in ATS Mini OS yet.
+  // Main-menu order follows ATS Mini Dev. The previously unsupported VHF spectrum
+  // placeholder is now used for the FT8 / FT4 decoder. A trailing * remains an inert item.
   static const char* const mainItems[] = {
     "Zurück", "Modulation", "Bänder", "Lautstärke", "Keypad", "DUAL RX*", "VFO A/B*",
     "Frequenz*", "BFO", "STEP", "Suche", "Scannen", "Speicher", "Decoder-Frequenzen", "Rauschsperre",
