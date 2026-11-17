@@ -977,7 +977,7 @@ void DisplayDriver::setTheme(uint8_t index) {
 void DisplayDriver::setFmLayout(uint8_t mode) {
   fmLayout_ = (mode <= 3 || mode == 4) ? mode : 0;
   lastGeneration_ = UINT32_MAX;
-  Serial.printf("[DISPLAY] FM layout: %s\\n", fmLayout_ == 1 ? "HJB" : (fmLayout_ == 3 ? "TEF6686 - Newsfeed" : (fmLayout_ == 2 ? "TEF6686 -FM Version" : "DAB Style")));
+  Serial.printf("[DISPLAY] FM layout: %s\\n", fmLayout_ == 4 ? "Waterfall Live" : (fmLayout_ == 1 ? "HJB" : (fmLayout_ == 3 ? "TEF6686 - Newsfeed" : (fmLayout_ == 2 ? "TEF6686 -FM Version" : "DAB Style"))));
 }
 
 void DisplayDriver::setAmLayout(uint8_t mode) {
@@ -1000,7 +1000,9 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   if (returningToRadio) lastGeneration_ = UINT32_MAX;
   // Redraw the file manager promptly while the encoder is moving; this also
   // keeps the selection frame visually attached to the active row.
-  const uint32_t redrawInterval = menuOpen ? ((menuPage==21 || menuPage==23 || menuPage==24 || menuPage==28) ? 100 : ((menuPage==6 || menuPage==19 || menuPage==22 || menuPage==26) ? 20 : 500)) : 40;
+  const bool liveWaterfallLayout = (s.modulation == RadioModulation::FM && fmLayout_ == 4) ||
+    (s.modulation != RadioModulation::FM && amLayout_ == 9);
+  const uint32_t redrawInterval = menuOpen ? ((menuPage==21 || menuPage==23 || menuPage==24 || menuPage==28) ? 100 : ((menuPage==6 || menuPage==19 || menuPage==22 || menuPage==26) ? 20 : 500)) : (liveWaterfallLayout ? 120 : 40);
   if(!returningToRadio && s.generation==lastGeneration_ && now-lastDrawMs_<redrawInterval && !menuStateChanged)return;
   lastGeneration_=s.generation;
   lastDrawMs_=now;
