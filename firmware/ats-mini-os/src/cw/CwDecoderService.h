@@ -8,7 +8,7 @@
 class CwDecoderService {
 public:
   bool begin(AudioCaptureService& capture);
-  bool enter(bool wifiOff);
+  bool enter(AudioCaptureService& capture, bool wifiOff);
   void exit();
   bool active() const { return active_; }
   bool wifiBlocked() const { return wifiBlocked_; }
