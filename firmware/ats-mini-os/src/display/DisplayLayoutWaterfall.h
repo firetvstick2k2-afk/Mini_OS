@@ -65,10 +65,12 @@ void draw(Canvas& d, const RadioSnapshot& s, bool ready, bool wifi,
   const bool haveData=waterfall && waterfall->active() &&
     waterfall->copyWaterfall(waterfallPixels,rowsMax,bins,rows,outBins);
   if(haveData && outBins) {
-    const uint16_t visibleRows = rows < wfH ? rows : wfH;
-    const uint16_t firstRow = rows - visibleRows;
-    for(uint16_t y=0;y<visibleRows;++y) {
-      const size_t rowBase=static_cast<size_t>(firstRow+y)*outBins;
+    // Stretch the rolling history vertically to the full panel height.
+    // Older rows stay at the top; the newest audio spectrum is at the bottom.
+    for(uint16_t y=0;y<wfH;++y) {
+      const uint16_t sourceRow=static_cast<uint16_t>(
+        (static_cast<uint32_t>(y)*rows)/wfH);
+      const size_t rowBase=static_cast<size_t>(sourceRow)*outBins;
       uint8_t low=255, high=0;
       for(uint16_t x=0;x<outBins;++x) {
         const uint8_t v=waterfallPixels[rowBase+x];
@@ -90,7 +92,7 @@ void draw(Canvas& d, const RadioSnapshot& s, bool ready, bool wifi,
           else if(level<205) color=PALE_BLUE;
           else color=WHITE;
         }
-        d.drawPixel(wfX+x,wfY+(wfH-visibleRows)+y,color);
+        d.drawPixel(wfX+x,wfY+y,color);
       }
     }
   } else {
