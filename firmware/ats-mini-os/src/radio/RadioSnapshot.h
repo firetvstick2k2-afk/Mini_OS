@@ -1,7 +1,6 @@
 #pragma once
 #include <Arduino.h>
 #include "BandManager.h"
-#include "../rds/RdsDecoder.h"
 
 // Immutable-style data contract for publishing tuner state to UI and services.
 // Only the future radio-core/RDS-owner modules should produce snapshots.
@@ -17,37 +16,6 @@ struct RadioSnapshot {
   int16_t snr = -1;
   uint16_t piCode = 0;
   uint8_t pty = 0;
-  char rdsPtyn[9] = {};
-  bool rdsTpValid = false;
-  bool rdsTp = false;
-  bool rdsTaValid = false;
-  bool rdsTa = false;
-  bool rdsLinkageActuatorValid = false;
-  bool rdsLinkageActuator = false;
-  bool rdsMusicSpeechValid = false;
-  bool rdsMusicSpeech = false;
-  bool rdsDiValid = false;
-  bool rdsDi = false;
-  bool rdsEccValid = false;
-  uint8_t rdsEcc = 0;
-  uint8_t rdsAfCount = 0;
-  uint32_t rdsAfKHz[25] = {};
-  uint8_t rdsAfMethodBCount = 0;
-  RdsAfMethodBList rdsAfMethodBLists[RDS_MAX_AF_METHOD_B_LISTS] = {};
-  bool rdsEonValid = false;
-  uint16_t rdsEonPi = 0;
-  bool rdsEonTp = false, rdsEonTa = false;
-  uint8_t rdsEonPty = 0, rdsEonAfCount = 0;
-  uint32_t rdsEonAfKHz[25] = {};
-  char rdsEonPs[9] = {};
-  uint8_t rdsEonCount = 0;
-  RdsEonNetwork rdsEonNetworks[RDS_MAX_EON_NETWORKS] = {};
-  uint16_t rdsOdaAid = 0;
-  uint8_t rdsOdaGroupType = 0xFF, rdsOdaGroupVersion = 0xFF;
-  bool rdsRtPlusValid[2] = {};
-  bool rdsRtPlusItemToggle = false, rdsRtPlusItemRunning = false;
-  uint8_t rdsRtPlusType[2] = {}, rdsRtPlusStart[2] = {}, rdsRtPlusLength[2] = {};
-  char rdsRtPlusText[2][65] = {};
   bool stereo = false;
   bool rdsAvailable = false;
   bool rdsClockValid = false;
