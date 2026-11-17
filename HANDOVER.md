@@ -2803,3 +2803,13 @@ Prüfstatus:
 - 3A wird nur akzeptiert, wenn Block C (AGTC) und Block D (AID) fehlerfrei genug sind (BLEC/BLED unterhalb der unkorrektierbaren Stufe).
 - Commits: `a9f6c89` (ODA-Zuordnungstabelle), `da37498` (Lebenszyklus und RT+-Dispatch).
 - Noch nicht kompiliert oder auf dem ATS Mini getestet.
+
+
+## RDS – Compile-Fehler im AF-Method-B-Datenvertrag behoben (2026-11-17)
+
+- GitHub Actions Build #66 / Run `44023763572` auf `dev/first-build-preparation` brach beim Kompilieren von `RadioCore.cpp` ab.
+- Ursache: `TunerDriver.cpp` kopierte `decoded.afMethodBUpdated` korrekt in `TunerRdsData`, aber das entsprechende bool-Feld fehlte in der Definition von `TunerRdsData` in `src/tuner/TunerDriver.h`.
+- Ergänzt wurde ausschließlich `bool afMethodBUpdated = false;` im Tuner-RDS-Datenvertrag. Decoderlogik, RadioCore-Verarbeitung, Display-Layouts und RadioDNS/Senderlogos wurden nicht verändert.
+- Fix-Commit: `723fb5e48a8a9fd4f3d71646cdd97421c3831425`.
+- Status: Quelltext-Fix committed; noch kein neuer Compile-Lauf und kein Flash. Der Nutzer startet den manuellen Compile-only-Workflow.
+- Nächster Schritt nach erfolgreichem Compile: RDS-Vervollständigung anhand der offenen Punkte im RDS-Handover fortsetzen; insbesondere EON-/RT+-Validierung und hostseitige Decoder-Testvektoren. Dual RX und VFO A/B bleiben zuletzt.
