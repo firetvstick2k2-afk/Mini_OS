@@ -376,7 +376,7 @@ void loop() {
   static bool layoutNetworkInitialized = false;
   if (!layoutNetworkInitialized) {
     layoutNetworkInitialized = true;
-    if (display.fmLayout() == 0 || display.fmLayout() == 3 ||
+    if (display.fmLayout() == 3 ||
         wifi.mode() == WifiClient::Mode::SYNC_ONLY) {
       BootDiagnostics::write("[LOOP][TRACE] selected layout/time-sync requires Wi-Fi");
       wifi.ensureStarted();
@@ -934,6 +934,28 @@ void loop() {
   const RadioSnapshot& currentSnapshot = radio.snapshot();
   const bool waterfallVisible = !menuOpen && currentSnapshot.modulation != RadioModulation::FM && display.amLayout() == 4;
   performance.setWaterfallActive(waterfallVisible);
+  static char logoCheckedKey[40] = {};
+  static bool currentLogoIsLocal = false;
+  char currentLogoKey[40] = {};
+  if (currentSnapshot.piCode && currentSnapshot.frequencyKHz) {
+    snprintf(currentLogoKey, sizeof(currentLogoKey), "%04X_%lu",
+      static_cast<unsigned>(currentSnapshot.piCode),
+      static_cast<unsigned long>(currentSnapshot.frequencyKHz));
+  }
+  if (strcmp(logoCheckedKey, currentLogoKey) != 0) {
+    strncpy(logoCheckedKey, currentLogoKey, sizeof(logoCheckedKey) - 1);
+    logoCheckedKey[sizeof(logoCheckedKey) - 1] = 0;
+    currentLogoIsLocal = currentLogoKey[0] && stationLogoClient.hasLocalLogo(currentSnapshot);
+    if (currentLogoKey[0]) {
+      Serial.printf("[LOGO] local LittleFS %s for %s; Wi-Fi %s\n",
+        currentLogoIsLocal ? "match" : "miss", currentLogoKey,
+        currentLogoIsLocal ? "stays off" : "may be enabled");
+    }
+  }
+  if (!menuOpen && currentSnapshot.modulation == RadioModulation::FM &&
+      display.fmLayout() == 0 && currentLogoKey[0] && !currentLogoIsLocal) {
+    wifi.ensureStarted();
+  }
   stationLogoClient.update(currentSnapshot, wifi.connected() && wifi.dataServicesAllowed());
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] stationLogoClient.update done");
   const NewsService::Snapshot currentNews = newsService.snapshot();
