@@ -2958,3 +2958,13 @@ Prüfstatus:
 - Code-Commit: `e30f80c85b827e29cc2a9346d70be6045b743727`.
 - Keine Layout-, RDS-, WLAN-, Tuner-Konfigurations- oder Hardwareänderung. Keine zusätzliche periodische Log-Ausgabe.
 - Kein Build, keine GitHub Action und kein Flash gestartet. Nutzer startet den Compile-only-Build selbst; Diagnose ausschließlich über internes BootDiagnostics-Log, kein Serial Monitor.
+
+
+## SI4735-PTY-Getter: Compile-Korrektur (2026-11-17)
+
+- GitHub Actions Lauf #69 (44087499986) brach im Compile-Schritt mit genau einem Fehler ab: TunerSI4735 besitzt kein getRdsProgramTypeX(); der Compiler nennt getRdsProgramType() als vorhandene Methode.
+- In firmware/ats-mini-os/src/tuner/TunerDriver.cpp wurde ausschließlich der PTY-Getter-Aufruf auf radio_.getRdsProgramType() korrigiert.
+- Code-Commit: 202719e93654e5ae96306095547cb12ec5e89f8b.
+- Die geänderte Zeile wurde anschließend erneut aus dem Branch abgerufen und verifiziert.
+- Keine weiteren RDS-Änderungen, keine Layout-/Boot-/WLAN-/Hardwareänderungen.
+- Noch kein erneuter Build gestartet; der Nutzer startet den nächsten Compile-only-Lauf. Kein Flash. Gerätefehlerdiagnose weiterhin ausschließlich über internes BootDiagnostics-Log, niemals Serial Monitor.
