@@ -1095,7 +1095,22 @@ void loop() {
   display.setFrequencyCursor(frequencyCursorActive?static_cast<uint8_t>(frequencyCursorPos|0x80U):100);
   const MoonCalendar::Snapshot currentMoon = MoonCalendar::calculate(time(nullptr));
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] before display.render");
-  display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal(), selectedMemorySlot, memories.count(), scanner.count(), scanner.capacity(), static_cast<uint8_t>(scanner.state()), static_cast<uint8_t>(seeker.state()), scanner.data(), memoryEditActive, memoryEditName, memoryEditCursor, &ftxDecoder, wifi.isOff(), systemClock.synchronized());
+  RadioSnapshot displaySnapshot = radio.snapshot();
+  if (pendingTuneDelta != 0 && radio.isReady()) {
+    const uint32_t step = displaySnapshot.tuningStepKHz ? displaySnapshot.tuningStepKHz : 1;
+    uint32_t minimum = displaySnapshot.bandMinimumKHz;
+    uint32_t maximum = displaySnapshot.bandMaximumKHz;
+    if (displaySnapshot.modulation == RadioModulation::LSB || displaySnapshot.modulation == RadioModulation::USB) {
+      if (minimum < 1800) minimum = 1800;
+      if (maximum > 30000) maximum = 30000;
+    }
+    const int64_t span = static_cast<int64_t>(maximum) - minimum + step;
+    int64_t offset = static_cast<int64_t>(displaySnapshot.frequencyKHz) - minimum;
+    offset = (offset + static_cast<int64_t>(pendingTuneDelta) * step) % span;
+    if (offset < 0) offset += span;
+    displaySnapshot.frequencyKHz = minimum + static_cast<uint32_t>(offset);
+  }
+  display.render(displaySnapshot,radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal(), selectedMemorySlot, memories.count(), scanner.count(), scanner.capacity(), static_cast<uint8_t>(scanner.state()), static_cast<uint8_t>(seeker.state()), scanner.data(), memoryEditActive, memoryEditName, memoryEditCursor, &ftxDecoder, wifi.isOff(), systemClock.synchronized());
   if (firstLoopDiagnostics) { BootDiagnostics::write("[LOOP][TRACE] display.render done; first loop complete"); firstLoopDiagnostics = false; }
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
