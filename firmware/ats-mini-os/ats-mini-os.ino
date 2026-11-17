@@ -89,6 +89,15 @@ uint16_t cursorStepKHz = 0;
 uint8_t menuPage = 0;
 uint8_t menuSelection = 0;
 int16_t lastDecoderPreviewSelection = -1;
+
+static constexpr uint8_t kDecoderCategoryCount = 11;
+static constexpr uint8_t kDecoderCategoryStart[kDecoderCategoryCount] = {0, 9, 19, 27, 32, 41, 46, 52, 60, 67, 72};
+static constexpr uint8_t kDecoderCategorySize[kDecoderCategoryCount] = {9, 10, 8, 5, 9, 5, 6, 8, 7, 5, 2};
+static int8_t decoderCategoryForPage(uint8_t page) {
+  return page >= 30 && page < 30 + kDecoderCategoryCount
+    ? static_cast<int8_t>(page - 30) : -1;
+}
+
 FileManager::Entry fmEntries[FileManager::MAX_ENTRIES];
 char fmPath[96] = "/";
 char fmMessage[40] = "LittleFS bereit";
@@ -463,15 +472,26 @@ void loop() {
             menuSelection=static_cast<uint8_t>(selected);
             if(scanner.point(selected).frequencyKHz && radio.tune(scanner.point(selected).frequencyKHz)) display.notifyTuning();
           }
-          else if(menuPage==26){
-            int16_t next = (static_cast<int16_t>(menuSelection) + rotationDelta) % (kDecoderFrequencyPresetCount + 1);
-            if (next < 0) next += kDecoderFrequencyPresetCount + 1;
+          else if(menuPage==26) {
+            int16_t next = (static_cast<int16_t>(menuSelection) + rotationDelta) % (kDecoderCategoryCount + 1);
+            if (next < 0) next += kDecoderCategoryCount + 1;
             menuSelection = static_cast<uint8_t>(next);
-            if (menuSelection > 0 && lastDecoderPreviewSelection != menuSelection && tuneDecoderPreset(static_cast<uint8_t>(menuSelection - 1))) {
-              lastDecoderPreviewSelection = menuSelection;
-              const DecoderFrequencyPreset& preset = kDecoderFrequencyPresets[menuSelection - 1];
-              BootDiagnostics::printf("[DECODER PREVIEW] %s %lu kHz kind=%u", preset.label, static_cast<unsigned long>(preset.frequencyKHz), static_cast<unsigned>(preset.decoder));
-            }
+          }
+          else if(decoderCategoryForPage(menuPage) >= 0) {
+            const uint8_t category = static_cast<uint8_t>(decoderCategoryForPage(menuPage));
+            const uint8_t itemCount = static_cast<uint8_t>(kDecoderCategorySize[category] + 1);
+            int16_t next = (static_cast<int16_t>(menuSelection) + rotationDelta) % itemCount;
+            if (next < 0) next += itemCount;
+            menuSelection = static_cast<uint8_t>(next);
+            if (menuSelection > 0) {
+              const uint8_t presetIndex = static_cast<uint8_t>(kDecoderCategoryStart[category] + menuSelection - 1);
+              if (lastDecoderPreviewSelection != static_cast<int16_t>(presetIndex + 1) && tuneDecoderPreset(presetIndex)) {
+                lastDecoderPreviewSelection = static_cast<int16_t>(presetIndex + 1);
+                const DecoderFrequencyPreset& preset = kDecoderFrequencyPresets[presetIndex];
+                BootDiagnostics::printf("[DECODER PREVIEW] %s %lu kHz kind=%u", preset.label,
+                  static_cast<unsigned long>(preset.frequencyKHz), static_cast<unsigned>(preset.decoder));
+              }
+            } else lastDecoderPreviewSelection = -1;
           }
           else if(menuPage==22){if(memoryEditActive){const char* chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-.";const size_t n=strlen(chars);const char ch=memoryEditName[memoryEditCursor];const char* q=strchr(chars,ch?ch:'A');int pos=q?static_cast<int>(q-chars):0;pos=(pos+rotationDelta)%static_cast<int>(n);if(pos<0)pos+=static_cast<int>(n);memoryEditName[memoryEditCursor]=chars[pos];memoryEditName[memoryEditCursor+1]='\0';}else{int v=(int)selectedMemorySlot+rotationDelta;v%=MemoryService::kSlotCount;if(v<0)v+=MemoryService::kSlotCount;selectedMemorySlot=(uint8_t)v;}}
           else if(menuPage==21){ if(radio.nextChannel(rotationDelta)) display.notifyTuning(); }
@@ -494,7 +514,7 @@ void loop() {
               Serial.printf("[MENU] volume=%u/63\n", static_cast<unsigned>(radio.volume()));
             }
           } else {
-            const int16_t itemCount = menuPage == 0 ? 25 : menuPage == 26 ? (kDecoderFrequencyPresetCount + 1) : menuPage == 25 ? 19 : menuPage == 22 ? MemoryService::kSlotCount : menuPage == 18 ? 2 : menuPage == 20 ? 1 :
+            const int16_t itemCount = menuPage == 0 ? 25 : menuPage == 26 ? (kDecoderCategoryCount + 1) : decoderCategoryForPage(menuPage) >= 0 ? (kDecoderCategorySize[decoderCategoryForPage(menuPage)] + 1) : menuPage == 25 ? 19 : menuPage == 22 ? MemoryService::kSlotCount : menuPage == 18 ? 2 : menuPage == 20 ? 1 :
               menuPage == 2 ? 4 : menuPage == 4 ? 6 : menuPage == 5 ? 11 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
               ((menuPage == 14) ? 5 : (menuPage == 15) ? 6 :
               menuPage == 10 ? 4 : menuPage == 11 ?
@@ -561,8 +581,21 @@ void loop() {
         } else if (menuPage == 26) {
           if (menuSelection == 0) {
             lastDecoderPreviewSelection = -1; menuPage = 0; menuSelection = 1;
-          } else if (!startDecoderPreset(static_cast<uint8_t>(menuSelection - 1))) {
-            BootDiagnostics::printf("[DECODER] preset start rejected index=%u", static_cast<unsigned>(menuSelection - 1));
+          } else {
+            menuPage = static_cast<uint8_t>(30 + menuSelection - 1);
+            menuSelection = 0;
+            lastDecoderPreviewSelection = -1;
+          }
+        } else if (decoderCategoryForPage(menuPage) >= 0) {
+          const uint8_t category = static_cast<uint8_t>(decoderCategoryForPage(menuPage));
+          if (menuSelection == 0) {
+            menuPage = 26;
+            menuSelection = static_cast<uint8_t>(category + 1);
+            lastDecoderPreviewSelection = -1;
+          } else {
+            const uint8_t presetIndex = static_cast<uint8_t>(kDecoderCategoryStart[category] + menuSelection - 1);
+            if (!startDecoderPreset(presetIndex))
+              BootDiagnostics::printf("[DECODER] preset start rejected index=%u", static_cast<unsigned>(presetIndex));
           }
         } else if (menuPage == 22) {
           if(memoryEditActive) {
@@ -945,6 +978,7 @@ void loop() {
           else if (menuPage == 24) { seeker.stop(); menuPage=0; menuSelection=10; }
           else if (menuPage == 21) { cwDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=23; }
           else if (menuPage == 28) { ftxDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=20; }
+          else if (decoderCategoryForPage(menuPage) >= 0) { menuPage=26; menuSelection=0; lastDecoderPreviewSelection=-1; }
           else if (sliderAdjustmentActive) {
             closeMenuToRadio("slider adjustment finished with long press");
           } else if (menuPage == 6 && fmMode == 4) {
