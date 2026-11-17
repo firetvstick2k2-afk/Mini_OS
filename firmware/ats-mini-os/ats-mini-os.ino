@@ -381,16 +381,25 @@ void setup() {
   Serial.printf("CPU profile: %s\n",performance.profileName());
 }
 void loop() {
+  static bool firstLoopDiagnostics = true;
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] entered first loop");
   performance.update();
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] performance.update done");
   wifi.update();
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] wifi.update done");
   newsService.update(wifi.connected() && wifi.dataServicesAllowed());
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] newsService.update done");
   weatherService.update(wifi.connected() && wifi.dataServicesAllowed());
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] weatherService.update done");
   systemClock.update(wifi.connected());
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] systemClock.update done");
   struct tm utcNow{};
   const bool utcValid = systemClock.getUtc(utcNow);
   eibi.update(wifi.connected() && wifi.dataServicesAllowed(), utcValid, utcNow, radio.snapshot().frequencyKHz);
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] eibi.update done");
   // WifiClient owns and services the local setup/status web server.
   encoder.update();
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] encoder.update done");
   EncoderEvent inputEvent;
   while (encoder.poll(inputEvent)) {
     ++encoderEventCount;
@@ -889,15 +898,20 @@ void loop() {
     }
   }
   radio.update();
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] radio.update done");
   scanner.tick(radio);
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] scanner.tick done");
   seeker.tick(radio);
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] seeker.tick done");
   updateLastFmFrequencyPersistence();
   updateVolumePersistence();
   cwDecoder.update();
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] cwDecoder.update done");
   const RadioSnapshot& currentSnapshot = radio.snapshot();
   const bool waterfallVisible = !menuOpen && currentSnapshot.modulation != RadioModulation::FM && display.amLayout() == 4;
   performance.setWaterfallActive(waterfallVisible);
   stationLogoClient.update(currentSnapshot, wifi.connected() && wifi.dataServicesAllowed());
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] stationLogoClient.update done");
   const NewsService::Snapshot currentNews = newsService.snapshot();
   const WeatherService::Snapshot currentWeather = weatherService.snapshot();
   static String currentWifiName;
@@ -912,7 +926,9 @@ void loop() {
   syncFrequencyCursor();
   display.setFrequencyCursor(frequencyCursorActive?static_cast<uint8_t>(frequencyCursorPos|0x80U):100);
   const MoonCalendar::Snapshot currentMoon = MoonCalendar::calculate(time(nullptr));
+  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] before display.render");
   display.render(radio.snapshot(),radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal(), selectedMemorySlot, memories.count(), scanner.count(), scanner.capacity(), static_cast<uint8_t>(scanner.state()), static_cast<uint8_t>(seeker.state()), scanner.data(), memoryEditActive, memoryEditName, memoryEditCursor, &ftxDecoder, wifi.mode() == WifiClient::Mode::OFF, systemClock.synchronized());
+  if (firstLoopDiagnostics) { BootDiagnostics::write("[LOOP][TRACE] display.render done; first loop complete"); firstLoopDiagnostics = false; }
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
     lastStatusMs=now; const RadioSnapshot& s=radio.snapshot();
