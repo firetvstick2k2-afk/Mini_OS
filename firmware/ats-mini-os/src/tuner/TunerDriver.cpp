@@ -505,7 +505,7 @@ bool TunerDriver::pollRds(TunerRdsData& out) {
       lastPiCode_ = pi;
     }
 
-    out.pty = radio_.getRdsProgramTypeX();
+    out.pty = radio_.getRdsProgramType();
     out.ptyValid = true;
 
     if (group == 0) {
