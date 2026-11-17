@@ -101,10 +101,12 @@ void draw(Canvas& d, const RadioSnapshot& s, bool ready, bool wifi,
   }
   d.setTextDatum(TL_DATUM);
 }
-inline void drawFm(auto& d,const RadioSnapshot& s,bool ready,bool wifi,AudioWaterfallService* w) {
+template <typename Canvas>
+inline void drawFm(Canvas& d,const RadioSnapshot& s,bool ready,bool wifi,AudioWaterfallService* w) {
   draw(d,s,ready,wifi,w,true);
 }
-inline void drawAm(auto& d,const RadioSnapshot& s,bool ready,bool wifi,AudioWaterfallService* w) {
+template <typename Canvas>
+inline void drawAm(Canvas& d,const RadioSnapshot& s,bool ready,bool wifi,AudioWaterfallService* w) {
   draw(d,s,ready,wifi,w,false);
 }
 } // namespace LiveWaterfallLayout
