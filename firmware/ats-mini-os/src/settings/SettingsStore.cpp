@@ -84,14 +84,12 @@ uint8_t SettingsStore::displayAmLayout(uint8_t fallback) {
   if (!ready_) return fallback;
   uint8_t saved = preferences_.getUChar(kDisplayAmLayoutKey, fallback);
 
-  // One-time migration: installations that previously stored the legacy
-  // decoder waterfall as their default now start with the live waterfall.
-  // The legacy layout remains selectable and can still be saved afterwards.
+  // One-time migration: make Live Waterfall the initial LW/MW/KW layout
+  // for existing installations as well. This does not affect the FM layout.
+  // After this migration, later user selections are preserved normally.
   if (!preferences_.getBool(kDisplayAmLayoutMigratedKey, false)) {
-    if (saved == 4) {
-      saved = 9;
-      preferences_.putUChar(kDisplayAmLayoutKey, saved);
-    }
+    saved = 9;
+    preferences_.putUChar(kDisplayAmLayoutKey, saved);
     preferences_.putBool(kDisplayAmLayoutMigratedKey, true);
   }
   return saved <= 9 ? saved : fallback;
