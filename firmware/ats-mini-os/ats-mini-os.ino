@@ -366,7 +366,7 @@ void setup() {
   BootDiagnostics::printf("[BOOT][STAGE] after wifi.begin (deferred) free_heap=%u max_block=%u min_free=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
   // DAB Style and the TEF Newsfeed layout use online station/content services.
   // Activate networking automatically only when one of these layouts is selected.
-  if (display.fmLayout() == 0 || display.fmLayout() == 3) wifi.ensureStarted();
+  if (display.fmLayout() == 0 || display.fmLayout() == 3 || wifi.mode() == WifiClient::Mode::SYNC_ONLY) wifi.ensureStarted();
   BootDiagnostics::printf("[BOOT][STAGE] setup complete free_heap=%u max_block=%u min_free=%u loop_stack_high_water=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()), static_cast<unsigned>(uxTaskGetStackHighWaterMark(nullptr)));
   Serial.printf("CPU profile: %s\n",performance.profileName());
 }
