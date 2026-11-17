@@ -7,7 +7,6 @@ namespace {
 constexpr int kCandidateCount = 20;
 constexpr int kMinSyncScore = 10;
 constexpr int kLdpcIterations = 25;
-constexpr float kToneSpacingHz = 6.25f;
 
 }
 
@@ -38,8 +37,9 @@ bool FtxDecoder::begin(FtxMode mode, float minAudioHz, float maxAudioHz) {
 
   monitor_ = {};
   monitor_init(&monitor_, &cfg);
-  if (!monitor_.window || !monitor_.last_frame || !monitor_.fft_work ||
-      !monitor_.fft_cfg || !monitor_.wf.mag || monitor_.block_size <= 0 ||
+  if (!monitor_.window || !monitor_.last_frame || !monitor_.timedata ||
+      !monitor_.freqdata || !monitor_.fft_work || !monitor_.fft_cfg ||
+      !monitor_.wf.mag || monitor_.block_size <= 0 ||
       monitor_.block_size > static_cast<int>(sizeof(frame_) / sizeof(frame_[0]))) {
     monitor_free(&monitor_);
     monitor_ = {};
@@ -123,7 +123,8 @@ size_t FtxDecoder::decodeSlot() {
 
     FtxDecodedMessage& out = results_[resultCount_++];
     strncpy(out.text, decoded, sizeof(out.text) - 1);
-    out.audioFrequencyHz = minAudioHz_ + candidates[i].freq_offset * kToneSpacingHz;
+    const float symbolPeriod = mode_ == FtxMode::FT4 ? FT4_SYMBOL_PERIOD : FT8_SYMBOL_PERIOD;
+    out.audioFrequencyHz = minAudioHz_ + candidates[i].freq_offset / symbolPeriod;
     out.syncScore = candidates[i].score > 0 ? static_cast<uint16_t>(candidates[i].score) : 0;
     out.ldpcErrors = status.ldpc_errors;
     out.slotUtc = slotUtc_;
