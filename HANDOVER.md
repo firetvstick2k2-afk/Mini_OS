@@ -2874,3 +2874,11 @@ Aktiver Branch: `dev/first-build-preparation`.
 - GitHub-Dateien wurden nach den Änderungen erneut abgerufen und die Schnittstellen auf Konsistenz geprüft.
 - Es wurde **kein Build und kein Flash** gestartet. CW-Refaktorierung, FFT/LDPC-Last, 4-kHz-Audio-Passband und FT8-/FT4-Empfang sind deshalb noch nicht verifiziert.
 - Als Nächstes: statische Prüfung der kompletten geänderten Schnittstellen, RTTY an den gemeinsamen Audio-Bus anbinden und SNR-Schätzung ergänzen. Danach Compile-only-Build durch den Nutzer und anschließender Gerätetest.
+
+
+### Nachtrag zur Decoder-Portierung – 2026-11-17
+
+- Audioaufnahme und FTx-Start sind zusätzlich gegen das alternative LILYGO_SI473X-Profil geschützt, da GPIO11 dort SPI-MOSI statt Audioeingang ist.
+- KISS FFT enthält jetzt sowohl COPYING als auch den vollständigen BSD-3-Clause-Lizenztext; ft8_lib behält seine MIT-Lizenz.
+- Statische Schnittstellenprüfung: ein einziger analogRead(kPin)-Aufruf im neuen Audio-Capture-Modul; CW und FTx verwenden die Callback-/Queue-Schnittstellen. Display-Header, Renderer und .ino-Aufruf enthalten die neue FTx-Schnittstelle.
+- Diese Prüfungen sind Quelltextprüfungen, kein Compilerlauf. Build, GitHub Actions und Flash bleiben unangetastet.
