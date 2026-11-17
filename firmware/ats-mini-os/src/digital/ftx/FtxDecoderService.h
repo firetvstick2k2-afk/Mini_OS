@@ -15,6 +15,8 @@ public:
   bool enter(FtxMode mode, bool wifiOff, bool utcSynchronized);
   void exit();
   bool active() const { return active_; }
+  FtxMode mode() const { return mode_; }
+  bool copyWaterfall(uint8_t* out, uint16_t maxRows, uint16_t outBins, uint16_t& rows, uint16_t& bins);
   uint32_t droppedBlocks() const { return droppedBlocks_; }
   size_t copyResults(FtxDecodedMessage* out, size_t capacity);
 
