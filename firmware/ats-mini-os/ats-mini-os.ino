@@ -205,23 +205,22 @@ bool startDecoderPreset(uint8_t presetIndex) {
   if (lastDecoderPreviewSelection != static_cast<int16_t>(presetIndex + 1) && !tuneDecoderPreset(presetIndex)) return false;
   if (preset.decoder == DecoderKind::CW) {
     suspendWifiForDecoder();
-    if (!cwDecoder.enter(audioCapture, wifi.isOff())) { restoreWifiAfterDecoder(); return false; }
+    const bool entered = cwDecoder.enter(audioCapture, wifi.isOff());
+    if (!entered) restoreWifiAfterDecoder();
     menuOpen = true; menuPage = 21; menuSelection = 0; lastDecoderPreviewSelection = -1;
-    BootDiagnostics::printf("[DECODER] preset=%s kind=CW active", preset.label);
+    BootDiagnostics::printf("[DECODER] preset=%s kind=CW %s", preset.label, entered ? "active" : "opened with diagnostic");
     return true;
   }
   if (preset.decoder == DecoderKind::FT8 || preset.decoder == DecoderKind::FT4) {
     const FtxMode mode = preset.decoder == DecoderKind::FT4 ? FtxMode::FT4 : FtxMode::FT8;
     suspendWifiForDecoder();
-    if (!ftxDecoder.enter(mode, wifi.isOff(), systemClock.synchronized(), audioCapture)) {
-      restoreWifiAfterDecoder();
-      BootDiagnostics::printf("[DECODER] preset=%s kind=%s start failed wifiOff=%u utc=%u",
-        preset.label, mode == FtxMode::FT4 ? "FT4" : "FT8", wifi.isOff(), systemClock.synchronized());
-      return false;
-    }
+    const bool entered = ftxDecoder.enter(mode, wifi.isOff(), systemClock.synchronized(), audioCapture);
+    if (!entered) restoreWifiAfterDecoder();
     menuOpen = true; menuPage = 28; menuSelection = mode == FtxMode::FT4 ? 1 : 0;
     lastDecoderPreviewSelection = -1;
-    BootDiagnostics::printf("[DECODER] preset=%s kind=%s active", preset.label, mode == FtxMode::FT4 ? "FT4" : "FT8");
+    BootDiagnostics::printf("[DECODER] preset=%s kind=%s %s wifiOff=%u utc=%u",
+      preset.label, mode == FtxMode::FT4 ? "FT4" : "FT8",
+      entered ? "active" : "opened with diagnostic", wifi.isOff(), systemClock.synchronized());
     return true;
   }
   closeMenuToRadio("listen-only decoder frequency selected");
