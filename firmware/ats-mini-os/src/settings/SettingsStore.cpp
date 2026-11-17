@@ -82,7 +82,18 @@ bool SettingsStore::saveDisplayFmLayout(uint8_t layout) {
 
 uint8_t SettingsStore::displayAmLayout(uint8_t fallback) {
   if (!ready_) return fallback;
-  const uint8_t saved = preferences_.getUChar(kDisplayAmLayoutKey, fallback);
+  uint8_t saved = preferences_.getUChar(kDisplayAmLayoutKey, fallback);
+
+  // One-time migration: installations that previously stored the legacy
+  // decoder waterfall as their default now start with the live waterfall.
+  // The legacy layout remains selectable and can still be saved afterwards.
+  if (!preferences_.getBool(kDisplayAmLayoutMigratedKey, false)) {
+    if (saved == 4) {
+      saved = 9;
+      preferences_.putUChar(kDisplayAmLayoutKey, saved);
+    }
+    preferences_.putBool(kDisplayAmLayoutMigratedKey, true);
+  }
   return saved <= 9 ? saved : fallback;
 }
 
