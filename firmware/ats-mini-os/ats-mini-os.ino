@@ -57,6 +57,7 @@ AudioCaptureService audioCapture;
 CwDecoderService cwDecoder;
 FtxDecoderService ftxDecoder;
 WifiClient wifi;
+bool wifiPausedForDecoder = false;
 NewsService newsService;
 WeatherService weatherService;
 StationLogoClient stationLogoClient;
@@ -154,6 +155,15 @@ void closeMenuToRadio(const char* reason) {
   menuPage = 0;
   menuSelection = 0;
   Serial.printf("[MENU] returned to radio: %s\n", reason);
+}
+void suspendWifiForDecoder() {
+  wifiPausedForDecoder = !wifi.isOff();
+  if (wifiPausedForDecoder) wifi.suspend();
+}
+void restoreWifiAfterDecoder() {
+  if (!wifiPausedForDecoder) return;
+  wifiPausedForDecoder = false;
+  wifi.ensureStarted();
 }
 bool tuneDecoderPreset(uint8_t presetIndex) {
   if (presetIndex >= kDecoderFrequencyPresetCount) return false;
@@ -495,14 +505,16 @@ void loop() {
           if(seeker.state()==SeekService::State::Running) seeker.stop(); else seeker.start(radio,1,12);
         } else if (menuPage == 28) {
           const FtxMode selectedMode = menuSelection == 1 ? FtxMode::FT4 : FtxMode::FT8;
+          suspendWifiForDecoder();
           const bool entered = ftxDecoder.enter(selectedMode,
             wifi.isOff(), systemClock.synchronized(), audioCapture);
+          if (!entered) restoreWifiAfterDecoder();
           Serial.printf("[FTX] %s %s (Wi-Fi off=%d, UTC sync=%d)\\n",
             selectedMode == FtxMode::FT4 ? "FT4" : "FT8",
             entered ? "active" : "not started",
             wifi.isOff(), systemClock.synchronized());
         } else if (menuPage == 21) {
-          cwDecoder.exit(); menuPage = 0; menuSelection = 23;
+          cwDecoder.exit(); restoreWifiAfterDecoder(); menuPage = 0; menuSelection = 23;
           Serial.println("[CW] decoder page closed");
         } else if (menuPage == 19) {
           if (!frequencyKeypad.press(radio)) closeMenuToRadio("frequency keypad finished");
@@ -535,7 +547,9 @@ void loop() {
               if (menuPage == 18) wifi.ensureStarted();
               if (menuPage == 19) frequencyKeypad.open(radio.snapshot());
               else if (menuPage == 21) {
+                suspendWifiForDecoder();
                 const bool entered = cwDecoder.enter(audioCapture, wifi.isOff());
+                if (!entered) restoreWifiAfterDecoder();
                 if (!entered && !cwDecoder.wifiBlocked()) Serial.println("[CW] audio sampler unavailable");
                 else Serial.printf("[CW] decoder %s; Wi-Fi mode=%u\n", entered ? "active" : "blocked (turn Wi-Fi OFF)", static_cast<unsigned>(wifi.mode()));
               }
@@ -839,8 +853,8 @@ void loop() {
           }
           else if (menuPage == 23) { scanner.stop(radio); menuPage=0; menuSelection=11; }
           else if (menuPage == 24) { seeker.stop(); menuPage=0; menuSelection=10; }
-          else if (menuPage == 21) { cwDecoder.exit(); menuPage=0; menuSelection=23; }
-          else if (menuPage == 28) { ftxDecoder.exit(); menuPage=0; menuSelection=20; }
+          else if (menuPage == 21) { cwDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=23; }
+          else if (menuPage == 28) { ftxDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=20; }
           else if (sliderAdjustmentActive) {
             closeMenuToRadio("slider adjustment finished with long press");
           } else if (menuPage == 6 && fmMode == 4) {
