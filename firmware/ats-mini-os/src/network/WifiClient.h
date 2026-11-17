@@ -12,9 +12,11 @@ public:
   enum class Mode : uint8_t { OFF = 0, AP_ONLY = 1, AP_CONNECT = 2, CONNECT = 3, SYNC_ONLY = 4 };
 
   void begin();
+  bool ensureStarted();
+  bool isOff() const { return !started_ || mode_ == Mode::OFF; }
   bool setMode(Mode mode);
   Mode mode() const { return mode_; }
-  bool dataServicesAllowed() const { return mode_ == Mode::AP_CONNECT || mode_ == Mode::CONNECT; }
+  bool dataServicesAllowed() const { return started_ && (mode_ == Mode::AP_CONNECT || mode_ == Mode::CONNECT); }
   String networkName() const;
   String ipAddress() const;
   void setNewsService(NewsService* service);
@@ -40,6 +42,7 @@ private:
   bool preferencesReady_ = false;
   bool serverStarted_ = false;
   bool apActive_ = false;
+  bool started_ = false;
   Mode mode_ = Mode::AP_CONNECT;
 
   bool stationEnabled() const;
