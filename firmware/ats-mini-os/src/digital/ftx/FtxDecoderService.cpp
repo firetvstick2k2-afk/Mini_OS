@@ -68,6 +68,14 @@ bool FtxDecoderService::enter(FtxMode mode, bool wifiOff, bool utcSynchronized, 
     memset(published_, 0, sizeof(published_));
     xSemaphoreGive(resultMutex_);
     xQueueReset(queue_);
+    BootDiagnostics::printf("[FTX][START] mode=%s sample_rate=%u block_samples=%u block_us=%lld",
+      mode_ == FtxMode::FT4 ? "FT4" : "FT8",
+      static_cast<unsigned>(AudioCaptureService::kSampleRate),
+      static_cast<unsigned>(AudioCaptureService::kBlockSamples),
+      static_cast<long long>(kBlockDurationUs));
+    BootDiagnostics::printf("[FTX][DSP] initialized=%u fft_block_size=%u wf_max_blocks=%u",
+      decoder_.initialized() ? 1U : 0U, static_cast<unsigned>(decoder_.fftBlockSize()),
+      static_cast<unsigned>(decoder_.waterfallMaxBlocks()));
   }
   xSemaphoreGive(engineMutex_);
   if (!ready) return false;
@@ -78,6 +86,7 @@ bool FtxDecoderService::enter(FtxMode mode, bool wifiOff, bool utcSynchronized, 
     xSemaphoreTake(engineMutex_, portMAX_DELAY);
     decoder_.end();
     xSemaphoreGive(engineMutex_);
+    BootDiagnostics::write("[FTX][START_FAIL] audio subscriber registration failed");
     return false;
   }
   return true;
@@ -145,8 +154,17 @@ void FtxDecoderService::processChunk(const AudioChunk& chunk) {
     static_cast<int64_t>(chunk.count) * 1000000LL / AudioCaptureService::kSampleRate;
   const int64_t slotLengthUs = mode_ == FtxMode::FT4 ? 7500000LL : 15000000LL;
 
+  ++chunksProcessed_;
+  lastChunkStartUs_ = chunkStart;
+  lastChunkEndUs_ = chunkEnd;
+  lastChunkDeltaUs_ = lastBlockStartUs_ ? chunkStart - lastBlockStartUs_ : 0;
   if (lastBlockStartUs_ && chunkStart - lastBlockStartUs_ > kBlockDurationUs * 2) {
-    collecting_ = false; // A queue overrun invalidates this slot; never decode a broken stream.
+    ++timestampGaps_;
+    BootDiagnostics::printf("[FTX][TIMING][GAP] delta_us=%lld expected_us=%lld chunk_start=%lld previous_start=%lld collecting=%u slot_start=%lld",
+      static_cast<long long>(chunkStart - lastBlockStartUs_), static_cast<long long>(kBlockDurationUs),
+      static_cast<long long>(chunkStart), static_cast<long long>(lastBlockStartUs_),
+      collecting_ ? 1U : 0U, static_cast<long long>(activeSlotStartUs_));
+    collecting_ = false;
     activeSlotStartUs_ = 0;
   }
   lastBlockStartUs_ = chunkStart;
@@ -157,12 +175,22 @@ void FtxDecoderService::processChunk(const AudioChunk& chunk) {
 
   if (collecting_ && activeSlotStartUs_ == currentSlotStart) {
     if (chunkEnd >= nextBoundary) {
+      ++boundaryHits_;
+      const int64_t previousSlotStart = activeSlotStartUs_;
       const int64_t untilBoundary = nextBoundary - chunkStart;
       size_t before = untilBoundary <= 0 ? 0 :
         static_cast<size_t>((untilBoundary * AudioCaptureService::kSampleRate + 999999LL) / 1000000LL);
       if (before > chunk.count) before = chunk.count;
       if (before) decoder_.pushSamples(chunk.samples, before);
-      if (decoder_.slotReady()) decodeAndPublish();
+      const bool readyAtBoundary = decoder_.slotReady();
+      BootDiagnostics::printf("[FTX][SLOT][END] mode=%s slot_start=%lld boundary=%lld chunk_start=%lld chunk_end=%lld samples_in_chunk=%u samples_before=%u wf_blocks=%u/%u ready=%u frame_fill=%u",
+        mode_ == FtxMode::FT4 ? "FT4" : "FT8", static_cast<long long>(previousSlotStart),
+        static_cast<long long>(nextBoundary), static_cast<long long>(chunkStart),
+        static_cast<long long>(chunkEnd), static_cast<unsigned>(chunk.count),
+        static_cast<unsigned>(before), static_cast<unsigned>(decoder_.symbolsCollected()),
+        static_cast<unsigned>(decoder_.waterfallMaxBlocks()), readyAtBoundary ? 1U : 0U,
+        static_cast<unsigned>(decoder_.pendingFrameSamples()));
+      if (readyAtBoundary) decodeAndPublish();
       collecting_ = false;
       activeSlotStartUs_ = 0;
 
@@ -170,10 +198,10 @@ void FtxDecoderService::processChunk(const AudioChunk& chunk) {
       const bool nextStarted = decoder_.startSlot(static_cast<time_t>(nextBoundary / 1000000LL));
       if (nextStarted) {
         ++slotStartSuccesses_;
-        BootDiagnostics::printf("[FTX][SLOT][START] mode=%s utc=%lld source=boundary-split",
-          mode_ == FtxMode::FT4 ? "FT4" : "FT8", static_cast<long long>(nextBoundary / 1000000LL));
         activeSlotStartUs_ = nextBoundary;
         collecting_ = true;
+        BootDiagnostics::printf("[FTX][SLOT][START] mode=%s utc=%lld source=boundary-split",
+          mode_ == FtxMode::FT4 ? "FT4" : "FT8", static_cast<long long>(nextBoundary / 1000000LL));
         if (before < chunk.count) {
           decoder_.pushSamples(chunk.samples + before, chunk.count - before);
           if (decoder_.slotReady()) {
@@ -182,6 +210,10 @@ void FtxDecoderService::processChunk(const AudioChunk& chunk) {
             activeSlotStartUs_ = 0;
           }
         }
+      } else {
+        ++slotStartFailures_;
+        BootDiagnostics::printf("[FTX][SLOT][START_FAIL] mode=%s utc=%lld source=boundary-split",
+          mode_ == FtxMode::FT4 ? "FT4" : "FT8", static_cast<long long>(nextBoundary / 1000000LL));
       }
       return;
     }
@@ -198,13 +230,29 @@ void FtxDecoderService::processChunk(const AudioChunk& chunk) {
   // Wait for the exact UTC slot edge. A chunk that straddles the edge is split
   // at the first sample on/after that edge, preserving symbol timing.
   if (chunkStart < nextBoundary && chunkEnd >= nextBoundary) {
+    ++boundaryHits_;
     const int64_t delta = nextBoundary - chunkStart;
     size_t offset = delta <= 0 ? 0 :
       static_cast<size_t>((delta * AudioCaptureService::kSampleRate + 999999LL) / 1000000LL);
-    if (offset > chunk.count) return;
-    if (!decoder_.startSlot(static_cast<time_t>(nextBoundary / 1000000LL))) return;
+    if (offset > chunk.count) {
+      BootDiagnostics::printf("[FTX][SLOT][OFFSET_FAIL] offset=%u count=%u delta_us=%lld",
+        static_cast<unsigned>(offset), static_cast<unsigned>(chunk.count), static_cast<long long>(delta));
+      return;
+    }
+    ++slotStartAttempts_;
+    if (!decoder_.startSlot(static_cast<time_t>(nextBoundary / 1000000LL))) {
+      ++slotStartFailures_;
+      BootDiagnostics::printf("[FTX][SLOT][START_FAIL] mode=%s utc=%lld source=first-boundary offset=%u count=%u",
+        mode_ == FtxMode::FT4 ? "FT4" : "FT8", static_cast<long long>(nextBoundary / 1000000LL),
+        static_cast<unsigned>(offset), static_cast<unsigned>(chunk.count));
+      return;
+    }
+    ++slotStartSuccesses_;
     activeSlotStartUs_ = nextBoundary;
     collecting_ = true;
+    BootDiagnostics::printf("[FTX][SLOT][START] mode=%s utc=%lld source=first-boundary offset=%u count=%u",
+      mode_ == FtxMode::FT4 ? "FT4" : "FT8", static_cast<long long>(nextBoundary / 1000000LL),
+      static_cast<unsigned>(offset), static_cast<unsigned>(chunk.count));
     decoder_.pushSamples(chunk.samples + offset, chunk.count - offset);
     if (decoder_.slotReady()) {
       decodeAndPublish();
@@ -216,7 +264,13 @@ void FtxDecoderService::processChunk(const AudioChunk& chunk) {
 
 void FtxDecoderService::decodeAndPublish() {
   ++completedSlots_;
+  const int blocksBeforeDecode = decoder_.symbolsCollected();
+  const int maxBlocksBeforeDecode = decoder_.waterfallMaxBlocks();
+  const int64_t slotStart = activeSlotStartUs_;
   decoder_.decodeSlot();
+  BootDiagnostics::printf("[FTX][DECODE] mode=%s slot_start=%lld wf_blocks=%d/%d results=%u",
+    mode_ == FtxMode::FT4 ? "FT4" : "FT8", static_cast<long long>(slotStart),
+    blocksBeforeDecode, maxBlocksBeforeDecode, static_cast<unsigned>(decoder_.resultCount()));
   if (decoder_.resultCount() > 0) ++decodedSlots_;
   FtxDecodedMessage fresh[kResultCapacity]{};
   const size_t count = decoder_.resultCount() < kResultCapacity ?
