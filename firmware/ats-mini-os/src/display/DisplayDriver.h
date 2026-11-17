@@ -15,7 +15,6 @@
 #include "../radio/ScanService.h"
 #include "../digital/ftx/FtxDecoderService.h"
 #include "../audio/AudioWaterfallService.h"
-#include "../audio/AudioWaterfallService.h"
 
 #if !defined(LILYGO_SI473X)
 #include <esp_rom_gpio.h>
