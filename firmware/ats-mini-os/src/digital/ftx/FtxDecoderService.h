@@ -21,6 +21,21 @@ public:
   uint32_t receivedBlocks() const { return receivedBlocks_; }
   uint32_t completedSlots() const { return completedSlots_; }
   uint32_t decodedSlots() const { return decodedSlots_; }
+  uint32_t slotStartAttempts() const { return slotStartAttempts_; }
+  uint32_t slotStartSuccesses() const { return slotStartSuccesses_; }
+  uint32_t slotStartFailures() const { return slotStartFailures_; }
+  uint32_t boundaryHits() const { return boundaryHits_; }
+  uint32_t timestampGaps() const { return timestampGaps_; }
+  uint32_t chunksProcessed() const { return chunksProcessed_; }
+  int64_t lastChunkStartUs() const { return lastChunkStartUs_; }
+  int64_t lastChunkEndUs() const { return lastChunkEndUs_; }
+  int64_t lastBoundaryUs() const { return lastBoundaryUs_; }
+  int64_t lastChunkDeltaUs() const { return lastChunkDeltaUs_; }
+  uint32_t decoderBlocks() const { return decoder_.symbolsCollected(); }
+  uint32_t decoderMaxBlocks() const { return static_cast<uint32_t>(decoder_.waterfallMaxBlocks()); }
+  uint32_t decoderFrameFill() const { return static_cast<uint32_t>(decoder_.pendingFrameSamples()); }
+  uint32_t decoderBlockSize() const { return static_cast<uint32_t>(decoder_.fftBlockSize()); }
+  bool decoderCollecting() const { return decoder_.collecting(); }
   size_t copyResults(FtxDecodedMessage* out, size_t capacity);
 
 private:
@@ -53,4 +68,14 @@ private:
   volatile uint32_t receivedBlocks_ = 0;
   volatile uint32_t completedSlots_ = 0;
   volatile uint32_t decodedSlots_ = 0;
+  volatile uint32_t slotStartAttempts_ = 0;
+  volatile uint32_t slotStartSuccesses_ = 0;
+  volatile uint32_t slotStartFailures_ = 0;
+  volatile uint32_t boundaryHits_ = 0;
+  volatile uint32_t timestampGaps_ = 0;
+  volatile uint32_t chunksProcessed_ = 0;
+  volatile int64_t lastChunkStartUs_ = 0;
+  volatile int64_t lastChunkEndUs_ = 0;
+  volatile int64_t lastBoundaryUs_ = 0;
+  volatile int64_t lastChunkDeltaUs_ = 0;
 };
