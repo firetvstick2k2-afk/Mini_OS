@@ -380,10 +380,8 @@ void loop() {
   wifi.update();
   if (eibiDownloadPending && wifi.connected() && wifi.dataServicesAllowed()) {
     const bool started = eibi.beginDownload(true);
-    if (started) {
-      eibiDownloadPending = false;
-      Serial.println("[EIBI] deferred download started after Wi-Fi connection");
-    }
+    eibiDownloadPending = false;
+    Serial.printf("[EIBI] deferred download %s after Wi-Fi connection\n", started ? "started" : "rejected");
   }
   if (eibiDownloadPending && millis() - eibiDownloadRequestedAtMs >= 60000) {
     eibiDownloadPending = false;
@@ -648,7 +646,7 @@ void loop() {
           eibiDownloadRequestedAtMs = millis();
           if (wifi.connected() && wifi.dataServicesAllowed()) {
             const bool started = eibi.beginDownload(true);
-            eibiDownloadPending = !started;
+            eibiDownloadPending = false;
             Serial.printf("[EIBI] download request %s: %s\n", started ? "accepted" : "waiting", eibi.statusText());
           } else {
             Serial.println("[EIBI] Wi-Fi started; waiting for router connection before download");
