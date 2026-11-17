@@ -1096,7 +1096,7 @@ void loop() {
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] before display.render");
   RadioSnapshot displaySnapshot = radio.snapshot();
   if (pendingTuneDelta != 0 && radio.isReady()) {
-    const uint32_t step = displaySnapshot.tuningStepKHz ? displaySnapshot.tuningStepKHz : 1;
+    const uint32_t step = BandManager::currentStepKHz() ? BandManager::currentStepKHz() : 1;
     uint32_t minimum = displaySnapshot.bandMinimumKHz;
     uint32_t maximum = displaySnapshot.bandMaximumKHz;
     if (displaySnapshot.modulation == RadioModulation::LSB || displaySnapshot.modulation == RadioModulation::USB) {
