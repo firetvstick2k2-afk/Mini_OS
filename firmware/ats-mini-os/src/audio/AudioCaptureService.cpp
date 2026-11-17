@@ -5,6 +5,9 @@
 #include <math.h>
 
 bool AudioCaptureService::begin() {
+#if defined(LILYGO_SI473X)
+  return false; // GPIO11 is the LILYGO SPI MOSI pin, not the ATS Mini audio input.
+#else
   if (initialized_) return true;
   pinMode(kPin, INPUT);
   if (xTaskCreatePinnedToCore(taskEntry, "audio-capture", 4096, this, 3, nullptr, 0) != pdPASS) {
@@ -12,6 +15,7 @@ bool AudioCaptureService::begin() {
   }
   initialized_ = true;
   return true;
+#endif
 }
 
 bool AudioCaptureService::subscribe(void* context, Consumer consumer) {
