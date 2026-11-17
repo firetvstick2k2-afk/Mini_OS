@@ -13,6 +13,7 @@ public:
 
   void begin();
   bool ensureStarted();
+  void suspend();
   bool isOff() const { return !started_ || mode_ == Mode::OFF; }
   bool setMode(Mode mode);
   Mode mode() const { return mode_; }
