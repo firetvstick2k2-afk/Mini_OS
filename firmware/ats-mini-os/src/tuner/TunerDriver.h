@@ -106,6 +106,7 @@ struct TunerRdsData {
   bool msValid = false;
   bool diValid = false;
   bool afUpdated = false;
+  bool afMethodBUpdated = false;
   bool tp = false;
   bool ta = false;
   bool musicSpeech = false;
