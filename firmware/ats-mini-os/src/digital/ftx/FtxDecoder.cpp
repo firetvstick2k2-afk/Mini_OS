@@ -1,4 +1,5 @@
 #include "FtxDecoder.h"
+#include "ft8_lib/ft8/encode.h"
 
 #include <math.h>
 #include <string.h>
@@ -7,7 +8,51 @@ namespace {
 constexpr int kCandidateCount = 20;
 constexpr int kMinSyncScore = 10;
 constexpr int kLdpcIterations = 25;
+constexpr float kSnrCalibrationDb = 1.7f;
 
+// Median waterfall-bin power, converted from the library's 0.5 dB magnitude
+// encoding to linear power. The 0.6931 factor corrects the exponential noise median.
+float estimateNoisePower(const ftx_waterfall_t& wf) {
+  uint32_t histogram[256] = {};
+  const int count = wf.num_blocks * wf.block_stride;
+  if (count <= 0) return 1.0f;
+  for (int i = 0; i < count; ++i)
+    ++histogram[WF_ELEM_MAG_INT(wf.mag[i]) & 255];
+  uint32_t accumulated = 0;
+  int median = 0;
+  while (median < 255 && (accumulated += histogram[median]) < static_cast<uint32_t>(count) / 2)
+    ++median;
+  return powf(10.0f, (static_cast<float>(median) * 0.5f - 120.0f) / 10.0f) / 0.6931f;
+}
+
+float estimateSnrDb(const monitor_t& monitor, const ftx_candidate_t& candidate,
+                    const uint8_t* tones, float noisePower) {
+  const ftx_waterfall_t& wf = monitor.wf;
+  const bool ft4 = wf.protocol == FTX_PROTOCOL_FT4;
+  const int symbolCount = ft4 ? FT4_NN : FT8_NN;
+  const int toneCount = ft4 ? 4 : 8;
+  const WF_ELEM_T* base = wf.mag + candidate.time_sub * wf.freq_osr * wf.num_bins +
+    candidate.freq_sub * wf.num_bins + candidate.freq_offset;
+  float signalPower = 0.0f;
+  int signalSymbols = 0;
+  for (int symbol = ft4 ? 1 : 0; symbol < (ft4 ? symbolCount - 1 : symbolCount); ++symbol) {
+    const int block = candidate.time_offset + symbol;
+    if (block < 0 || block >= wf.num_blocks) continue;
+    const WF_ELEM_T* row = base + block * wf.block_stride;
+    const int tone = tones[symbol];
+    if (tone < toneCount && candidate.freq_offset + tone < wf.num_bins) {
+      signalPower += powf(10.0f, WF_ELEM_MAG(row[tone]) / 10.0f);
+      ++signalSymbols;
+    }
+  }
+  if (!signalSymbols) return -30.0f;
+  const float meanSignalPower = signalPower / signalSymbols;
+  const float equivalentNoiseBandwidth = 1.5f / (monitor.symbol_period * wf.freq_osr);
+  const float signalAboveNoise = meanSignalPower - noisePower > 1e-3f * noisePower
+    ? meanSignalPower - noisePower : 1e-3f * noisePower;
+  return 10.0f * log10f(signalAboveNoise / noisePower *
+    equivalentNoiseBandwidth / 2500.0f) + kSnrCalibrationDb;
+}
 }
 
 bool FtxDecoder::lookupHash(ftx_callsign_hash_type_t, uint32_t, char*) {
@@ -100,6 +145,7 @@ size_t FtxDecoder::decodeSlot() {
   ftx_candidate_t candidates[kCandidateCount]{};
   const int found = ftx_find_candidates(&monitor_.wf, kCandidateCount,
                                         candidates, kMinSyncScore);
+  const float noisePower = found ? estimateNoisePower(monitor_.wf) : 1.0f;
   ftx_callsign_hash_interface_t hashIf{};
   hashIf.lookup_hash = &FtxDecoder::lookupHash;
   hashIf.save_hash = &FtxDecoder::saveHash;
@@ -121,8 +167,13 @@ size_t FtxDecoder::decodeSlot() {
     }
     if (duplicate) continue;
 
+    uint8_t tones[FT4_NN > FT8_NN ? FT4_NN : FT8_NN] = {};
+    if (mode_ == FtxMode::FT4) ft4_encode(message.payload, tones);
+    else ft8_encode(message.payload, tones);
+
     FtxDecodedMessage& out = results_[resultCount_++];
     strncpy(out.text, decoded, sizeof(out.text) - 1);
+    out.snrDb = estimateSnrDb(monitor_, candidates[i], tones, noisePower);
     const float symbolPeriod = mode_ == FtxMode::FT4 ? FT4_SYMBOL_PERIOD : FT8_SYMBOL_PERIOD;
     out.audioFrequencyHz = minAudioHz_ + candidates[i].freq_offset / symbolPeriod;
     out.syncScore = candidates[i].score > 0 ? static_cast<uint16_t>(candidates[i].score) : 0;
