@@ -3,10 +3,11 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 #include "CwDecoder.h"
+#include "../audio/AudioCaptureService.h"
 
 class CwDecoderService {
 public:
-  bool begin();
+  bool begin(AudioCaptureService& capture);
   bool enter(bool wifiOff);
   void exit();
   bool active() const { return active_; }
@@ -17,18 +18,21 @@ public:
   bool signal() const { return signal_; }
   uint16_t audioLevel() const { return audioLevel_; }
   int wpm() const { return wpm_; }
+
 private:
-  static void taskEntry(void* arg);
-  void sampleTask();
-  static constexpr uint8_t kPin=11;
-  static constexpr uint32_t kSampleRate=4000;
-  static constexpr uint8_t kBlock=24;
+  static void onAudioSamples(void* context, const int16_t* samples, size_t count);
+  void consumeSamples(const int16_t* samples, size_t count);
+
+  static constexpr uint32_t kSampleRate = AudioCaptureService::kSampleRate;
   CwDecoder decoder_;
-  SemaphoreHandle_t mutex_=nullptr;
-  volatile bool active_=false;
-  bool initialized_=false,wifiBlocked_=false,signal_=false;
-  volatile uint16_t audioLevel_=0;
-  char shownText_[CwDecoder::TEXT_MAX+1]={0};
-  int wpm_=0;
-  uint32_t lastUiMs_=0,lastToneMs_=0;
+  AudioCaptureService* capture_ = nullptr;
+  SemaphoreHandle_t mutex_ = nullptr;
+  volatile bool active_ = false;
+  bool initialized_ = false, wifiBlocked_ = false, signal_ = false;
+  volatile uint16_t audioLevel_ = 0;
+  float dcEstimate_ = 2048.0f, devSum_ = 0.0f;
+  uint32_t devCount_ = 0;
+  char shownText_[CwDecoder::TEXT_MAX + 1] = {};
+  int wpm_ = 0;
+  uint32_t lastUiMs_ = 0, lastToneMs_ = 0;
 };
