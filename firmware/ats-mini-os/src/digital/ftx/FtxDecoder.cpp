@@ -133,3 +133,27 @@ size_t FtxDecoder::decodeSlot() {
   slotReady_ = false;
   return resultCount_;
 }
+
+bool FtxDecoder::copyWaterfall(uint8_t* out, uint16_t maxRows, uint16_t outBins,
+                               uint16_t& rows, uint16_t& bins) const {
+  rows = bins = 0;
+  if (!initialized_ || !out || !maxRows || !outBins || !monitor_.wf.mag ||
+      monitor_.wf.num_blocks <= 0 || monitor_.wf.num_bins <= 0) return false;
+
+  rows = static_cast<uint16_t>(monitor_.wf.num_blocks < maxRows ?
+    monitor_.wf.num_blocks : maxRows);
+  bins = outBins;
+  const int firstRow = monitor_.wf.num_blocks - rows;
+  for (uint16_t y = 0; y < rows; ++y) {
+    const int srcRow = firstRow + y;
+    for (uint16_t x = 0; x < outBins; ++x) {
+      int srcBin = (static_cast<int>(x) * monitor_.wf.num_bins) / outBins;
+      if (srcBin >= monitor_.wf.num_bins) srcBin = monitor_.wf.num_bins - 1;
+      const int srcIndex = srcRow * monitor_.wf.block_stride +
+        srcBin * monitor_.wf.freq_osr;
+      out[static_cast<size_t>(y) * outBins + x] =
+        static_cast<uint8_t>(monitor_.wf.mag[srcIndex]);
+    }
+  }
+  return rows > 0;
+}
