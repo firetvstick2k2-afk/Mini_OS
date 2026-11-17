@@ -9,12 +9,6 @@ constexpr int kMinSyncScore = 10;
 constexpr int kLdpcIterations = 25;
 constexpr float kToneSpacingHz = 6.25f;
 
-ftx_callsign_hash_interface_t makeHashInterface() {
-  ftx_callsign_hash_interface_t iface{};
-  iface.lookup_hash = FtxDecoder::lookupHash;
-  iface.save_hash = FtxDecoder::saveHash;
-  return iface;
-}
 }
 
 bool FtxDecoder::lookupHash(ftx_callsign_hash_type_t, uint32_t, char*) {
@@ -106,7 +100,9 @@ size_t FtxDecoder::decodeSlot() {
   ftx_candidate_t candidates[kCandidateCount]{};
   const int found = ftx_find_candidates(&monitor_.wf, kCandidateCount,
                                         candidates, kMinSyncScore);
-  ftx_callsign_hash_interface_t hashIf = makeHashInterface();
+  ftx_callsign_hash_interface_t hashIf{};
+  hashIf.lookup_hash = &FtxDecoder::lookupHash;
+  hashIf.save_hash = &FtxDecoder::saveHash;
 
   for (int i = found - 1; i >= 0 && resultCount_ < kMaxResults; --i) {
     ftx_message_t message{};
