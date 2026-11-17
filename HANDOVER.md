@@ -2992,3 +2992,15 @@ Prüfstatus:
 - Kein Hosttest, Firmwarebuild, GitHub-Actions-Workflow oder Flash wurde ausgeführt. Die Zähler müssen beim nächsten Gerätetest ausgewertet werden; sie belegen noch keine erfolgreiche HF-/Audio-Decodierung.
 
 - Nach dem Commit wurde der Decoder-Übergang nochmals mit dem Display-Renderer abgeglichen: Decoderseiten 21/28 werden nur im geöffneten Menü-/Decoderzustand gerendert. Der Direktstart hält deshalb `menuOpen` aktiv und wechselt nur die Seite; damit bleibt die Decoderansicht sichtbar. Diese Korrektur ist im Folgecommit enthalten.
+
+
+## FT8/FT4 – Erweiterte Slot-/Timing-Diagnose (2026-11-17)
+
+- Diagnoseinstrumentierung im aktiven Branch `dev/first-build-preparation` ergänzt; Ziel ist die Eingrenzung, warum im Hardwarelog Audioblöcke eintreffen, aber `slots=0` bleibt.
+- `FtxDecoder` stellt Diagnosewerte für Initialisierung, FFT-Blockgröße, gefüllte Waterfall-Blöcke, Maximum, Sample-Pufferfüllstand und internen Collecting-Status bereit.
+- `FtxDecoderService` zählt verarbeitete Chunks, Slotstart-Versuche/Erfolge/Fehler, erkannte Slotgrenzen und Zeitstempel-Lücken. Es protokolliert Slotstarts, Slotenden, Startfehler, Zeitlücken und Decode-Aufrufe mit UTC-Zeitstempeln und Waterfall-Füllstand.
+- Der periodische `[FTX][DIAG]`-Datensatz enthält jetzt zusätzlich Pipeline-/Timing-Zähler und den letzten Chunk-/Grenzzeitpunkt.
+- BootDiagnostics-Formatpuffer von 256 auf 512 Byte erweitert, damit die längere periodische Diagnosezeile nicht abgeschnitten wird.
+- Änderungen: `FtxDecoder.h`, `FtxDecoderService.h/.cpp`, `ats-mini-os.ino`, `BootDiagnostics.cpp`.
+- Commits: `c9711d2d1fe4a7dd14e141ed6ec2535d51a6d3ee`, `08a6530eec2ec18e81c279fa534d6773ea61db5c`, `b68817bf9c935bdcf8dd007da613908f676a25fe`, `f5b6c6a06534344710ecdffc353f6ffcb0dd9a0c`, `fa41d6b8e8828244e04f2f40b1d17f8c0970a74f`.
+- Änderungen wurden aus dem Zielbranch erneut abgerufen und stichprobenartig geprüft. Kein Build, keine GitHub Action und kein Flash gestartet; Nutzer startet den Compile-/Hardwaretest selbst. CW-Decoder, Display-Layouts und Audio-Hardwarepfad wurden nicht geändert.
