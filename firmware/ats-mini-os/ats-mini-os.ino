@@ -483,15 +483,9 @@ void loop() {
             int16_t next = (static_cast<int16_t>(menuSelection) + rotationDelta) % itemCount;
             if (next < 0) next += itemCount;
             menuSelection = static_cast<uint8_t>(next);
-            if (menuSelection > 0) {
-              const uint8_t presetIndex = static_cast<uint8_t>(kDecoderCategoryStart[category] + menuSelection - 1);
-              if (lastDecoderPreviewSelection != static_cast<int16_t>(presetIndex + 1) && tuneDecoderPreset(presetIndex)) {
-                lastDecoderPreviewSelection = static_cast<int16_t>(presetIndex + 1);
-                const DecoderFrequencyPreset& preset = kDecoderFrequencyPresets[presetIndex];
-                BootDiagnostics::printf("[DECODER PREVIEW] %s %lu kHz kind=%u", preset.label,
-                  static_cast<unsigned long>(preset.frequencyKHz), static_cast<unsigned>(preset.decoder));
-              }
-            } else lastDecoderPreviewSelection = -1;
+            // Browsing categories only changes the highlighted preset. The radio is
+            // tuned once, on confirmation, so scrolling stays responsive.
+            lastDecoderPreviewSelection = -1;
           }
           else if(menuPage==22){if(memoryEditActive){const char* chars="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 _-.";const size_t n=strlen(chars);const char ch=memoryEditName[memoryEditCursor];const char* q=strchr(chars,ch?ch:'A');int pos=q?static_cast<int>(q-chars):0;pos=(pos+rotationDelta)%static_cast<int>(n);if(pos<0)pos+=static_cast<int>(n);memoryEditName[memoryEditCursor]=chars[pos];memoryEditName[memoryEditCursor+1]='\0';}else{int v=(int)selectedMemorySlot+rotationDelta;v%=MemoryService::kSlotCount;if(v<0)v+=MemoryService::kSlotCount;selectedMemorySlot=(uint8_t)v;}}
           else if(menuPage==21){ if(radio.nextChannel(rotationDelta)) display.notifyTuning(); }
