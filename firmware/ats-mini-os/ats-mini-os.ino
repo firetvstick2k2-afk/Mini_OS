@@ -69,6 +69,9 @@ uint32_t lastStatusMs = 0;
 uint32_t lastObservedFmFrequencyKHz = DEFAULT_FM_FREQUENCY_KHZ;
 uint32_t fmFrequencyChangedAtMs = 0;
 bool fmFrequencySavePending = false;
+int32_t pendingTuneDelta = 0;
+uint32_t pendingTuneChangedAtMs = 0;
+constexpr uint32_t kEncoderTuneSettleMs = 2000;
 uint8_t lastObservedVolume = 32;
 uint32_t volumeChangedAtMs = 0;
 bool volumeSavePending = false;
@@ -513,11 +516,11 @@ void loop() {
             bfoSavePending = true;
             Serial.printf("[BFO] offset=%d Hz\n", static_cast<int>(radio.bfoOffsetHz()));
           }
-        } else if(frequencyCursorActive){if(tuneFrequencyDigit(rotationDelta))Serial.printf("[FREQ CURSOR] pos=%u step=%lu kHz\n",frequencyCursorPos,static_cast<unsigned long>(frequencyCursorStepKHz(frequencyCursorPos,radio.snapshot().modulation)));} else if (radio.nextChannel(rotationDelta)) {
-          display.notifyTuning();
-          Serial.printf("[INPUT] tune step %s -> %.1f MHz\n",
-            rotationDelta > 0 ? "CW" : "CCW",
-            radio.snapshot().frequencyKHz / 1000.0f);
+        } else if(frequencyCursorActive){if(tuneFrequencyDigit(rotationDelta))Serial.printf("[FREQ CURSOR] pos=%u step=%lu kHz\n",frequencyCursorPos,static_cast<unsigned long>(frequencyCursorStepKHz(frequencyCursorPos,radio.snapshot().modulation)));} else {
+          pendingTuneDelta = constrain(pendingTuneDelta + rotationDelta, -32767, 32767);
+          pendingTuneChangedAtMs = millis();
+          Serial.printf("[INPUT] tune queued delta=%ld; waiting %lu ms\\n",
+            static_cast<long>(pendingTuneDelta), static_cast<unsigned long>(kEncoderTuneSettleMs));
         }
         break;
       }
@@ -532,11 +535,29 @@ void loop() {
           }
           Serial.println("[BFO] adjustment finished; encoder returned to tuning");
         } else if(frequencyCursorActive){if(alignFrequencyCursor())display.notifyTuning();frequencyCursorActive=false;if(bfoSavePending){const bool saved=settingsStore.saveBfoOffsetHz(radio.bfoOffsetHz());Serial.printf("[SETTINGS] cursor BFO=%d Hz %s\n",static_cast<int>(radio.bfoOffsetHz()),saved?"saved":"save failed");bfoSavePending=false;}} else if (!menuOpen) {
-          menuOpen = true;
-          sliderAdjustmentActive = false;
-          menuPage = 0;
-          menuSelection = 0;
-          Serial.println("[MENU] opened");
+          pendingTuneDelta = 0;
+          int matchingPreset = -1;
+          const RadioSnapshot& live = radio.snapshot();
+          for (uint8_t i = 0; i < kDecoderFrequencyPresetCount; ++i) {
+            const DecoderFrequencyPreset& preset = kDecoderFrequencyPresets[i];
+            if (preset.decoder != DecoderKind::None &&
+                preset.frequencyKHz == live.frequencyKHz &&
+                preset.modulation == live.modulation) {
+              matchingPreset = i;
+              break;
+            }
+          }
+          if (matchingPreset >= 0) {
+            if (!startDecoderPreset(static_cast<uint8_t>(matchingPreset)))
+              BootDiagnostics::printf("[DECODER] direct launch failed at %lu kHz",
+                static_cast<unsigned long>(live.frequencyKHz));
+          } else {
+            menuOpen = true;
+            sliderAdjustmentActive = false;
+            menuPage = 0;
+            menuSelection = 0;
+            Serial.println("[MENU] opened");
+          }
         } else if (menuPage == 26) {
           if (menuSelection == 0) {
             lastDecoderPreviewSelection = -1; menuPage = 0; menuSelection = 1;
@@ -964,6 +985,15 @@ void loop() {
   }
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] before radio.update");
   radio.update();
+  if (pendingTuneDelta != 0 && millis() - pendingTuneChangedAtMs >= kEncoderTuneSettleMs) {
+    const int32_t settledDelta = pendingTuneDelta;
+    pendingTuneDelta = 0;
+    if (radio.nextChannel(static_cast<int16_t>(constrain(settledDelta, -32767, 32767)))) {
+      display.notifyTuning();
+      Serial.printf("[INPUT] settled tune delta=%ld -> %.1f MHz\\n",
+        static_cast<long>(settledDelta), radio.snapshot().frequencyKHz / 1000.0f);
+    }
+  }
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] radio.update done");
   scanner.tick(radio);
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] scanner.tick done");
