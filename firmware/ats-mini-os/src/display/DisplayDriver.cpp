@@ -1423,8 +1423,8 @@ void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnect
     if (fmLayout_ == 5) {
       if (fmAudioFft_) fmAudioFft_->copyWaterfall(fmFftBuffer_);
       const bool fftAvailable = fmAudioFft_ && fmAudioFft_->available();
-      if (useSprite_) { sprite_.fillSprite(BLACK); FmAudioFftLayout::draw(sprite_, s, wifiConnected, fmFftBuffer_, fftAvailable); sprite_.pushSprite(0, 0); }
-      else { device_.fillScreen(BLACK); FmAudioFftLayout::draw(device_, s, wifiConnected, fmFftBuffer_, fftAvailable); }
+      if (useSprite_) { sprite_.fillSprite(BLACK); FmAudioFftLayout::draw(sprite_, s, fmFftBuffer_, fftAvailable); sprite_.pushSprite(0, 0); }
+      else { device_.fillScreen(BLACK); FmAudioFftLayout::draw(device_, s, fmFftBuffer_, fftAvailable); }
       return;
     }
     if (fmLayout_ == 3) {
