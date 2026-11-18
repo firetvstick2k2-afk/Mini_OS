@@ -514,7 +514,7 @@ void loop() {
               Serial.printf("[MENU] volume=%u/63\n", static_cast<unsigned>(radio.volume()));
             }
           } else {
-            const int16_t itemCount = menuPage == 0 ? 25 : menuPage == 26 ? (kDecoderCategoryCount + 1) : decoderCategoryForPage(menuPage) >= 0 ? (kDecoderCategorySize[decoderCategoryForPage(menuPage)] + 1) : menuPage == 25 ? 19 : menuPage == 22 ? MemoryService::kSlotCount : menuPage == 18 ? 2 : menuPage == 20 ? 1 :
+            const int16_t itemCount = menuPage == 0 ? 24 : menuPage == 26 ? (kDecoderCategoryCount + 1) : decoderCategoryForPage(menuPage) >= 0 ? (kDecoderCategorySize[decoderCategoryForPage(menuPage)] + 1) : menuPage == 25 ? 19 : menuPage == 22 ? MemoryService::kSlotCount : menuPage == 18 ? 2 : menuPage == 20 ? 1 :
               menuPage == 2 ? 4 : menuPage == 4 ? 6 : menuPage == 5 ? 11 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
               ((menuPage == 14) ? 6 : (menuPage == 15) ? 6 :
               menuPage == 10 ? 4 : menuPage == 11 ?
