@@ -129,9 +129,19 @@ void FmAudioFftService::processFrame(int16_t rssi) {
     float power = 0.0f;
     for (size_t n = 0; n < 4; ++n)
       power += real[first + n] * real[first + n] + imag[first + n] * imag[first + n];
-    const float magnitude = sqrtf(power * 0.25f) / 256.0f;
-    const float db = 20.0f * log10f(magnitude + 0.015f);
-    const float target = constrain((db + 48.0f) * 5.4f, 0.0f, 255.0f);
+    // Convert the FFT magnitude back to a fraction of ADC full scale.
+    // The input samples are raw 12-bit ADC readings (0..4095), not
+    // signed 16-bit audio. A Hann window has a coherent gain of ~0.5;
+    // for a sinusoid its FFT peak is therefore approximately A*N/4.
+    // Averaging four neighbouring bins keeps the display less speckled.
+    const float magnitude = sqrtf(power * 0.25f) /
+                            (static_cast<float>(kFftSize) * 0.25f * 2048.0f);
+    const float dbfs = 20.0f * log10f(magnitude + 0.000003f);
+
+    // Display range: -84 dBFS (near black) to -18 dBFS (bright).
+    // This leaves ordinary low-level noise dark instead of clipping
+    // almost every bin into the white end of the palette.
+    const float target = constrain((dbfs + 84.0f) * (255.0f / 66.0f), 0.0f, 255.0f);
     if (!haveSmoothedBins_) smoothedBins_[bin] = target;
     else {
       const float alpha = target > smoothedBins_[bin] ? 0.48f : 0.20f;
