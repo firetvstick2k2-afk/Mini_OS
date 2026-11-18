@@ -78,24 +78,26 @@ void draw(Canvas& d, const RadioSnapshot& s, const uint8_t* waterfall, bool avai
   d.drawRect(1, 60, 318, 106, BLUE);
   d.fillRect(x0, y0, width, height, BG);
   if (available && waterfall) {
-    // Bilinear interpolation expands the 64x64 FFT history smoothly to
-    // the full display area instead of drawing visible rectangular blocks.
-    for (int py = 0; py < height; ++py) {
-      const float sourceY = static_cast<float>(py) * 63.0f / (height - 1);
-      const uint8_t y0i = static_cast<uint8_t>(sourceY);
-      const uint8_t y1i = y0i < 63 ? y0i + 1 : 63;
-      const float fy = sourceY - y0i;
-      for (int px = 0; px < width; ++px) {
-        const float sourceX = static_cast<float>(px) * 63.0f / (width - 1);
-        const uint8_t x0i = static_cast<uint8_t>(sourceX);
-        const uint8_t x1i = x0i < 63 ? x0i + 1 : 63;
-        const float fx = sourceX - x0i;
-        const float top = waterfall[static_cast<size_t>(y0i) * 64 + x0i] * (1.0f - fx) +
-                          waterfall[static_cast<size_t>(y0i) * 64 + x1i] * fx;
-        const float bottom = waterfall[static_cast<size_t>(y1i) * 64 + x0i] * (1.0f - fx) +
-                             waterfall[static_cast<size_t>(y1i) * 64 + x1i] * fx;
-        const uint8_t value = static_cast<uint8_t>(top * (1.0f - fy) + bottom * fy + 0.5f);
-        d.drawPixel(x0 + px, y0 + py, color(value));
+    // Very light 4-neighbour edge softening. Keep the original 64x64
+    // cell structure and most of each measured value; strong peaks stay crisp.
+    for (uint8_t row = 0; row < 64; ++row) {
+      const int y = y0 + static_cast<int>(row) * height / 64;
+      const int rowHeight = (static_cast<int>(row + 1) * height / 64) -
+                            (static_cast<int>(row) * height / 64);
+      for (uint8_t bin = 0; bin < 64; ++bin) {
+        const int x = x0 + static_cast<int>(bin) * width / 64;
+        const int columnWidth = (static_cast<int>(bin + 1) * width / 64) -
+                                (static_cast<int>(bin) * width / 64);
+        const uint8_t center = waterfall[static_cast<size_t>(row) * 64 + bin];
+        const uint8_t left = waterfall[static_cast<size_t>(row) * 64 + (bin ? bin - 1 : bin)];
+        const uint8_t right = waterfall[static_cast<size_t>(row) * 64 + (bin < 63 ? bin + 1 : bin)];
+        const uint8_t above = waterfall[static_cast<size_t>(row ? row - 1 : row) * 64 + bin];
+        const uint8_t below = waterfall[static_cast<size_t>(row < 63 ? row + 1 : row) * 64 + bin];
+        const uint16_t neighbours = static_cast<uint16_t>(left) + right + above + below;
+        const uint8_t softened = center >= 160
+          ? center
+          : static_cast<uint8_t>((static_cast<uint16_t>(center) * 88 + (neighbours / 4) * 12) / 100);
+        d.fillRect(x, y, columnWidth, rowHeight, color(softened));
       }
     }
   } else {
