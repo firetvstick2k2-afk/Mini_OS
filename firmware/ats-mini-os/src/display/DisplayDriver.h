@@ -13,6 +13,7 @@
 #include "../storage/FileManager.h"
 #include "../input/FrequencyKeypad.h"
 #include "../radio/ScanService.h"
+#include "../radio/FmLivePanoramaService.h"
 #include "../digital/ftx/FtxDecoderService.h"
 #include "../audio/AudioWaterfallService.h"
 
@@ -252,6 +253,7 @@ public:
   uint8_t amLayout() const { return amLayout_; }
   void setAmLayout(uint8_t mode);
   void setAudioWaterfall(AudioWaterfallService* service) { audioWaterfall_ = service; lastGeneration_ = UINT32_MAX; }
+  void setFmLivePanorama(FmLivePanoramaService* service) { fmLivePanorama_ = service; lastGeneration_ = UINT32_MAX; }
   uint8_t brightness() const { return brightness_; }
   void setBrightness(uint8_t value);
   uint8_t themeIndex() const { return themeIndex_; }
@@ -263,6 +265,7 @@ private:
   uint8_t fmLayout_ = 0; // 0 = DAB Style, 1 = HJB, 2 = TEF6686 FM, 3 = TEF6686 Newsfeed
   uint8_t amLayout_ = 9; // Default to the live LW/MW/KW waterfall.
   AudioWaterfallService* audioWaterfall_ = nullptr;
+  FmLivePanoramaService* fmLivePanorama_ = nullptr;
   uint8_t brightness_ = 180;
   uint8_t frequencyCursor_ = 100;
   uint8_t themeIndex_ = 0;
