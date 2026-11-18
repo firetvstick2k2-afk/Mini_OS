@@ -4,6 +4,7 @@
 #include "DisplayLayoutHJB.h"
 #include "DisplayLayoutSW.h"
 #include "DisplayLayoutWaterfall.h"
+#include "DisplayLayoutFmPanorama.h"
 #include "DisplayStatusBar.h"
 #include "../radio/BandManager.h"
 #include "../radio/DecoderFrequencyList.h"
@@ -500,7 +501,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     "Zurück", "Display-Helligkeit", "Layout", "Farbschema"
   };
   static const char* const layoutGroupItems[] = { "Zurück", "UKW / FM", "LW / MW / KW" };
-  static const char* const fmLayoutItems[] = { "Zurück", "DAB Style", "TEF6686 -FM Version", "TEF6686 - Newsfeed", "Waterfall Live" };
+  static const char* const fmLayoutItems[] = { "Zurück", "DAB Style", "TEF6686 -FM Version", "TEF6686 - Newsfeed", "Waterfall Live (Audio)", "FM RF Panorama" };
   static const char* const amLayoutItems[] = { "Zurück", "HJB", "Waterfall", "TinyRadio", "TEF6686 - KW/MW/LW", "Waterfall Live" };
   static const char* const decoderCategoryItems[] = {
     "Zurück", "CW", "FT8", "FT4", "RTTY", "DWD / Pinneberg",
@@ -617,7 +618,8 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     // Keep the currently selected layout marked, as in the Dev menu.
     const bool active = page == 14 ?
       ((selection == 1 && layoutMode == 0) || (selection == 2 && layoutMode == 2) ||
-       (selection == 3 && layoutMode == 3) || (selection == 4 && layoutMode == 4)) :
+       (selection == 3 && layoutMode == 3) || (selection == 4 && layoutMode == 4) ||
+       (selection == 5 && layoutMode == 5)) :
       ((selection == 1 && layoutMode == 1) || (selection == 2 && layoutMode == 4) ||
        (selection == 3 && layoutMode == 7) || (selection == 4 && layoutMode == 8) ||
        (selection == 5 && layoutMode == 9));
@@ -996,9 +998,9 @@ void DisplayDriver::setTheme(uint8_t index) {
 }
 
 void DisplayDriver::setFmLayout(uint8_t mode) {
-  fmLayout_ = (mode <= 3 || mode == 4) ? mode : 0;
+  fmLayout_ = mode <= 5 ? mode : 0;
   lastGeneration_ = UINT32_MAX;
-  Serial.printf("[DISPLAY] FM layout: %s\\n", fmLayout_ == 4 ? "Waterfall Live" : (fmLayout_ == 1 ? "HJB" : (fmLayout_ == 3 ? "TEF6686 - Newsfeed" : (fmLayout_ == 2 ? "TEF6686 -FM Version" : "DAB Style"))));
+  Serial.printf("[DISPLAY] FM layout: %s\\n", fmLayout_ == 5 ? "FM RF Panorama" : (fmLayout_ == 4 ? "Waterfall Live (Audio)" : (fmLayout_ == 1 ? "HJB" : (fmLayout_ == 3 ? "TEF6686 - Newsfeed" : (fmLayout_ == 2 ? "TEF6686 -FM Version" : "DAB Style")))));
 }
 
 void DisplayDriver::setAmLayout(uint8_t mode) {
@@ -1417,6 +1419,11 @@ void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnect
     if (fmLayout_ == 4) {
       if (useSprite_) { sprite_.fillSprite(BLACK); LiveWaterfallLayout::drawFm(sprite_, s, radioReady, wifiConnected, audioWaterfall_); sprite_.pushSprite(0, 0); }
       else { device_.fillScreen(BLACK); LiveWaterfallLayout::drawFm(device_, s, radioReady, wifiConnected, audioWaterfall_); }
+      return;
+    }
+    if (fmLayout_ == 5) {
+      if (useSprite_) { sprite_.fillSprite(BLACK); FmPanoramaLayout::draw(sprite_, s, wifiConnected, fmLivePanorama_); sprite_.pushSprite(0, 0); }
+      else { device_.fillScreen(BLACK); FmPanoramaLayout::draw(device_, s, wifiConnected, fmLivePanorama_); }
       return;
     }
     if (fmLayout_ == 3) {
