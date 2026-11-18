@@ -1136,6 +1136,7 @@ void loop() {
   const MoonCalendar::Snapshot currentMoon = MoonCalendar::calculate(time(nullptr));
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] before display.render");
   RadioSnapshot displaySnapshot = radio.snapshot();
+  if (menuOpen && menuPage == 29) displaySnapshot.frequencyKHz = fmPanoramaCenterKHz;
   if (pendingTuneDelta != 0 && radio.isReady()) {
     const uint32_t step = BandManager::currentStepKHz() ? BandManager::currentStepKHz() : 1;
     uint32_t minimum = displaySnapshot.bandMinimumKHz;
