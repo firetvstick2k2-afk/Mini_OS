@@ -15,7 +15,7 @@ public:
   void exit();
   void update(int16_t rssi);
   bool active() const { return active_; }
-  bool available() const { return rowsFilled_ != 0; }
+  bool available() const { portENTER_CRITICAL(&mux_); const bool ready = rowsFilled_ != 0; portEXIT_CRITICAL(&mux_); return ready; }
   void copyWaterfall(uint8_t* destination) const;
 
 private:
@@ -31,5 +31,5 @@ private:
   uint8_t waterfall_[kRows][kBins]{};
   uint8_t nextRow_ = 0;
   uint8_t rowsFilled_ = 0;
-  bool active_ = false;
+  volatile bool active_ = false;
 };
