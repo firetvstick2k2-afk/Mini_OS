@@ -491,7 +491,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     "Zurück", "Decoder-Frequenzen", "FT8 / FT4 Decoder", "CW DECODER", "Modulation", "Bänder", "Lautstärke",
     "Keypad", "DUAL RX*", "VFO A/B*", "Frequenz*", "BFO", "STEP", "Suche", "Scannen",
     "Speicher", "Rauschsperre", "Bandbreite", "AGC/Dämpfung", "Auto-Lautstärke",
-    "Soft-Mute", "Einstellungen", "FM-Panorama", "Wetterbericht", "Mondkalender"
+    "Soft-Mute", "Einstellungen", "Wetterbericht", "Mondkalender"
   };
   static const char* const volumeItems[] = {
     "Zurück", "Lautstärke", "Stumm (später)"
@@ -500,7 +500,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     "Zurück", "Display-Helligkeit", "Layout", "Farbschema"
   };
   static const char* const layoutGroupItems[] = { "Zurück", "UKW / FM", "LW / MW / KW" };
-  static const char* const fmLayoutItems[] = { "Zurück", "DAB Style", "TEF6686 -FM Version", "TEF6686 - Newsfeed", "Decoder", "Live Wasserfall" };
+  static const char* const fmLayoutItems[] = { "Zurück", "DAB Style", "TEF6686 -FM Version", "TEF6686 - Newsfeed", "Decoder", "Live FFT Waterfall" };
   static const char* const amLayoutItems[] = { "Zurück", "HJB", "Decoder / Wasserfall", "TinyRadio", "TEF6686 - KW/MW/LW" };
   static const char* const decoderCategoryItems[] = {
     "Zurück", "CW", "FT8", "FT4", "RTTY", "DWD / Pinneberg",
