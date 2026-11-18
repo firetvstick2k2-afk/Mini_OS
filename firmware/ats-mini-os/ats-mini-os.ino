@@ -1066,7 +1066,7 @@ void loop() {
   if (fmAudioFftSelected) {
     if (!fmAudioFft.active() && !fmAudioFft.enter(audioCapture))
       BootDiagnostics::write("[FM FFT][START_FAIL] audio capture unavailable");
-    fmAudioFft.update(currentSnapshot.rssi);
+    fmAudioFft.update(currentSnapshot.rssi, currentSnapshot.frequencyKHz);
   } else {
     fmAudioFft.exit();
   }
