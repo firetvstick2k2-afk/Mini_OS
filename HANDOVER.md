@@ -3100,3 +3100,14 @@ Prüfstatus:
 - Code-Commit: `4e41b44669cefe752b31362d5653f2842a59833d`.
 - Build-/Gerätestatus: Änderung committet; Build und Gerätetest stehen noch aus. Nutzer startet Builds selbst.
 - Nächster Schritt: Nutzer testet mit einem starken FM-Sender. Prüfen, ob Pixelstruktur wieder gefällt, Blau weniger milchig wirkt und Weiß bei starken Peaks deutlicher ist. Falls nötig anschließend nur Farbwerte/Schwellen feinjustieren.
+
+
+## WLAN-Konfiguration – nur Netzwerk 1 wird berücksichtigt (2026-11-18)
+
+- Nutzer meldet einen Fehler in der WLAN-Konfiguration der Web-/Geräteeinstellungen (Screenshot der Seite mit „WLAN Netzwerk 1“, „WLAN Netzwerk 2“ und „WLAN Netzwerk 3“ liegt im Chat vor).
+- Beobachtetes Verhalten: Nur der erste WLAN-Zugang wird akzeptiert/verwendet. Ist Netzwerk 1 beispielsweise der S22-Hotspot, wird ein zusätzlich eingetragener zweiter Zugang (Netzwerk 2) offenbar überhaupt nicht als Verbindungsversuch ausprobiert, wenn Netzwerk 1 nicht verfügbar ist.
+- Erwartetes Verhalten aus Nutzersicht: Das Gerät soll bei nicht verfügbarem bzw. nicht erreichbarem WLAN-Netzwerk 1 auch die weiteren gespeicherten WLAN-Zugänge (insbesondere Netzwerk 2) versuchen.
+- Noch nicht diagnostiziert: Ursache und tatsächlicher Verbindungs-/Fallback-Ablauf im Firmware-Code sind offen. Nicht vorwegnehmen, ob Fehler im Webformular, Speichern der Zugangsdaten, Konfigurationsübergabe oder WLAN-Reconnect-/Fallback-Code liegt.
+- Nächster Schritt: WLAN-Konfigurationsseite, Speicherung/Übertragung aller SSID-/Passwort-Paare und die Verbindungslogik im aktiven Branch `dev/first-build-preparation` prüfen. Insbesondere feststellen, ob Netzwerk 2/3 dauerhaft gespeichert und beim Verbindungsaufbau bzw. Reconnect tatsächlich durchprobiert werden.
+- Diese WLAN-Baustelle ist unabhängig von FM-Live-FFT und FT8-Slot-Timing; bei der nächsten Priorisierung ausdrücklich mit berücksichtigen.
+- Noch keine Codeänderung vorgenommen; zunächst nur als offener Fehler dokumentiert.
