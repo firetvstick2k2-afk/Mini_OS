@@ -786,11 +786,11 @@ void drawRadioUtilityPage(Canvas& c,uint8_t page,uint8_t selection,const RadioSn
   } else if(page==29) {
     const int gx=20,gy=54,gw=280,gh=72;
     c.drawRect(gx,gy,gw,gh,blue); c.drawFastHLine(gx+1,gy+gh-2,gw-2,0x4208); c.drawFastHLine(gx+1,gy+gh/2,gw-2,0x2104);
-    if(scanPoints && scanCount>0) for(uint16_t i=0;i<scanCount && i<FmPanoramaService::kPointCount;++i) {
-      const int x=gx+2+(int)((uint32_t)i*(gw-4)/(FmPanoramaService::kPointCount-1));
+    if(scanPoints && scanCount>0) for(uint16_t i=0;i<scanCount && i<21;++i) {
+      const int x=gx+2+(int)((uint32_t)i*(gw-4)/(21-1));
       const int y=gy+gh-3-(int)((uint16_t)scanPoints[i].rssi*(gh-9)/100);
       c.drawFastVLine(x,y,gy+gh-3-y,scanPoints[i].rssi>=55?yellow:green);
-      if(i>0){const int px=gx+2+(int)((uint32_t)(i-1)*(gw-4)/(FmPanoramaService::kPointCount-1));const int py=gy+gh-3-(int)((uint16_t)scanPoints[i-1].rssi*(gh-9)/100);c.drawLine(px,py,x,y,green);}
+      if(i>0){const int px=gx+2+(int)((uint32_t)(i-1)*(gw-4)/(21-1));const int py=gy+gh-3-(int)((uint16_t)scanPoints[i-1].rssi*(gh-9)/100);c.drawLine(px,py,x,y,green);}
     } else {c.setTextColor(0x7BEF,navy);c.drawString("NO PANORAMA DATA",160,88);}
     c.fillTriangle(155,gy+1,165,gy+1,160,gy+10,red);
     snprintf(line,sizeof(line),"MITTE %.2f MHz",s.frequencyKHz/1000.0f); c.setTextColor(yellow,navy);c.drawString(line,160,137);
