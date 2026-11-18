@@ -127,7 +127,8 @@ template<class C> void drawDecoder(C& d,const RadioSnapshot& s,bool ready,bool w
   drawNetworkBatteryStatus(d, wifi, 8);
 
   // Three compact selector/unit tiles stacked below WLAN+.
-  const char* mode=s.modulation==RadioModulation::AM?"AM":
+  const char* mode=s.modulation==RadioModulation::FM?"FM":
+                   s.modulation==RadioModulation::AM?"AM":
                    s.modulation==RadioModulation::USB?"USB":"LSB";
   d.setFont(&lgfx::fonts::Font0);
   d.setTextDatum(MC_DATUM);
