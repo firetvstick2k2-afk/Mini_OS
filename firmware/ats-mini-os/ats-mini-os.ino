@@ -697,6 +697,7 @@ void loop() {
               } else if (menuPage == 11 && selectedMainItem == 17) menuSelection = 6;
               else if (menuPage == 11 && selectedMainItem == 15) menuSelection = 1;
               else menuSelection = 0;
+              if (menuPage == 29) fmPanoramaCenterKHz = static_cast<uint32_t>(constrain(radio.snapshot().frequencyKHz, 88500UL, 107000UL));
               Serial.printf("[MENU] opened selection page %u\n", static_cast<unsigned>(menuPage));
             }
         } else if (menuPage == 18) {
