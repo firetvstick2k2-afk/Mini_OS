@@ -3132,3 +3132,35 @@ Prüfstatus:
 - Umsetzungsvorgabe: globale Live-Tuning-Verzögerung von der Decoder-Menü-Vorschau entkoppeln. Decoder-Vorschau-Zeitkonstante und Ablauf beibehalten; normale Radioabstimmung direkt ausführen und weiterhin `display.notifyTuning()` korrekt auslösen.
 - Vor der Änderung aktuelle Encoder-Verarbeitung und alle Verwendungen von `kEncoderTuneSettleMs` im aktiven Branch prüfen. Danach Codeänderung committen, HANDOVER ergänzen und erneut abrufen/verifizieren. Nutzer startet den Build; Build-/Hardwaretest erst nach Rückmeldung als bestätigt markieren.
 - Priorität: erster Punkt beim nächsten Arbeitsbeginn heute Abend.
+
+
+## Boot-Splash-PNG – Bootanzeige und Upload über die WLAN-Konfigurationsseite (2026-11-18)
+
+- Nutzer hat ausdrücklich bestätigt, dass die passende PNG-Datei bereits auf dem ATS Mini im vorhandenen LittleFS liegt. Das Bild selbst soll nicht neu erstellt, bearbeitet oder ungefragt ersetzt werden.
+- Auftrag: vorhandenes /splash.png beim Booten auf dem 320x170-Display anzeigen und auf der vorhandenen Mini-OS-Konfigurationsseite eine Upload-Funktion bereitstellen. Als Referenz dient die funktionierende Implementierung im privaten Repository 13HN2709/ats-mini-dev, Branch main.
+- Referenz geprüft:
+  - ats-mini/Splash.cpp und ats-mini/Splash.h: PNG-Laden aus LittleFS, temporäre Datei und Auflösungsprüfung.
+  - ats-mini/PageConfig.h: Vorschau des gespeicherten Bildes und multipart PNG-Upload-Feld.
+  - ats-mini/Network.cpp: Upload-Handler mit Größenbegrenzung, temporärer Datei, Prüfung und atomarem Austausch.
+  - ats-mini/ats-mini.ino: Splash-Aufruf nach Display-/Radio-Initialisierung.
+- Mini OS verwendet bereits WebServer in src/network/WifiClient.cpp (kein ESPAsyncWebServer). Die Referenzlogik wird daher in die bestehende synchrone Webserver-Architektur integriert; kein zweiter Webserver und keine neue Async-Webserver-Abhängigkeit.
+- Neue Dateien:
+  - firmware/ats-mini-os/src/display/SplashService.h
+  - firmware/ats-mini-os/src/display/SplashService.cpp
+  - SplashService verwendet /splash.png und /splash.png.tmp, maximal 512 KiB. Die Validierung prüft PNG-Signatur, IHDR und exakt erwartete Auflösung 320x170. Das bisherige Bild wird bis zur erfolgreichen Prüfung und Installation beibehalten; beim Austausch wird es zunächst als Backup umbenannt und bei Installationsfehler wiederhergestellt.
+- Geänderte Dateien:
+  - src/display/DisplayDriver.h/.cpp: showBootSplash() rendert das vorhandene PNG nach Display-Initialisierung und zeigt es standardmäßig 2500 ms. Bei fehlendem Bild wird der normale Start nicht blockiert; bei Decode-Fehler wird die normale UI fortgesetzt.
+  - src/network/WifiClient.h/.cpp: Konfigurationsseite erhält Vorschau und eigenständiges multipart PNG-Upload-Formular. Upload wird stückweise in die temporäre LittleFS-Datei geschrieben, auf 512 KiB begrenzt und vor Installation auf PNG-Signatur/IHDR/320x170 geprüft. Route /splash.png liefert die Vorschau. Uploadfehler lassen das bisherige Splash-Bild erhalten.
+  - ats-mini-os.ino: display.showBootSplash(2500) wird nach Display-/Radio-Initialisierung und vor WLAN-Start aufgerufen, sofern die Storage-Discovery LittleFS erfolgreich bereitgestellt hat.
+- Die vorhandene /splash.png wird beim Boot nur gelesen. Es wurde kein Bildinhalt ins Repository kopiert und keine vorhandene Bilddatei im Gerät gelöscht oder verändert. Ein Upload ersetzt das Bild nur nach erfolgreicher Validierung.
+- Code-Commits in Reihenfolge:
+  - c45f7a697a705e46dff5fcda6f571aad5fb8d47e – SplashService interface
+  - 3d6d22b7f245fe24cfd501cf2530a95734fdc921 – SplashService implementation
+  - 592008c35aec4a37d4d3c6aba4db1a0597dcfb1e – DisplayDriver header
+  - bffa5b01f5c7fcdd81aeaff0c55fe6abe608b6e4 – boot image rendering
+  - 2cc8adcbdf26b704ee23c98b5aed4d247d28dd5d – WifiClient upload state
+  - c0943647386676087aeb8c1688fd22cac4dc6a44 – web configuration preview/upload endpoint and handlers
+  - c9043b60cb4b4021f4a772886bd91fa406e80651 – boot sequence call
+  - f649226ff0a8251a7548ba566b4dd0d0aeef2a2a – multipart callback signature and LittleFS include correction
+- Build status: not run by ChatGPT; user starts builds. Compile and hardware test are pending. In particular verify PNG decoding on the ATS Mini V4 panel, the first-boot splash timing, config page preview, successful upload, rejection of wrong dimensions/non-PNG/oversized files, and preservation of the old image on failed upload.
+- No GitHub Actions started and no device flashed by ChatGPT. No bootloader, partition table, or existing LittleFS data was erased/formatted.
