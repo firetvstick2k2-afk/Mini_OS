@@ -3198,3 +3198,14 @@ Prüfstatus:
 - Dies ist zunächst als verbindliches UX-/Produktfeedback für die weitere Planung festgehalten, **keine sofortige Aufforderung, die Funktionen zu löschen oder umzubauen**.
 - Vor einer späteren Änderung: die konkreten Implementierungen in Mini OS und die entsprechenden Funktionen in ATS Mini Dev direkt vergleichen; herausarbeiten, welche Bedienung und welches Verhalten der Nutzer aus Dev erwartet. Danach gezielt abstimmen, ob Anpassung, Ersatz oder Entfernung gewünscht ist.
 - Bis dahin diese Funktionen nicht eigenmächtig ändern oder entfernen.
+
+
+## Buildfehler korrigiert – WebServer-Splash-Upload-Callback (2026-11-18)
+
+- Nutzer hat festgelegt: gemeldete Buildfehler künftig nach Diagnose direkt korrigieren und Bescheid geben, damit er unmittelbar den nächsten Build starten kann. Keine unnötige Rückfrage nach einer eindeutig lokalisierten und abgegrenzten Korrektur.
+- GitHub Actions Run `44375539343` / Job `135053632006` geprüft. Der Compile-Schritt scheiterte ausschließlich an `WifiClient.cpp:210-212`: Der vierte Parameter von `WebServer::on(path, HTTP_POST, completion, upload)` muss laut tatsächlich installierter ESP32 WebServer API `THandlerFunction` / `std::function<void()>` sein. Der bisherige Upload-Lambda nahm fälschlich `HTTPUpload&` entgegen.
+- Bestehende Upload-Verarbeitung ruft bereits korrekt `server_.upload()` innerhalb von `handleSplashUpload()` ab. Daher wurde nur der Callback angepasst: `[this](HTTPUpload&) { handleSplashUpload(); }` → `[this]() { handleSplashUpload(); }`. Multipart-Upload-Zustandslogik und Abschluss-Callback bleiben unverändert.
+- Geänderte Datei: `firmware/ats-mini-os/src/network/WifiClient.cpp`.
+- Korrektur-Commit: `28d4277ab60f7d35cd227e79d3b4674a7f2d414f`.
+- Nach dem Update erneut vom Branch abzurufen und zu verifizieren. Build wurde nicht gestartet; Nutzer startet den nächsten Actions-Lauf selbst.
+- Die sonstigen Compiler-Warnungen im fehlgeschlagenen Lauf waren nicht build-abbrechend und wurden in dieser gezielten Korrektur nicht verändert.
