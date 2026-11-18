@@ -30,7 +30,6 @@
 #include "src/menus/MenuSSB.h"
 #include "src/tuner/SsbPatchManager.h"
 #include "src/audio/AudioCaptureService.h"
-#include "src/audio/AudioWaterfallService.h"
 #include "src/cw/CwDecoderService.h"
 #include "src/digital/ftx/FtxDecoderService.h"
 
@@ -60,7 +59,6 @@ bool themeSavePending = false;
 EncoderInput encoder;
 FrequencyKeypad frequencyKeypad;
 AudioCaptureService audioCapture;
-AudioWaterfallService audioWaterfall;
 CwDecoderService cwDecoder;
 FtxDecoderService ftxDecoder;
 WifiClient wifi;
@@ -362,7 +360,6 @@ void setup() {
     display.setTheme(savedTheme);
     display.setFmLayout(savedFmLayout);
     display.setAmLayout(savedAmLayout);
-    display.setAudioWaterfall(&audioWaterfall);
     display.setFmLivePanorama(&fmLivePanorama);
     Serial.printf("[DISPLAY] first UI initialized; brightness=%u/255\n",
       static_cast<unsigned>(display.brightness()));
@@ -718,7 +715,7 @@ void loop() {
           menuSelection = display.fmLayout() == 5 ? 5 : (display.fmLayout() == 4 ? 4 : (display.fmLayout() == 3 ? 3 : (display.fmLayout() == 2 ? 2 : 1)));
         } else if (menuPage == 13 && menuSelection == 2) {
           menuPage = 15;
-           menuSelection = display.amLayout() == 9 ? 5 : (display.amLayout() == 4 ? 2 : (display.amLayout() == 7 ? 3 : (display.amLayout() == 8 ? 4 : 1)));
+           menuSelection = (display.amLayout() == 9 || display.amLayout() == 4) ? 2 : (display.amLayout() == 7 ? 3 : (display.amLayout() == 8 ? 4 : 1)));
         } else if ((menuPage == 14 || menuPage == 15) && menuSelection == 0) {
           const bool returningFromFm = menuPage == 14;
           menuPage = 5;
@@ -733,7 +730,7 @@ void loop() {
           closeMenuToRadio("FM layout selected");
         } else if (menuPage == 15 && menuSelection > 0) {
           // Preserve the legacy layout IDs and include the independent TEF6686 SW renderer.
-          static const uint8_t layoutIds[] = { 1, 4, 7, 8, 9 };
+          static const uint8_t layoutIds[] = { 1, 4, 7, 8 };
           static const char* const layoutNames[] = {
             "HJB", "Decoder / Wasserfall", "TinyRadio", "TEF6686 - KW/MW/LW", "Waterfall Live"
           };
@@ -1080,8 +1077,8 @@ void loop() {
   cwDecoder.update();
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] cwDecoder.update done");
   const RadioSnapshot& currentSnapshot = radio.snapshot();
-  const bool liveWaterfallSelected = currentSnapshot.modulation == RadioModulation::FM
-    ? display.fmLayout() == 4 : display.amLayout() == 9;
+  const bool decoderWaterfallSelected = currentSnapshot.modulation == RadioModulation::FM
+    ? display.fmLayout() == 4 : display.amLayout() == 4;
   const bool fmPanoramaSelected = !menuOpen && currentSnapshot.modulation == RadioModulation::FM && display.fmLayout() == 5;
   if (fmPanoramaSelected) {
     if (radio.isReady() && !fmLivePanorama.active() && !fmLivePanorama.start(radio, static_cast<uint32_t>(constrain(currentSnapshot.frequencyKHz, 88500UL, 107000UL))))
@@ -1090,20 +1087,7 @@ void loop() {
   } else if (fmLivePanorama.active()) {
     fmLivePanorama.stop(radio);
   }
-  if (!menuOpen && liveWaterfallSelected) {
-    if (!audioWaterfall.active()) {
-      if (!audioWaterfall.begin(audioCapture))
-        BootDiagnostics::write("[WATERFALL][START_FAIL] audio capture / FFT unavailable");
-      else
-        BootDiagnostics::write("[WATERFALL][START] continuous audio FFT active");
-    }
-    audioWaterfall.poll();
-  } else if (audioWaterfall.active()) {
-    audioWaterfall.end();
-    BootDiagnostics::write("[WATERFALL][STOP] layout inactive");
-  }
-  const bool legacyWaterfallVisible = !menuOpen && currentSnapshot.modulation != RadioModulation::FM && display.amLayout() == 4;
-  const bool waterfallVisible = !menuOpen && ((liveWaterfallSelected && audioWaterfall.active()) || legacyWaterfallVisible || fmPanoramaSelected);
+  const bool waterfallVisible = !menuOpen && (decoderWaterfallSelected || fmPanoramaSelected);
   performance.setWaterfallActive(waterfallVisible);
   static char logoCheckedKey[40] = {};
   static bool currentLogoIsLocal = false;
