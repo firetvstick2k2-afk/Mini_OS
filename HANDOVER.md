@@ -3046,3 +3046,16 @@ Prüfstatus:
 - Code-Commit: `a6c99a01c31e0fce240bda8c3770cbf05a5fe335`.
 - Build-/Gerätestatus: Änderung committet; Build und Gerätetest stehen noch aus. Nutzer startet Builds selbst.
 - Nächster Schritt: Nutzer baut und fotografiert denselben FM-Sender erneut. Prüfen, ob die sichtbaren rechteckigen Übergänge ausreichend geglättet sind und ob die kontinuierliche Farbskala den gewünschten Kontrast liefert. Falls die Pixelzeichnung zu langsam ist, Rendering gezielt optimieren, ohne die Messrate zu ändern.
+
+
+## FT8 – Wiedereinstieg / offener Fehler: keine Decodes trotz Dauersignal (2026-11-18)
+
+- Dieser Punkt ist bereits technisch in den Abschnitten „FT8/FT4 – Host-Testvektoren“ und „FT8/FT4 – Erweiterte Slot-/Timing-Diagnose“ vorbereitet. Er wird hier zusätzlich als ausdrücklich nächster Arbeitsschritt festgehalten, damit er nicht hinter der FM-Wasserfallarbeit verloren geht.
+- Beobachtung des Nutzers: Trotz ungefähr fünf Minuten kontinuierlich empfangenem FT8-Signal wurde kein Decode angezeigt.
+- Die Fehlersuche war deshalb auf die Slot-/Timing-Erkennung fokussiert. Der letzte bekannte Diagnosehinweis: Audioblöcke trafen ein, aber der Slot-Zähler blieb bei `slots=0`. Das beweist noch nicht, ob die Ursache in der Zeitbasis, Erkennung der FT8-Slotgrenzen, Zeitstempel-/Chunk-Kontinuität oder dem Übergang zum Decoder liegt.
+- Bereits vorhandene Instrumentierung laut vorherigem Arbeitsstand: Audio-Chunk-Zähler, Slotstart-Versuche/-Erfolge/-Fehler, erkannte Slotgrenzen, Zeitstempel-Lücken, Slotstart-/Slotende- und Decode-Aufruf-Logs mit UTC-Zeitstempeln sowie periodischer `[FTX][DIAG]`-Datensatz. BootDiagnostics-Logpuffer wurde für die längere Ausgabe erweitert.
+- Vorhanden, aber noch nicht als ausgeführt bestätigt: native Host-Testvektoren für FT8 und FT4 inklusive Rausch-Slots sowie `tests/run_ftx_host_tests.sh`. Der Host-Testlauf war im letzten dokumentierten Stand noch offen.
+- Nächster Wiedereinstieg: Zuerst aktuelles internes BootDiagnostics-Log nach einem kontrollierten FT8-Empfang auswerten. Insbesondere prüfen, ob Audio-Chunks kontinuierlich eintreffen, ob Slotstart-Versuche/Erfolge und Slotgrenzen auftreten, ob Zeitstempel-Lücken vorhanden sind und ob `decodeSlot()` tatsächlich aufgerufen wird. Danach gezielt den ersten fehlenden Übergang untersuchen; nicht blind Decoderparameter ändern.
+- Anschließend den vorhandenen Host-Testlauf ausführen bzw. den Nutzer um den dafür vorgesehenen Test bitten, falls eine Ausführung in der aktuellen Arbeitsumgebung nicht möglich ist. Build-/Geräteteststatus nicht als erfolgreich markieren, solange kein Ergebnis vorliegt.
+- Arbeitspriorität für die nächste Sitzung: FT8-Slot-Timing und Logging wieder aufnehmen. Die FM-Live-FFT-Wasserfall-Optik ist davon getrennt und darf diesen offenen FT8-Punkt nicht verdrängen.
+- Keine GitHub Action eigenständig starten und kein Flash durch ChatGPT; Builds/Gerätetests startet der Nutzer.
