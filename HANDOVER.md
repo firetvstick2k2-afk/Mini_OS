@@ -3068,3 +3068,13 @@ Prüfstatus:
 - Diese Beobachtung gehört zur offenen FT8-Slot-/Timing-Diagnose und soll zusammen mit dem Symptom „Audioblöcke kommen an, aber `slots=0`“ untersucht werden.
 - Noch keine bestätigte Ursache. Insbesondere nicht vorschnell annehmen, dass nur die Displaydarstellung betroffen ist: zu prüfen sind Audio-Chunk-Zufuhr, Slot-/Zeitbasis, Waterfall-Blockfüllung und der Zustand des Decoders nach dem kurzen Aufbau.
 - Nächster Schritt bleibt die Auswertung des aktuellen internen BootDiagnostics-Logs; dabei Wasserfall-Füllstand/Decoder-Collecting-Status und Slot-/Chunk-Zähler zeitlich zueinander in Beziehung setzen.
+
+
+## FM Live FFT Waterfall – Darstellungsziel nach Vergleich der interpolierten Ansicht (2026-11-18)
+
+- Nutzervergleich der letzten Fotos: Die vorherige blockigere Darstellung ließ starke weiße Signalbereiche besser erkennen. Die aktuelle bilinear interpolierte Darstellung wirkt dagegen zu weich, „poliert“ bzw. milchig und dadurch künstlich.
+- Präzisierter Gestaltungswunsch: Nicht zurück zu harten Bauklötzchen, aber auch keine flächige Weichzeichnung. Die Kanten der Signalblöcke sollen nur leicht „abgefeilt“ wirken, fast rund; Konturen und ursprüngliche Signalstruktur müssen erkennbar bleiben.
+- Starke Signale sollen kräftiger und optisch etwas breiter/dicker erscheinen; Weiß soll intensiver und deutlicher hervortreten. Keine großflächigen milchigen Übergänge.
+- Technische Richtung für den nächsten FM-FFT-Schritt: bilineare Vollflächen-Weichzeichnung reduzieren/ersetzen durch sehr leichte lokale Kantenrundung bzw. zurückhaltendes Anti-Aliasing, dabei Signalspitzen und Weißanteile erhalten. Keine pauschale Unschärfe und keine aggressive Mittelung.
+- Diese Präferenz betrifft ausschließlich den FM-Live-FFT-Wasserfall, nicht den separaten FT8-Decoder-Wasserfall.
+- Noch keine weitere Codeänderung aus dieser Beschreibung abgeleitet; zunächst als verbindliches visuelles Ziel dokumentiert.
