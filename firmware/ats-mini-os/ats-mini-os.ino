@@ -729,7 +729,7 @@ void loop() {
           if (layout == 3) wifi.ensureStarted();
           const bool saved = settingsStore.saveDisplayFmLayout(layout);
           Serial.printf("[SETTINGS] FM layout=%s %s\n",
-            layout == 5 ? "FM RF Panorama" : (layout == 4 ? "Waterfall Live (Audio)" : (layout == 3 ? "TEF6686 - Newsfeed" : (layout == 2 ? "TEF6686 -FM Version" : "DAB Style"))), saved ? "saved" : "save failed");
+            layout == 5 ? "Live Wasserfall" : (layout == 4 ? "Wasserfall" : (layout == 3 ? "TEF6686 - Newsfeed" : (layout == 2 ? "TEF6686 -FM Version" : "DAB Style"))), saved ? "saved" : "save failed");
           closeMenuToRadio("FM layout selected");
         } else if (menuPage == 15 && menuSelection > 0) {
           // Preserve the legacy layout IDs and include the independent TEF6686 SW renderer.
