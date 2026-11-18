@@ -2,7 +2,6 @@
 #include <Arduino.h>
 #include <stdio.h>
 #include "../radio/RadioSnapshot.h"
-#include "DisplayStatusBar.h"
 
 namespace FmAudioFftLayout {
 constexpr uint16_t BG=0x0000, DEEP_BLUE=0x0008, BLUE=0x001F;
@@ -19,7 +18,7 @@ inline uint16_t color(uint8_t value) {
 }
 
 template <typename Canvas>
-void draw(Canvas& d, const RadioSnapshot& s, bool wifi, const uint8_t* waterfall, bool available) {
+void draw(Canvas& d, const RadioSnapshot& s, const uint8_t* waterfall, bool available) {
   d.fillScreen(BG);
 
   d.setTextDatum(TL_DATUM);
