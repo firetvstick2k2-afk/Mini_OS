@@ -10,6 +10,7 @@ bool FmLivePanoramaService::start(RadioCore& radio, uint32_t centerKHz) {
   rowCount_ = 0;
   centerKHz_ = centerKHz;
   restartAtMs_ = 0;
+  restartPending_ = false;
   active_ = sweep_.start(radio, centerKHz_);
   if (active_) Serial.printf("[FM LIVE PANORAMA] started at %.2f MHz\n", centerKHz_ / 1000.0f);
   return active_;
@@ -22,15 +23,19 @@ void FmLivePanoramaService::tick(RadioCore& radio) {
     return;
   }
   if (sweep_.state() == FmPanoramaService::State::Done) {
-    const Point* completed = sweep_.data();
-    if (completed && sweep_.count() == FmPanoramaService::kPointCount) {
-      memcpy(history_[nextRow_], completed, sizeof(history_[nextRow_]));
-      nextRow_ = static_cast<uint8_t>((nextRow_ + 1) % kHistoryRows);
-      if (rowCount_ < kHistoryRows) ++rowCount_;
+    if (!restartPending_) {
+      const Point* completed = sweep_.data();
+      if (completed && sweep_.count() == FmPanoramaService::kPointCount) {
+        memcpy(history_[nextRow_], completed, sizeof(history_[nextRow_]));
+        nextRow_ = static_cast<uint8_t>((nextRow_ + 1) % kHistoryRows);
+        if (rowCount_ < kHistoryRows) ++rowCount_;
+      }
+      restartAtMs_ = millis() + 180;
+      restartPending_ = true;
     }
-    if (!restartAtMs_) restartAtMs_ = millis() + 180;
     if (static_cast<int32_t>(millis() - restartAtMs_) >= 0) {
       restartAtMs_ = 0;
+      restartPending_ = false;
       if (!sweep_.start(radio, centerKHz_)) {
         active_ = false;
         Serial.println("[FM LIVE PANORAMA] next sweep could not start");
@@ -49,6 +54,7 @@ void FmLivePanoramaService::stop(RadioCore& radio) {
   sweep_.stop(radio);
   active_ = false;
   restartAtMs_ = 0;
+  restartPending_ = false;
   Serial.println("[FM LIVE PANORAMA] stopped");
 }
 
