@@ -134,7 +134,7 @@ template<class C> void drawDecoder(C& d,const RadioSnapshot& s,bool ready,bool w
   d.setTextDatum(MC_DATUM);
   d.setTextColor(CYAN,BG);
   d.drawRect(8,24,42,18,CYAN);
-  d.drawString(s.bandName[0]?s.bandName:"ALL",29,33);
+  d.drawString(s.modulation==RadioModulation::FM?"ALL":(s.bandName[0]?s.bandName:"ALL"),29,33);
   d.drawRect(8,46,42,18,CYAN);
   d.drawString(mode,29,55);
   d.drawRect(8,68,42,18,CYAN);
