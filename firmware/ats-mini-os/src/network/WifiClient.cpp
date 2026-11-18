@@ -209,7 +209,7 @@ void WifiClient::startWebServer() {
   });
   server_.on("/splash/upload", HTTP_POST,
     [this]() { handleSplashUploadComplete(); },
-    [this](HTTPUpload&) { handleSplashUpload(); });
+    [this]() { handleSplashUpload(); });
 
   server_.on("/wifi/status", HTTP_GET, [this]() { handleStatus(); });
 
