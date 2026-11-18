@@ -491,7 +491,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     "Zurück", "Decoder-Frequenzen", "FT8 / FT4 Decoder", "CW DECODER", "Modulation", "Bänder", "Lautstärke",
     "Keypad", "DUAL RX*", "VFO A/B*", "Frequenz*", "BFO", "STEP", "Suche", "Scannen",
     "Speicher", "Rauschsperre", "Bandbreite", "AGC/Dämpfung", "Auto-Lautstärke",
-    "Soft-Mute", "Einstellungen", "ALL-Band Spektrum*", "Wetterbericht", "Mondkalender"
+    "Soft-Mute", "Einstellungen", "FM-Panorama", "Wetterbericht", "Mondkalender"
   };
   static const char* const volumeItems[] = {
     "Zurück", "Lautstärke", "Stumm (später)"
@@ -722,7 +722,7 @@ void drawRadioUtilityPage(Canvas& c,uint8_t page,uint8_t selection,const RadioSn
   c.fillScreen(navy); c.drawRect(5,5,310,160,blue);
   c.setTextDatum(MC_DATUM); c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
   c.setTextColor(cyan,navy);
-  const char* title=page==22?"SENDERSPEICHER":(page==23?"SPECTRUM SCAN":"SEEK / SENDERSUCHE");
+  const char* title=page==22?"SENDERSPEICHER":(page==23?"SPECTRUM SCAN":(page==29?"FM PANORAMA":"SEEK / SENDERSUCHE"));
   c.drawString(title,160,18);
   c.setFont(&lgfx::fonts::FreeSans9pt7b); c.setTextColor(0xFFFF,navy);
   char line[64];
@@ -783,6 +783,20 @@ void drawRadioUtilityPage(Canvas& c,uint8_t page,uint8_t selection,const RadioSn
     const char* status=scanState==1?"SCAN LAEUFT":scanState==2?"SCAN FERTIG":scanState==3?"ABGEBROCHEN":scanState==4?"FEHLER":"BEREIT";
     c.setTextColor(scanState==4?red:(scanState==1?green:yellow),navy); c.drawString(status,160,150);
     c.setTextColor(cyan,navy); c.drawString(scanCount>0 && scanState!=1?"DREHEN: PEAK  KLICK: UEBERNEHMEN":"KLICK: START / STOP   LANG: ABBRUCH",160,163);
+  } else if(page==29) {
+    const int gx=20,gy=54,gw=280,gh=72;
+    c.drawRect(gx,gy,gw,gh,blue); c.drawFastHLine(gx+1,gy+gh-2,gw-2,0x4208); c.drawFastHLine(gx+1,gy+gh/2,gw-2,0x2104);
+    if(scanPoints && scanCount>0) for(uint16_t i=0;i<scanCount && i<FmPanoramaService::kPointCount;++i) {
+      const int x=gx+2+(int)((uint32_t)i*(gw-4)/(FmPanoramaService::kPointCount-1));
+      const int y=gy+gh-3-(int)((uint16_t)scanPoints[i].rssi*(gh-9)/100);
+      c.drawFastVLine(x,y,gy+gh-3-y,scanPoints[i].rssi>=55?yellow:green);
+      if(i>0){const int px=gx+2+(int)((uint32_t)(i-1)*(gw-4)/(FmPanoramaService::kPointCount-1));const int py=gy+gh-3-(int)((uint16_t)scanPoints[i-1].rssi*(gh-9)/100);c.drawLine(px,py,x,y,green);}
+    } else {c.setTextColor(0x7BEF,navy);c.drawString("NO PANORAMA DATA",160,88);}
+    c.fillTriangle(155,gy+1,165,gy+1,160,gy+10,red);
+    snprintf(line,sizeof(line),"MITTE %.2f MHz",s.frequencyKHz/1000.0f); c.setTextColor(yellow,navy);c.drawString(line,160,137);
+    const char* status=scanState==1?"SCAN LAEUFT":scanState==2?"SCAN FERTIG":scanState==3?"ABGEBROCHEN":scanState==4?"FEHLER":"BEREIT";
+    c.setTextColor(scanState==4?red:(scanState==1?green:yellow),navy);c.drawString(status,160,151);
+    c.setTextColor(cyan,navy);c.drawString(scanState==1?"KLICK: STOPP   LANG: ZURUECK":(scanCount?"DREHEN: FENSTER  KLICK: MITTE":"KLICK: SCAN STARTEN"),160,163);
   } else {
     const char* status=seekState==1?"SUCHE LAEUFT":seekState==2?"SENDER GEFUNDEN":seekState==3?"KEIN SENDER GEFUNDEN":seekState==4?"ABGEBROCHEN":seekState==5?"FEHLER":"BEREIT";
     c.setTextColor(seekState==1?green:(seekState==5?red:yellow),navy); c.drawString(status,160,68);
@@ -1009,7 +1023,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   // keeps the selection frame visually attached to the active row.
   const bool liveWaterfallLayout = (s.modulation == RadioModulation::FM && fmLayout_ == 4) ||
     (s.modulation != RadioModulation::FM && amLayout_ == 9);
-  const uint32_t redrawInterval = menuOpen ? ((menuPage==21 || menuPage==23 || menuPage==24 || menuPage==28) ? 100 : ((menuPage==6 || menuPage==19 || menuPage==22 || menuPage==26 || (menuPage>=30 && menuPage<=40)) ? 20 : 500)) : (liveWaterfallLayout ? 120 : 40);
+  const uint32_t redrawInterval = menuOpen ? ((menuPage==21 || menuPage==23 || menuPage==24 || menuPage==28 || menuPage==29) ? 100 : ((menuPage==6 || menuPage==19 || menuPage==22 || menuPage==26 || (menuPage>=30 && menuPage<=40)) ? 20 : 500)) : (liveWaterfallLayout ? 120 : 40);
   if(!returningToRadio && s.generation==lastGeneration_ && now-lastDrawMs_<redrawInterval && !menuStateChanged)return;
   lastGeneration_=s.generation;
   lastDrawMs_=now;
@@ -1024,7 +1038,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   lastMenuBootLogEnabled_=bootLogEnabled;
   if (menuOpen) {
     if(menuPage>=30 && menuPage<=40){const uint8_t category=static_cast<uint8_t>(menuPage-30);if(useSprite_){sprite_.fillSprite(BLACK);drawDecoderFrequencyPage(sprite_,category,menuSelection);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawDecoderFrequencyPage(device_,category,menuSelection);}return;}
-    if(menuPage==22 || menuPage==23 || menuPage==24){if(useSprite_){sprite_.fillSprite(BLACK);drawRadioUtilityPage(sprite_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawRadioUtilityPage(device_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);}return;}
+    if(menuPage==22 || menuPage==23 || menuPage==24 || menuPage==29){if(useSprite_){sprite_.fillSprite(BLACK);drawRadioUtilityPage(sprite_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawRadioUtilityPage(device_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);}return;}
     if(menuPage==21){if(useSprite_){sprite_.fillSprite(BLACK);drawLegacyCWPage(sprite_,s,cwWifiBlocked,cwText,cwSignal);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawLegacyCWPage(device_,s,cwWifiBlocked,cwText,cwSignal);}return;}
     if(menuPage==28){if(useSprite_){sprite_.fillSprite(BLACK);drawFtxDecoderPage(sprite_,s,menuSelection,ftxService,ftxWifiOff,ftxUtcSynchronized);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFtxDecoderPage(device_,s,menuSelection,ftxService,ftxWifiOff,ftxUtcSynchronized);}return;}
     if(menuPage==19 && keypadView){if(useSprite_){sprite_.fillSprite(BLACK);drawFrequencyKeypad(sprite_,*keypadView);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFrequencyKeypad(device_,*keypadView);}return;}
