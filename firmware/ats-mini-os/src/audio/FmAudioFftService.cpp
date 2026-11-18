@@ -15,8 +15,12 @@ bool FmAudioFftService::enter(AudioCaptureService& capture) {
   portENTER_CRITICAL(&mux_);
   memset(sampleRing_, 0, sizeof(sampleRing_));
   memset(waterfall_, 0, sizeof(waterfall_));
+  memset(smoothedBins_, 0, sizeof(smoothedBins_));
   samplesSeen_ = lastFrameAt_ = 0;
+  lastFrequencyKHz_ = 0;
+  holdRowsUntilMs_ = 0;
   nextRow_ = rowsFilled_ = 0;
+  haveSmoothedBins_ = false;
   portEXIT_CRITICAL(&mux_);
   if (!capture_->subscribe(this, onAudioSamples)) {
     capture_ = nullptr;
@@ -44,24 +48,33 @@ void FmAudioFftService::pushSamples(const int16_t* samples, size_t count) {
   if (!active_ || !samples) return;
   portENTER_CRITICAL(&mux_);
   for (size_t i = 0; i < count; ++i) {
-    sampleRing_[samplesSeen_ % 512] = samples[i];
+    sampleRing_[samplesSeen_ % kFftSize] = samples[i];
     ++samplesSeen_;
   }
   portEXIT_CRITICAL(&mux_);
 }
 
-void FmAudioFftService::update(int16_t rssi) {
+void FmAudioFftService::update(int16_t rssi, uint32_t frequencyKHz) {
   if (!active_) return;
+  if (frequencyKHz && lastFrequencyKHz_ && frequencyKHz != lastFrequencyKHz_) {
+    // Keep the previous picture visible while the tuner settles; don't draw
+    // the muted retune transient as a full-width blank/noise band.
+    holdRowsUntilMs_ = millis() + 220;
+    haveSmoothedBins_ = false;
+  }
+  if (frequencyKHz) lastFrequencyKHz_ = frequencyKHz;
+
   uint32_t seen = 0;
   portENTER_CRITICAL(&mux_);
   seen = samplesSeen_;
   portEXIT_CRITICAL(&mux_);
-  if (seen < kFftSize || seen - lastFrameAt_ < 64) return;
+  if (seen < kFftSize || seen - lastFrameAt_ < kSamplesPerRow) return;
   lastFrameAt_ = seen;
   processFrame(rssi);
 }
 
 void FmAudioFftService::processFrame(int16_t rssi) {
+  (void)rssi; // RF RSSI must not be used as an audio-level control.
   float real[kFftSize]{};
   float imag[kFftSize]{};
   portENTER_CRITICAL(&mux_);
@@ -70,14 +83,19 @@ void FmAudioFftService::processFrame(int16_t rssi) {
     portEXIT_CRITICAL(&mux_);
     return;
   }
+
+  // Remove ADC DC offset before the Hann window.
+  float mean = 0.0f;
+  for (size_t i = 0; i < kFftSize; ++i)
+    mean += static_cast<float>(sampleRing_[(end - kFftSize + i) % kFftSize]);
+  mean /= static_cast<float>(kFftSize);
   for (size_t i = 0; i < kFftSize; ++i) {
-    const int16_t sample = sampleRing_[(end - kFftSize + i) % 512];
+    const float sample = static_cast<float>(sampleRing_[(end - kFftSize + i) % kFftSize]) - mean;
     const float window = 0.5f - 0.5f * cosf(6.28318530718f * static_cast<float>(i) / (kFftSize - 1));
-    real[i] = (static_cast<float>(sample) - 2048.0f) * window;
+    real[i] = sample * window;
   }
   portEXIT_CRITICAL(&mux_);
 
-  // In-place radix-2 Cooley-Tukey FFT.
   size_t j = 0;
   for (size_t i = 1; i < kFftSize; ++i) {
     size_t bit = kFftSize >> 1;
@@ -105,17 +123,26 @@ void FmAudioFftService::processFrame(int16_t rssi) {
     }
   }
 
-  const float rssiGain = rssi < 0 ? 0.70f : (0.60f + 0.40f * constrain(static_cast<float>(rssi), 0.0f, 100.0f) / 100.0f);
   uint8_t row[kBins]{};
   for (size_t bin = 0; bin < kBins; ++bin) {
-    const size_t first = 1 + bin * 2;
-    const float m1 = sqrtf(real[first] * real[first] + imag[first] * imag[first]);
-    const float m2 = sqrtf(real[first + 1] * real[first + 1] + imag[first + 1] * imag[first + 1]);
-    const float magnitude = (m1 > m2 ? m1 : m2) / 256.0f;
-    const float db = 20.0f * log10f(magnitude + 0.5f);
-    const float scaled = (db + 6.0f) * 4.0f * rssiGain;
-    row[bin] = static_cast<uint8_t>(constrain(static_cast<int>(scaled), 0, 255));
+    const size_t first = 1 + bin * 4;
+    float power = 0.0f;
+    for (size_t n = 0; n < 4; ++n)
+      power += real[first + n] * real[first + n] + imag[first + n] * imag[first + n];
+    const float magnitude = sqrtf(power * 0.25f) / 256.0f;
+    const float db = 20.0f * log10f(magnitude + 0.015f);
+    const float target = constrain((db + 48.0f) * 5.4f, 0.0f, 255.0f);
+    if (!haveSmoothedBins_) smoothedBins_[bin] = target;
+    else {
+      const float alpha = target > smoothedBins_[bin] ? 0.48f : 0.20f;
+      smoothedBins_[bin] += (target - smoothedBins_[bin]) * alpha;
+    }
+    row[bin] = static_cast<uint8_t>(constrain(static_cast<int>(smoothedBins_[bin] + 0.5f), 0, 255));
   }
+  haveSmoothedBins_ = true;
+
+  // Freeze the existing waterfall during the brief RF retune gap.
+  if (static_cast<int32_t>(millis() - holdRowsUntilMs_) < 0) return;
 
   portENTER_CRITICAL(&mux_);
   memcpy(waterfall_[nextRow_], row, sizeof(row));
