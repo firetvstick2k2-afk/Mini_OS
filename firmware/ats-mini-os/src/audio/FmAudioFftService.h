@@ -1,7 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include <freertos/FreeRTOS.h>
-#include "../audio/AudioCaptureService.h"
+#include "AudioCaptureService.h"
 
 // Continuous, independent audio FFT for the FM live waterfall.
 // It consumes the shared audio stream but never touches the FT8/FT4 decoder.
@@ -32,4 +32,5 @@ private:
   uint8_t nextRow_ = 0;
   uint8_t rowsFilled_ = 0;
   volatile bool active_ = false;
+  bool attempted_ = false;
 };
