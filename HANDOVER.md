@@ -3035,3 +3035,14 @@ Prüfstatus:
 - Geändert wurde ausschließlich die Farbzuordnung des FM-Live-FFT-Wasserfalls. Keine Änderung an FFT-Berechnung, Audio-Capture, RSSI/SNR-Auswertung, Zeilenrate, Frequenz-/Akkuanzeige, altem Decoder-Wasserfall oder TEF6686-Layout.
 - Build-/Gerätestatus: Änderung committet; neuer Build und Gerätetest stehen noch aus. Nutzer startet Builds selbst.
 - Nächster Schritt: Nutzer baut und testet denselben starken Sender erneut. Anhand des Fotos beurteilen, ob Weißanteil und Kontrast passen; erst danach gegebenenfalls weitere Schwellenwerte anpassen.
+
+
+## FM Live FFT Waterfall – räumliche Glättung gegen Bauklötzchen (2026-11-18)
+
+- Nutzer bestätigte, dass die Darstellung weiterhin wie grobe kleine Bauklötzchen wirkt; wünschte ausdrücklich die zuvor besprochene Glättung.
+- In `firmware/ats-mini-os/src/display/DisplayLayoutFmAudioFft.h` wurde die blockweise Darstellung der 64x64-Werte durch bilineare Interpolation auf die vollständige Wasserfallfläche (314x102 Pixel) ersetzt. Jeder Displaypixel erhält dadurch einen aus den benachbarten FFT-Zellen interpolierten Pegel.
+- Die bisherige harte Farbstufung wurde durch einen kontinuierlichen RGB565-Farbverlauf zwischen Dunkelblau, Blau, Cyan und Weiß ersetzt. Die zuvor festgelegte frühere Weiß-Schwelle bleibt erhalten: der Verlauf erreicht ab dem oberen Pegelbereich Weiß.
+- FFT-Erfassung, 64x64 Messhistorie, 12 Zeilen/s, Audio-Capture, Frequenz-/Akkuanzeige, RSSI/SNR-Text, alter Decoder-Wasserfall und TEF6686-Layout bleiben unverändert. Es handelt sich um Darstellungsinterpolation, nicht um zusätzliche echte FFT-Bins.
+- Code-Commit: `a6c99a01c31e0fce240bda8c3770cbf05a5fe335`.
+- Build-/Gerätestatus: Änderung committet; Build und Gerätetest stehen noch aus. Nutzer startet Builds selbst.
+- Nächster Schritt: Nutzer baut und fotografiert denselben FM-Sender erneut. Prüfen, ob die sichtbaren rechteckigen Übergänge ausreichend geglättet sind und ob die kontinuierliche Farbskala den gewünschten Kontrast liefert. Falls die Pixelzeichnung zu langsam ist, Rendering gezielt optimieren, ohne die Messrate zu ändern.
