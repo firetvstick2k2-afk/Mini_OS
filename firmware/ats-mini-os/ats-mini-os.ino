@@ -667,8 +667,7 @@ void loop() {
           }
         } else if ((menuPage==5 && menuSelection==4)) {fmOpen();
         } else if (menuPage == 0) {
-            // ATS Mini Dev menu order is retained; the unsupported VHF spectrum slot now opens FT8/FT4.
-            // Unsupported entries are marked with * in the renderer and stay inert.
+            // ATS Mini Dev menu order is retained; FM Panorama occupies the former unused spectrum placeholder.
             static const uint8_t targetPages[25] = {
               255, 26, 28, 21, 16, 8, 1, 19, 255, 255, 255, 12, 9,
               24, 23, 22, 25, 7, 11, 11, 11, 5, 29, 18, 20
