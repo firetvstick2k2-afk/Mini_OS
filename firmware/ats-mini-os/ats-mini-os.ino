@@ -9,6 +9,7 @@
 #include "src/radio/MemoryService.h"
 #include "src/radio/ScanService.h"
 #include "src/radio/FmPanoramaService.h"
+#include "src/radio/FmLivePanoramaService.h"
 #include "src/radio/SeekService.h"
 #include "src/system/PerformanceManager.h"
 #include "src/system/BootDiagnostics.h"
@@ -45,6 +46,7 @@ RadioCore radio;
 MemoryService memories;
 ScanService scanner;
 FmPanoramaService fmPanorama;
+FmLivePanoramaService fmLivePanorama;
 uint32_t fmPanoramaCenterKHz = DEFAULT_FM_FREQUENCY_KHZ;
 SeekService seeker;
 uint8_t selectedMemorySlot = 0;
@@ -361,6 +363,7 @@ void setup() {
     display.setFmLayout(savedFmLayout);
     display.setAmLayout(savedAmLayout);
     display.setAudioWaterfall(&audioWaterfall);
+    display.setFmLivePanorama(&fmLivePanorama);
     Serial.printf("[DISPLAY] first UI initialized; brightness=%u/255\n",
       static_cast<unsigned>(display.brightness()));
   }
@@ -526,7 +529,7 @@ void loop() {
           } else {
             const int16_t itemCount = menuPage == 0 ? 25 : menuPage == 26 ? (kDecoderCategoryCount + 1) : decoderCategoryForPage(menuPage) >= 0 ? (kDecoderCategorySize[decoderCategoryForPage(menuPage)] + 1) : menuPage == 25 ? 19 : menuPage == 22 ? MemoryService::kSlotCount : menuPage == 18 ? 2 : menuPage == 20 ? 1 :
               menuPage == 2 ? 4 : menuPage == 4 ? 6 : menuPage == 5 ? 11 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
-              ((menuPage == 14) ? 5 : (menuPage == 15) ? 6 :
+              ((menuPage == 14) ? 6 : (menuPage == 15) ? 6 :
               menuPage == 10 ? 4 : menuPage == 11 ?
               (radio.snapshot().modulation == RadioModulation::FM ? 10 : 14) :
               menuPage == 3 ? 8 : menuPage == 28 ? 2 : menuPage == 27 ? 4 :
@@ -712,7 +715,7 @@ void loop() {
           menuSelection = 9;
         } else if (menuPage == 13 && menuSelection == 1) {
           menuPage = 14;
-          menuSelection = display.fmLayout() == 4 ? 4 : (display.fmLayout() == 3 ? 3 : (display.fmLayout() == 2 ? 2 : 1));
+          menuSelection = display.fmLayout() == 5 ? 5 : (display.fmLayout() == 4 ? 4 : (display.fmLayout() == 3 ? 3 : (display.fmLayout() == 2 ? 2 : 1)));
         } else if (menuPage == 13 && menuSelection == 2) {
           menuPage = 15;
            menuSelection = display.amLayout() == 9 ? 5 : (display.amLayout() == 4 ? 2 : (display.amLayout() == 7 ? 3 : (display.amLayout() == 8 ? 4 : 1)));
@@ -721,12 +724,12 @@ void loop() {
           menuPage = 5;
           menuSelection = returningFromFm ? 5 : 6;
         } else if (menuPage == 14 && menuSelection > 0) {
-          const uint8_t layout = menuSelection == 1 ? 0 : (menuSelection == 2 ? 2 : (menuSelection == 3 ? 3 : 4));
+          const uint8_t layout = menuSelection == 1 ? 0 : (menuSelection == 2 ? 2 : (menuSelection == 3 ? 3 : (menuSelection == 4 ? 4 : 5)));
           display.setFmLayout(layout);
           if (layout == 3) wifi.ensureStarted();
           const bool saved = settingsStore.saveDisplayFmLayout(layout);
           Serial.printf("[SETTINGS] FM layout=%s %s\n",
-            layout == 4 ? "Waterfall Live" : (layout == 3 ? "TEF6686 - Newsfeed" : (layout == 2 ? "TEF6686 -FM Version" : "DAB Style")), saved ? "saved" : "save failed");
+            layout == 5 ? "FM RF Panorama" : (layout == 4 ? "Waterfall Live (Audio)" : (layout == 3 ? "TEF6686 - Newsfeed" : (layout == 2 ? "TEF6686 -FM Version" : "DAB Style"))), saved ? "saved" : "save failed");
           closeMenuToRadio("FM layout selected");
         } else if (menuPage == 15 && menuSelection > 0) {
           // Preserve the legacy layout IDs and include the independent TEF6686 SW renderer.
@@ -1079,6 +1082,14 @@ void loop() {
   const RadioSnapshot& currentSnapshot = radio.snapshot();
   const bool liveWaterfallSelected = currentSnapshot.modulation == RadioModulation::FM
     ? display.fmLayout() == 4 : display.amLayout() == 9;
+  const bool fmPanoramaSelected = !menuOpen && currentSnapshot.modulation == RadioModulation::FM && display.fmLayout() == 5;
+  if (fmPanoramaSelected) {
+    if (!fmLivePanorama.active() && !fmLivePanorama.start(radio, currentSnapshot.frequencyKHz))
+      BootDiagnostics::write("[FM PANORAMA][START_FAIL] live RF sweep could not start");
+    fmLivePanorama.tick(radio);
+  } else if (fmLivePanorama.active()) {
+    fmLivePanorama.stop(radio);
+  }
   if (!menuOpen && liveWaterfallSelected) {
     if (!audioWaterfall.active()) {
       if (!audioWaterfall.begin(audioCapture))
@@ -1092,7 +1103,7 @@ void loop() {
     BootDiagnostics::write("[WATERFALL][STOP] layout inactive");
   }
   const bool legacyWaterfallVisible = !menuOpen && currentSnapshot.modulation != RadioModulation::FM && display.amLayout() == 4;
-  const bool waterfallVisible = !menuOpen && ((liveWaterfallSelected && audioWaterfall.active()) || legacyWaterfallVisible);
+  const bool waterfallVisible = !menuOpen && ((liveWaterfallSelected && audioWaterfall.active()) || legacyWaterfallVisible || fmPanoramaSelected);
   performance.setWaterfallActive(waterfallVisible);
   static char logoCheckedKey[40] = {};
   static bool currentLogoIsLocal = false;
