@@ -3122,3 +3122,13 @@ Prüfstatus:
 - Nutzererwartung/zu klärende Zielrichtung: normale Frequenzabstimmung beim Drehen soll wieder unmittelbar reagieren; die 2-Sekunden-Wartezeit ist unerwünscht, sofern sie nicht ausdrücklich für einen separaten Vorgang benötigt wird.
 - Noch keine Codeänderung vorgenommen. Vor einer Korrektur getrennte Zeitkonstanten für Live-Tuning und Decoder-Preset-Vorschau erwägen, damit die Decoder-Menü-Vorschau ihren eigenen Ablauf behält.
 - Betroffene Layouts: grundsätzlich alle Layouts, die die zentrale Encoder-/Radio-Abstimmung verwenden, einschließlich DAB Style.
+
+
+## Priorität für heute Abend – Live-Abstimmung sofort, Verzögerung nur im Decoder-Frequenzmenü (2026-11-18)
+
+- Nutzer bestätigt die gewünschte Korrektur ausdrücklich als ersten Arbeitspunkt für heute Abend.
+- Beim normalen Radiohören soll jede Encoder-Drehung die Frequenz wieder unmittelbar abstimmen – unabhängig vom aktiven Layout (einschließlich DAB Style). Keine 2-Sekunden-Sammel-/Wartezeit im normalen Radiobetrieb.
+- Die bisherige 2-Sekunden-Settle-Verzögerung soll ausschließlich im Decoder-Frequenzmenü für die verzögerte Preset-Vorschau bestehen bleiben.
+- Umsetzungsvorgabe: globale Live-Tuning-Verzögerung von der Decoder-Menü-Vorschau entkoppeln. Decoder-Vorschau-Zeitkonstante und Ablauf beibehalten; normale Radioabstimmung direkt ausführen und weiterhin `display.notifyTuning()` korrekt auslösen.
+- Vor der Änderung aktuelle Encoder-Verarbeitung und alle Verwendungen von `kEncoderTuneSettleMs` im aktiven Branch prüfen. Danach Codeänderung committen, HANDOVER ergänzen und erneut abrufen/verifizieren. Nutzer startet den Build; Build-/Hardwaretest erst nach Rückmeldung als bestätigt markieren.
+- Priorität: erster Punkt beim nächsten Arbeitsbeginn heute Abend.
