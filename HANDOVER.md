@@ -3111,3 +3111,14 @@ Prüfstatus:
 - Nächster Schritt: WLAN-Konfigurationsseite, Speicherung/Übertragung aller SSID-/Passwort-Paare und die Verbindungslogik im aktiven Branch `dev/first-build-preparation` prüfen. Insbesondere feststellen, ob Netzwerk 2/3 dauerhaft gespeichert und beim Verbindungsaufbau bzw. Reconnect tatsächlich durchprobiert werden.
 - Diese WLAN-Baustelle ist unabhängig von FM-Live-FFT und FT8-Slot-Timing; bei der nächsten Priorisierung ausdrücklich mit berücksichtigen.
 - Noch keine Codeänderung vorgenommen; zunächst nur als offener Fehler dokumentiert.
+
+
+## Encoder-Abstimmverzögerung – wirkt layoutübergreifend (2026-11-18)
+
+- Nutzer beobachtet, dass auch das DAB-Style-Layout beim Drehen des Encoders nicht mehr unmittelbar abstimmt, sondern verzögert reagiert. Frage, ob dies nur DAB Style oder alle Layouts betrifft.
+- Codeprüfung im aktiven Branch `dev/first-build-preparation`: Die Encoder-Rotationsereignisse werden zentral in `firmware/ats-mini-os/ats-mini-os.ino` verarbeitet. Außerhalb von Menü/BFO/Frequenzcursor wird `pendingTuneDelta` gesammelt und die Radioabstimmung erst ausgeführt, wenn seit dem letzten Dreh `kEncoderTuneSettleMs` vergangen ist.
+- Aktueller globaler Wert: `constexpr uint32_t kEncoderTuneSettleMs = 2000;` Die Verzögerung gilt damit für die gemeinsame Live-Abstimmung und ist nicht auf ein einzelnes Display-Layout beschränkt. Währenddessen wird die Frequenz im Display-Snapshot anhand von `pendingTuneDelta` bereits vorläufig angezeigt; die eigentliche Radioabstimmung erfolgt erst nach Ablauf der Wartezeit. Ein Encoder-Klick kann die ausstehende Änderung ebenfalls sofort übernehmen.
+- Die gleiche Konstante wird außerdem für Decoder-Preset-Vorschauen in Menüs verwendet; Änderungen an der allgemeinen Abstimmverzögerung sollten diesen separaten Vorschau-Mechanismus nicht unbeabsichtigt verändern.
+- Nutzererwartung/zu klärende Zielrichtung: normale Frequenzabstimmung beim Drehen soll wieder unmittelbar reagieren; die 2-Sekunden-Wartezeit ist unerwünscht, sofern sie nicht ausdrücklich für einen separaten Vorgang benötigt wird.
+- Noch keine Codeänderung vorgenommen. Vor einer Korrektur getrennte Zeitkonstanten für Live-Tuning und Decoder-Preset-Vorschau erwägen, damit die Decoder-Menü-Vorschau ihren eigenen Ablauf behält.
+- Betroffene Layouts: grundsätzlich alle Layouts, die die zentrale Encoder-/Radio-Abstimmung verwenden, einschließlich DAB Style.
