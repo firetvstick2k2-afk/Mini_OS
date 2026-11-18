@@ -66,9 +66,9 @@ void draw(Canvas& d, const RadioSnapshot& s, bool wifi,
   d.setFont(&lgfx::fonts::Font0);
   d.setTextDatum(TL_DATUM);
   d.setTextColor(CYAN, BG);
-  d.drawString("88 MHz", 4, 39);
+  d.drawString("-1 MHz", 4, 39);
   d.setTextDatum(MR_DATUM);
-  d.drawString("108 MHz", 316, 39);
+  d.drawString("+1 MHz", 316, 39);
   if (!rows) {
     d.setTextDatum(MC_DATUM);
     d.setTextColor(CYAN, BG);
