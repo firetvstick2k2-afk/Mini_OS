@@ -7,13 +7,26 @@ namespace FmAudioFftLayout {
 constexpr uint16_t BG=0x0000, DEEP_BLUE=0x0008, BLUE=0x001F;
 constexpr uint16_t CYAN=0x07FF, WHITE=0xFFFF;
 
+inline uint16_t blendColor(uint16_t a, uint16_t b, uint8_t amount) {
+  const uint16_t ar = (a >> 11) & 0x1F, ag = (a >> 5) & 0x3F, ab = a & 0x1F;
+  const uint16_t br = (b >> 11) & 0x1F, bg = (b >> 5) & 0x3F, bb = b & 0x1F;
+  const uint16_t r = ar + ((static_cast<int>(br) - ar) * amount) / 255;
+  const uint16_t g = ag + ((static_cast<int>(bg) - ag) * amount) / 255;
+  const uint16_t bl = ab + ((static_cast<int>(bb) - ab) * amount) / 255;
+  return static_cast<uint16_t>((r << 11) | (g << 5) | bl);
+}
+
+// Continuous palette: strong values reach white early, without hard color steps.
 inline uint16_t color(uint8_t value) {
-  if (value < 12) return DEEP_BLUE;
-  if (value < 38) return 0x0010;
-  if (value < 72) return BLUE;
-  if (value < 112) return 0x03FF;
-  if (value < 160) return CYAN;
-  // Bring strong FFT levels to white earlier; avoid a broad pale-blue plateau.
+  static constexpr uint8_t stops[] = {0, 38, 72, 112, 160, 255};
+  static constexpr uint16_t colors[] = {DEEP_BLUE, 0x0010, BLUE, 0x03FF, CYAN, WHITE};
+  for (uint8_t i = 0; i < 5; ++i) {
+    if (value <= stops[i + 1]) {
+      const uint8_t span = stops[i + 1] - stops[i];
+      const uint8_t amount = span ? static_cast<uint8_t>((static_cast<uint16_t>(value - stops[i]) * 255) / span) : 255;
+      return blendColor(colors[i], colors[i + 1], amount);
+    }
+  }
   return WHITE;
 }
 
@@ -65,14 +78,24 @@ void draw(Canvas& d, const RadioSnapshot& s, const uint8_t* waterfall, bool avai
   d.drawRect(1, 60, 318, 106, BLUE);
   d.fillRect(x0, y0, width, height, BG);
   if (available && waterfall) {
-    for (uint8_t row=0; row<64; ++row) {
-      const int y = y0 + static_cast<int>(row) * height / 64;
-      const int rowHeight = (static_cast<int>(row + 1) * height / 64) - (static_cast<int>(row) * height / 64);
-      for (uint8_t bin=0; bin<64; ++bin) {
-        const int x = x0 + static_cast<int>(bin) * width / 64;
-        const int columnWidth = (static_cast<int>(bin + 1) * width / 64) - (static_cast<int>(bin) * width / 64);
-        const uint16_t shade = color(waterfall[static_cast<size_t>(row) * 64 + bin]);
-        d.fillRect(x, y, columnWidth, rowHeight, shade);
+    // Bilinear interpolation expands the 64x64 FFT history smoothly to
+    // the full display area instead of drawing visible rectangular blocks.
+    for (int py = 0; py < height; ++py) {
+      const float sourceY = static_cast<float>(py) * 63.0f / (height - 1);
+      const uint8_t y0i = static_cast<uint8_t>(sourceY);
+      const uint8_t y1i = y0i < 63 ? y0i + 1 : 63;
+      const float fy = sourceY - y0i;
+      for (int px = 0; px < width; ++px) {
+        const float sourceX = static_cast<float>(px) * 63.0f / (width - 1);
+        const uint8_t x0i = static_cast<uint8_t>(sourceX);
+        const uint8_t x1i = x0i < 63 ? x0i + 1 : 63;
+        const float fx = sourceX - x0i;
+        const float top = waterfall[static_cast<size_t>(y0i) * 64 + x0i] * (1.0f - fx) +
+                          waterfall[static_cast<size_t>(y0i) * 64 + x1i] * fx;
+        const float bottom = waterfall[static_cast<size_t>(y1i) * 64 + x0i] * (1.0f - fx) +
+                             waterfall[static_cast<size_t>(y1i) * 64 + x1i] * fx;
+        const uint8_t value = static_cast<uint8_t>(top * (1.0f - fy) + bottom * fy + 0.5f);
+        d.drawPixel(x0 + px, y0 + py, color(value));
       }
     }
   } else {
