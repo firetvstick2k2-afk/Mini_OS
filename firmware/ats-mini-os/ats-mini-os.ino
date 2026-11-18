@@ -1084,7 +1084,7 @@ void loop() {
     ? display.fmLayout() == 4 : display.amLayout() == 9;
   const bool fmPanoramaSelected = !menuOpen && currentSnapshot.modulation == RadioModulation::FM && display.fmLayout() == 5;
   if (fmPanoramaSelected) {
-    if (!fmLivePanorama.active() && !fmLivePanorama.start(radio, currentSnapshot.frequencyKHz))
+    if (!fmLivePanorama.active() && !fmLivePanorama.start(radio, static_cast<uint32_t>(constrain(currentSnapshot.frequencyKHz, 88500UL, 107000UL))))
       BootDiagnostics::write("[FM PANORAMA][START_FAIL] live RF sweep could not start");
     fmLivePanorama.tick(radio);
   } else if (fmLivePanorama.active()) {
