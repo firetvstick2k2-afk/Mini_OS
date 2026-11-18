@@ -36,7 +36,8 @@ void draw(Canvas& d, const RadioSnapshot& s, bool wifi,
   }
 
   char frequency[20];
-  snprintf(frequency, sizeof(frequency), "%.2f MHz", s.frequencyKHz / 1000.0f);
+  const uint32_t centerKHz = panorama ? panorama->centerFrequencyKHz() : s.frequencyKHz;
+  snprintf(frequency, sizeof(frequency), "%.2f MHz", centerKHz / 1000.0f);
   d.setFont(&lgfx::fonts::Font7);
   d.setTextDatum(MR_DATUM);
   d.setTextColor(WHITE, BG);
