@@ -7,7 +7,7 @@
 class FmLivePanoramaService {
 public:
   using Point = FmPanoramaService::Point;
-  static constexpr uint8_t kHistoryRows = 24;
+  static constexpr uint8_t kHistoryRows = 28;
   bool start(RadioCore& radio, uint32_t centerKHz);
   void tick(RadioCore& radio);
   void stop(RadioCore& radio);
@@ -22,4 +22,5 @@ private:
   uint32_t centerKHz_ = 0;
   uint32_t restartAtMs_ = 0;
   bool active_ = false;
+  bool restartPending_ = false;
 };
