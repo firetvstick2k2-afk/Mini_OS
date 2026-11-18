@@ -406,6 +406,9 @@ void setup() {
   } else {
     Serial.println("[TUNER] init failed; check I2C, radio power and GPIO configuration.");
   }
+  // Display the existing LittleFS splash after display/radio initialization.
+  // The image is optional; a missing or invalid file leaves normal startup unchanged.
+  if (storageReady) display.showBootSplash(2500);
   wifi.setNewsService(&newsService);
   wifi.setWeatherService(&weatherService);
   BootDiagnostics::printf("[BOOT][STAGE] before wifi.begin free_heap=%u max_block=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
