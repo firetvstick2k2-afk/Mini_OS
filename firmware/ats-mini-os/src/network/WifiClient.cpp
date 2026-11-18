@@ -1,4 +1,5 @@
 #include "WifiClient.h"
+#include "../display/SplashService.h"
 #include "../news/NewsService.h"
 #include "../system/BootDiagnostics.h"
 
@@ -198,6 +199,16 @@ void WifiClient::startWebServer() {
   server_.on("/", HTTP_GET, [this]() { handleRoot(); });
 
   server_.on("/wifi/save", HTTP_POST, [this]() { handleSave(); });
+  server_.on("/splash.png", HTTP_GET, [this]() {
+    if (!SplashService::exists()) return server_.send(404, "text/plain; charset=utf-8", "Kein Bootbild gespeichert.");
+    File image = LittleFS.open(SplashService::IMAGE_PATH, "r");
+    if (!image) return server_.send(500, "text/plain; charset=utf-8", "Bootbild konnte nicht geöffnet werden.");
+    server_.streamFile(image, "image/png");
+    image.close();
+  });
+  server_.on("/splash/upload", HTTP_POST,
+    [this]() { handleSplashUploadComplete(); },
+    [this]() { handleSplashUpload(); });
 
   server_.on("/wifi/status", HTTP_GET, [this]() { handleStatus(); });
 
@@ -273,6 +284,13 @@ void WifiClient::handleRoot() {
   page += F("<form method='post' action='/weather/save'><label>Postleitzahl</label><input name='postal' inputmode='numeric' pattern='[0-9]{5}' minlength='5' maxlength='5' required value='");
   page += weatherService_ ? htmlEscape(weatherService_->postalCode()) : String("");
   page += F("'><button type='submit'>Wetter-Standort speichern</button></form></section>");
+  page += F("<section><h2>Bootbild</h2><p>PNG für die Startanzeige (320 × 170 Pixel, maximal 512 KB).</p>");
+  if (SplashService::exists()) {
+    page += F("<img src='/splash.png' alt='Aktuelles Bootbild' style='display:block;max-width:100%;height:auto;margin:10px 0;border:1px solid #426276'>");
+  } else {
+    page += F("<p><small>Aktuell ist kein Bootbild gespeichert.</small></p>");
+  }
+  page += F("<form method='post' action='/splash/upload' enctype='multipart/form-data'><label>PNG-Datei auswählen</label><input type='file' name='splash' accept='image/png,.png' required><button type='submit'>Bootbild hochladen</button></form></section>");
   page += F("<form id='wifi' method='post' action='/wifi/save'><button type='submit'>Speichern und verbinden</button></form>"
             "<section><h3>Verbindungsstatus</h3><p id='status'>Wird geladen ...</p>"
             "<small>Einrichtungs-WLAN: ATS-Mini-OS-Setup · Adresse: 10.1.1.1</small></section>"
@@ -281,6 +299,85 @@ void WifiClient::handleRoot() {
             "'Nicht mit Router verbunden · Setup-Seite bleibt erreichbar';}catch(e){}}status();setInterval(status,3000);</script>"
             "</main></body></html>");
   server_.send(200, "text/html; charset=utf-8", page);
+}
+
+void WifiClient::handleSplashUpload() {
+  HTTPUpload& upload = server_.upload();
+  if (upload.status == UPLOAD_FILE_START) {
+    if (splashUploadFile_) splashUploadFile_.close();
+    SplashService::discardTemporary();
+    splashUploadBytes_ = 0;
+    splashUploadFailed_ = false;
+    splashUploadSucceeded_ = false;
+    splashUploadMessage_ = "";
+    String filename = upload.filename;
+    filename.toLowerCase();
+    if (!filename.endsWith(".png")) {
+      splashUploadFailed_ = true;
+      splashUploadMessage_ = "Bitte eine PNG-Datei auswählen.";
+      return;
+    }
+    splashUploadFile_ = LittleFS.open(SplashService::TEMP_PATH, "w");
+    if (!splashUploadFile_) {
+      splashUploadFailed_ = true;
+      splashUploadMessage_ = "LittleFS ist nicht verfügbar oder die temporäre Datei kann nicht angelegt werden.";
+    }
+  } else if (upload.status == UPLOAD_FILE_WRITE) {
+    if (splashUploadFailed_ || !splashUploadFile_) return;
+    if (splashUploadBytes_ + upload.currentSize > SplashService::MAX_FILE_SIZE) {
+      splashUploadFailed_ = true;
+      splashUploadMessage_ = "Das Bootbild darf maximal 512 KB groß sein.";
+      splashUploadFile_.close();
+      SplashService::discardTemporary();
+      return;
+    }
+    const size_t written = splashUploadFile_.write(upload.buf, upload.currentSize);
+    if (written != upload.currentSize) {
+      splashUploadFailed_ = true;
+      splashUploadMessage_ = "Fehler beim Schreiben der PNG-Datei in LittleFS.";
+      splashUploadFile_.close();
+      SplashService::discardTemporary();
+      return;
+    }
+    splashUploadBytes_ += written;
+  } else if (upload.status == UPLOAD_FILE_END) {
+    if (splashUploadFile_) {
+      splashUploadFile_.flush();
+      splashUploadFile_.close();
+    }
+    if (!splashUploadFailed_) {
+      if (!SplashService::validate(SplashService::TEMP_PATH, 320, 170)) {
+        splashUploadFailed_ = true;
+        splashUploadMessage_ = "Ungültige PNG-Datei. Erforderlich sind exakt 320 × 170 Pixel und höchstens 512 KB.";
+        SplashService::discardTemporary();
+      } else if (!SplashService::install()) {
+        splashUploadFailed_ = true;
+        splashUploadMessage_ = "Das neue Bootbild konnte nicht sicher installiert werden; das bisherige Bild bleibt erhalten.";
+        SplashService::discardTemporary();
+      } else {
+        splashUploadSucceeded_ = true;
+        splashUploadMessage_ = "Bootbild erfolgreich gespeichert. Es wird beim nächsten Neustart angezeigt.";
+      }
+    }
+    BootDiagnostics::printf("[SPLASH] upload bytes=%u result=%s",
+      static_cast<unsigned>(splashUploadBytes_), splashUploadSucceeded_ ? "success" : "failed");
+  } else if (upload.status == UPLOAD_FILE_ABORTED) {
+    if (splashUploadFile_) splashUploadFile_.close();
+    SplashService::discardTemporary();
+    splashUploadFailed_ = true;
+    splashUploadMessage_ = "Upload abgebrochen.";
+  }
+}
+
+void WifiClient::handleSplashUploadComplete() {
+  if (splashUploadSucceeded_) {
+    server_.send(200, "text/html; charset=utf-8",
+      "<meta charset='utf-8'><meta http-equiv='refresh' content='3;url=/'><p>Bootbild erfolgreich gespeichert. Die bisherige Anzeige bleibt bis zum Neustart aktiv.</p><p><a href='/'>Zurück</a></p>");
+  } else {
+    String message = htmlEscape(splashUploadMessage_.length() ? splashUploadMessage_ : String("Upload fehlgeschlagen."));
+    server_.send(400, "text/html; charset=utf-8",
+      "<meta charset='utf-8'><p>" + message + "</p><p><a href='/'>Zurück zur Konfiguration</a></p>");
+  }
 }
 
 void WifiClient::handleSave() {
