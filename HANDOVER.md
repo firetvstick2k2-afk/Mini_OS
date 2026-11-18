@@ -3078,3 +3078,14 @@ Prüfstatus:
 - Technische Richtung für den nächsten FM-FFT-Schritt: bilineare Vollflächen-Weichzeichnung reduzieren/ersetzen durch sehr leichte lokale Kantenrundung bzw. zurückhaltendes Anti-Aliasing, dabei Signalspitzen und Weißanteile erhalten. Keine pauschale Unschärfe und keine aggressive Mittelung.
 - Diese Präferenz betrifft ausschließlich den FM-Live-FFT-Wasserfall, nicht den separaten FT8-Decoder-Wasserfall.
 - Noch keine weitere Codeänderung aus dieser Beschreibung abgeleitet; zunächst als verbindliches visuelles Ziel dokumentiert.
+
+
+## FM Live FFT Waterfall – dezente Kantenberuhigung statt Milchglas (2026-11-18)
+
+- Nutzer hat das zuvor dokumentierte Darstellungsziel bestätigt und die Umsetzung ausdrücklich beauftragt: Signalstruktur ähnlich der ursprünglichen Blockdarstellung erhalten, harte Ecken nur leicht „abfeilen“, fast rund wirken lassen; keine milchige Vollflächen-Weichzeichnung.
+- In `firmware/ats-mini-os/src/display/DisplayLayoutFmAudioFft.h` wurde die bilineare Interpolation über die gesamte Wasserfallfläche entfernt.
+- Stattdessen wird die ursprüngliche 64x64-Zellstruktur wieder direkt auf die Displayfläche gezeichnet. Für schwächere/mittlere Werte wird eine sehr zurückhaltende 4-Nachbar-Mischung angewendet (88 % Originalwert, 12 % Mittelwert der vier direkten Nachbarn). Starke Werte ab 160 bleiben unverändert, damit weiße Signalspitzen scharf und kräftig erhalten bleiben.
+- Der kontinuierliche Blau-/Cyan-/Weiß-Farbverlauf und die frühere Weiß-Schwelle bleiben bestehen. Keine Änderung an FFT-Erfassung, Pegelberechnung, Audio-Capture, Zeilenrate, Frequenz-/Akkuanzeige, RSSI/SNR-Text, FT8-Decoder-Wasserfall oder TEF6686-Layout.
+- Code-Commit: `1d82872a731da5aa0f67f432aba68ef5eb67c31e`.
+- Build-/Gerätestatus: Änderung committet; Build und Gerätetest stehen noch aus. Nutzer startet Builds selbst.
+- Nächster Schritt: Nutzer baut und vergleicht die Anzeige. Prüfen, ob Konturen wieder klarer sind, die Blockecken aber weniger hart wirken und weiße Signalspitzen erhalten bleiben. Falls nötig nur den geringen 12-%-Glättungsanteil feinjustieren.
