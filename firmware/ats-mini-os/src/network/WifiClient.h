@@ -4,6 +4,7 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Preferences.h>
+#include <FS.h>
 #include "../news/NewsService.h"
 #include "../weather/WeatherService.h"
 
@@ -31,6 +32,11 @@ private:
   static constexpr uint32_t RETRY_INTERVAL_MS = 12000;
   WebServer server_{80};
   Preferences preferences_;
+  File splashUploadFile_;
+  size_t splashUploadBytes_ = 0;
+  bool splashUploadFailed_ = false;
+  bool splashUploadSucceeded_ = false;
+  String splashUploadMessage_;
   char ssid_[NETWORK_COUNT][33] = {};
   char password_[NETWORK_COUNT][65] = {};
   NewsService::Configuration newsConfig_;
@@ -59,6 +65,8 @@ private:
   void handleStatus();
   void handleNewsSave();
   void handleWeatherSave();
+  void handleSplashUpload();
+  void handleSplashUploadComplete();
   void loadNewsConfig();
   static String htmlEscape(const String& value);
 };
