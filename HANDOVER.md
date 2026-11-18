@@ -3164,3 +3164,16 @@ Prüfstatus:
   - f649226ff0a8251a7548ba566b4dd0d0aeef2a2a – multipart callback signature and LittleFS include correction
 - Build status: not run by ChatGPT; user starts builds. Compile and hardware test are pending. In particular verify PNG decoding on the ATS Mini V4 panel, the first-boot splash timing, config page preview, successful upload, rejection of wrong dimensions/non-PNG/oversized files, and preservation of the old image on failed upload.
 - No GitHub Actions started and no device flashed by ChatGPT. No bootloader, partition table, or existing LittleFS data was erased/formatted.
+
+
+## Encoder-Abstimmung – Live-Tuning wieder unmittelbar (2026-11-18)
+
+- Nutzer hat vor dem nächsten Build die Korrektur der verzögerten normalen Abstimmung beauftragt.
+- Ursache im aktiven Branch bestätigt: Normale Encoder-Drehungen wurden in `ats-mini-os.ino` global in `pendingTuneDelta` gesammelt und erst nach `kEncoderTuneSettleMs = 2000` an `radio.nextChannel()` übergeben. Das betraf alle Layouts, weil die Verarbeitung zentral erfolgt.
+- Korrektur umgesetzt: Im normalen Radiobetrieb wird `radio.nextChannel(rotationDelta)` jetzt direkt beim Encoder-Rotationsereignis ausgeführt. Bei erfolgreicher Abstimmung folgt unmittelbar `display.notifyTuning()`. Das gilt layoutübergreifend, einschließlich DAB Style.
+- Die globale Live-Tuning-Warteschlange, deren 2-Sekunden-Ablauf, die vorläufige Display-Frequenzberechnung und der Klick-Commit einer ausstehenden Live-Abstimmung wurden entfernt.
+- Decoder-Preset-Vorschau bleibt separat verzögert: eigene Konstante `kDecoderPreviewSettleMs = 2000`, weiterhin nur im Decoder-Kategoriefenster verwendet. Die Vorschau-Logik wurde nicht auf sofortiges Tuning umgestellt.
+- Änderung in `firmware/ats-mini-os/ats-mini-os.ino`, Commit: `92fbbc2575651eddace2af6d275e70b0de8a9b84`.
+- Nach dem Commit erneut vom aktiven Branch abgerufen und geprüft: neue Sofort-Abstimmung vorhanden; alte Symbole `pendingTuneDelta`, `pendingTuneChangedAtMs` und `kEncoderTuneSettleMs` kommen nicht mehr vor; Decoder-Vorschau verwendet weiterhin die 2000-ms-Konstante.
+- Build-/Gerätestatus: noch nicht gebaut und nicht am Gerät getestet. Nutzer startet den Build selbst.
+- Nächster Schritt: Nutzer kann den Build starten und normales Tuning in mehreren Layouts testen; zusätzlich prüfen, dass die Decoder-Preset-Vorschau weiterhin erst nach 2 Sekunden Ruhe abstimmt.
