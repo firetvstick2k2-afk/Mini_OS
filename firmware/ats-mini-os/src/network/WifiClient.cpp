@@ -1,5 +1,6 @@
 #include "WifiClient.h"
 #include "../display/SplashService.h"
+#include <LittleFS.h>
 #include "../news/NewsService.h"
 #include "../system/BootDiagnostics.h"
 
@@ -208,7 +209,7 @@ void WifiClient::startWebServer() {
   });
   server_.on("/splash/upload", HTTP_POST,
     [this]() { handleSplashUploadComplete(); },
-    [this]() { handleSplashUpload(); });
+    [this](HTTPUpload&) { handleSplashUpload(); });
 
   server_.on("/wifi/status", HTTP_GET, [this]() { handleStatus(); });
 
