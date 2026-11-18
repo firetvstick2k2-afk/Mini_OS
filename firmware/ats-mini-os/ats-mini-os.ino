@@ -798,7 +798,7 @@ void loop() {
           menuSelection = 0;
         } else if (menuPage == 5 && menuSelection == 6) {
           menuPage = 14;
-          menuSelection = display.fmLayout() == 2 ? 2 : 1;
+          menuSelection = display.fmLayout() == 5 ? 5 : (display.fmLayout() == 4 ? 4 : (display.fmLayout() == 3 ? 3 : (display.fmLayout() == 2 ? 2 : 1)));
         } else if (menuPage == 5 && menuSelection == 7) {
           menuPage = 15;
            menuSelection = display.amLayout() == 4 ? 2 : (display.amLayout() == 7 ? 3 : (display.amLayout() == 8 ? 4 : 1));
