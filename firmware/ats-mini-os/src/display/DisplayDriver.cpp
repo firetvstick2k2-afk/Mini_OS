@@ -3,7 +3,7 @@
 // #include "DisplayLayoutAM.h"  // Legacy LW/MW/KW layout disabled; retained as source only.
 #include "DisplayLayoutHJB.h"
 #include "DisplayLayoutSW.h"
-#include "DisplayLayoutFmPanorama.h"
+#include "DisplayLayoutFmAudioFft.h"
 #include "DisplayStatusBar.h"
 #include "../radio/BandManager.h"
 #include "../radio/DecoderFrequencyList.h"
@@ -999,7 +999,7 @@ void DisplayDriver::setTheme(uint8_t index) {
 void DisplayDriver::setFmLayout(uint8_t mode) {
   fmLayout_ = mode <= 5 ? mode : 0;
   lastGeneration_ = UINT32_MAX;
-  Serial.printf("[DISPLAY] FM layout: %s\\n", fmLayout_ == 5 ? "Live Wasserfall" : (fmLayout_ == 4 ? "Decoder" : (fmLayout_ == 1 ? "HJB" : (fmLayout_ == 3 ? "TEF6686 - Newsfeed" : (fmLayout_ == 2 ? "TEF6686 -FM Version" : "DAB Style")))));
+  Serial.printf("[DISPLAY] FM layout: %s\\n", fmLayout_ == 5 ? "Live FFT Waterfall" : (fmLayout_ == 4 ? "Decoder" : (fmLayout_ == 1 ? "HJB" : (fmLayout_ == 3 ? "TEF6686 - Newsfeed" : (fmLayout_ == 2 ? "TEF6686 -FM Version" : "DAB Style")))));
 }
 
 void DisplayDriver::setAmLayout(uint8_t mode) {
@@ -1421,8 +1421,10 @@ void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnect
       return;
     }
     if (fmLayout_ == 5) {
-      if (useSprite_) { sprite_.fillSprite(BLACK); FmPanoramaLayout::draw(sprite_, s, wifiConnected, fmLivePanorama_); sprite_.pushSprite(0, 0); }
-      else { device_.fillScreen(BLACK); FmPanoramaLayout::draw(device_, s, wifiConnected, fmLivePanorama_); }
+      if (fmAudioFft_) fmAudioFft_->copyWaterfall(fmFftBuffer_);
+      const bool fftAvailable = fmAudioFft_ && fmAudioFft_->available();
+      if (useSprite_) { sprite_.fillSprite(BLACK); FmAudioFftLayout::draw(sprite_, s, wifiConnected, fmFftBuffer_, fftAvailable); sprite_.pushSprite(0, 0); }
+      else { device_.fillScreen(BLACK); FmAudioFftLayout::draw(device_, s, wifiConnected, fmFftBuffer_, fftAvailable); }
       return;
     }
     if (fmLayout_ == 3) {
