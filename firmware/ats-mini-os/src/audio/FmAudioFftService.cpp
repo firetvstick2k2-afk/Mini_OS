@@ -4,6 +4,8 @@
 
 bool FmAudioFftService::enter(AudioCaptureService& capture) {
   if (active_) return capture_ == &capture;
+  if (attempted_) return false;
+  attempted_ = true;
 #if defined(LILYGO_SI473X)
   (void)capture;
   return false;
@@ -29,6 +31,7 @@ void FmAudioFftService::exit() {
   active_ = false;
   if (capture_) capture_->unsubscribe(this);
   capture_ = nullptr;
+  attempted_ = false;
 }
 
 void FmAudioFftService::onAudioSamples(void* context, const int16_t* samples, size_t count, int64_t utcStartMicros) {
