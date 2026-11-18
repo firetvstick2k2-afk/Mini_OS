@@ -3024,3 +3024,14 @@ Prüfstatus:
 - Nach jeder Codeänderung durch ChatGPT HANDOVER.md im selben aktiven Branch aktualisieren und anschließend den Dokumentations-Commit sowie den tatsächlichen Dateistand verifizieren.
 - Buildstatus strikt unterscheiden: nicht gestartet / läuft / fehlgeschlagen / erfolgreich vom Nutzer bestätigt. Gerätetest/Flash ebenfalls nur nach ausdrücklicher Bestätigung als erledigt markieren.
 - Wichtige feste Grenzen: Nutzer startet Builds selbst; keine GitHub Actions eigenständig starten und nicht flashen. Keine Änderungen an nicht betroffenen Layouts/Modulen. Referenzrepository ATS Mini Dev nur als Referenz verwenden; aktives Ziel bleibt Mini_OS.
+
+
+## FM Live FFT Waterfall – Weißbereich früher beginnen lassen (2026-11-18)
+
+- Nutzerbeobachtung beim starken FM-Sender: Anzeige mit RSSI etwa 40 und SNR etwa 21–25 zeigte zu viel Hellblau/Cyan und zu wenig Weiß; der Empfang wurde als sehr stark und klar beschrieben.
+- Nutzerwunsch: Hellblau soll in Weiß übergehen bzw. Weiß soll deutlich früher einsetzen.
+- In `firmware/ats-mini-os/src/display/DisplayLayoutFmAudioFft.h` wurde die separate PALE_BLUE-Stufe entfernt. Werte ab 160 werden jetzt weiß dargestellt; zuvor begann Weiß erst oberhalb von 210. Unterhalb 160 bleiben die bisherigen dunklen Blau-/Cyan-Stufen unverändert.
+- Code-Commit: `8aec10a0ed205748e60ff2a4a63a64558350c137`.
+- Geändert wurde ausschließlich die Farbzuordnung des FM-Live-FFT-Wasserfalls. Keine Änderung an FFT-Berechnung, Audio-Capture, RSSI/SNR-Auswertung, Zeilenrate, Frequenz-/Akkuanzeige, altem Decoder-Wasserfall oder TEF6686-Layout.
+- Build-/Gerätestatus: Änderung committet; neuer Build und Gerätetest stehen noch aus. Nutzer startet Builds selbst.
+- Nächster Schritt: Nutzer baut und testet denselben starken Sender erneut. Anhand des Fotos beurteilen, ob Weißanteil und Kontrast passen; erst danach gegebenenfalls weitere Schwellenwerte anpassen.
