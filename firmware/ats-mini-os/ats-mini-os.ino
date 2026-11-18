@@ -715,7 +715,7 @@ void loop() {
           menuSelection = display.fmLayout() == 5 ? 5 : (display.fmLayout() == 4 ? 4 : (display.fmLayout() == 3 ? 3 : (display.fmLayout() == 2 ? 2 : 1)));
         } else if (menuPage == 13 && menuSelection == 2) {
           menuPage = 15;
-           menuSelection = (display.amLayout() == 9 || display.amLayout() == 4) ? 2 : (display.amLayout() == 7 ? 3 : (display.amLayout() == 8 ? 4 : 1)));
+           menuSelection = display.amLayout() == 4 ? 2 : (display.amLayout() == 7 ? 3 : (display.amLayout() == 8 ? 4 : 1));
         } else if ((menuPage == 14 || menuPage == 15) && menuSelection == 0) {
           const bool returningFromFm = menuPage == 14;
           menuPage = 5;
@@ -726,13 +726,13 @@ void loop() {
           if (layout == 3) wifi.ensureStarted();
           const bool saved = settingsStore.saveDisplayFmLayout(layout);
           Serial.printf("[SETTINGS] FM layout=%s %s\n",
-            layout == 5 ? "Live Wasserfall" : (layout == 4 ? "FFT Wasserfall (Alt)" : (layout == 3 ? "TEF6686 - Newsfeed" : (layout == 2 ? "TEF6686 -FM Version" : "DAB Style"))), saved ? "saved" : "save failed");
+            layout == 5 ? "Live Wasserfall" : (layout == 4 ? "Decoder" : (layout == 3 ? "TEF6686 - Newsfeed" : (layout == 2 ? "TEF6686 -FM Version" : "DAB Style"))), saved ? "saved" : "save failed");
           closeMenuToRadio("FM layout selected");
         } else if (menuPage == 15 && menuSelection > 0) {
           // Preserve the legacy layout IDs and include the independent TEF6686 SW renderer.
           static const uint8_t layoutIds[] = { 1, 4, 7, 8 };
           static const char* const layoutNames[] = {
-            "HJB", "Decoder / Wasserfall", "TinyRadio", "TEF6686 - KW/MW/LW", "Waterfall Live"
+            "HJB", "Decoder / Wasserfall", "TinyRadio", "TEF6686 - KW/MW/LW"
           };
           const uint8_t index = static_cast<uint8_t>(menuSelection - 1);
           if (index < sizeof(layoutIds) / sizeof(layoutIds[0])) {
