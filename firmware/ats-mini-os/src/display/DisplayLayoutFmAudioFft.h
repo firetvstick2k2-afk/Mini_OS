@@ -21,7 +21,6 @@ inline uint16_t color(uint8_t value) {
 template <typename Canvas>
 void draw(Canvas& d, const RadioSnapshot& s, bool wifi, const uint8_t* waterfall, bool available) {
   d.fillScreen(BG);
-  drawNetworkBatteryStatus(d, wifi, 8);
 
   d.setTextDatum(TL_DATUM);
   d.setFont(&lgfx::fonts::Font2);
@@ -45,17 +44,17 @@ void draw(Canvas& d, const RadioSnapshot& s, bool wifi, const uint8_t* waterfall
   d.drawString(status, 5, 32);
 
   constexpr int x0=3, y0=52, width=314, height=114;
-  constexpr int cellW=width / 64;
-  constexpr int cellH=height / 64;
   d.drawRect(1, 50, 318, 118, BLUE);
   d.fillRect(x0, y0, width, height, BG);
   if (available && waterfall) {
     for (uint8_t row=0; row<64; ++row) {
-      const int y = y0 + static_cast<int>(row) * cellH;
+      const int y = y0 + static_cast<int>(row) * height / 64;
+      const int rowHeight = (static_cast<int>(row + 1) * height / 64) - (static_cast<int>(row) * height / 64);
       for (uint8_t bin=0; bin<64; ++bin) {
-        const int x = x0 + static_cast<int>(bin) * cellW;
+        const int x = x0 + static_cast<int>(bin) * width / 64;
+        const int columnWidth = (static_cast<int>(bin + 1) * width / 64) - (static_cast<int>(bin) * width / 64);
         const uint16_t shade = color(waterfall[static_cast<size_t>(row) * 64 + bin]);
-        d.fillRect(x, y, cellW, cellH, shade);
+        d.fillRect(x, y, columnWidth, rowHeight, shade);
       }
     }
   } else {
