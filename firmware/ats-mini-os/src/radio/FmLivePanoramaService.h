@@ -13,6 +13,7 @@ public:
   void stop(RadioCore& radio);
   bool active() const { return active_; }
   uint8_t rowCount() const { return rowCount_; }
+  uint32_t centerFrequencyKHz() const { return centerKHz_; }
   const Point* row(uint8_t chronologicalIndex) const;
 private:
   FmPanoramaService sweep_;
