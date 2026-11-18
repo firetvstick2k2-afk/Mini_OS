@@ -262,7 +262,7 @@ public:
   uint32_t detectedPanelId() const { return device_.getDisplayId(); }
 private:
   Device device_;
-  uint8_t fmLayout_ = 0; // 0 = DAB Style, 1 = HJB, 2 = TEF6686 FM, 3 = TEF6686 Newsfeed
+  uint8_t fmLayout_ = 0; // 0 = DAB, 1 = HJB, 2 = TEF FM, 3 = TEF News, 4 = audio waterfall, 5 = RF panorama
   uint8_t amLayout_ = 9; // Default to the live LW/MW/KW waterfall.
   AudioWaterfallService* audioWaterfall_ = nullptr;
   FmLivePanoramaService* fmLivePanorama_ = nullptr;
