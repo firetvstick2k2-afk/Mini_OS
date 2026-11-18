@@ -16,10 +16,10 @@ inline uint16_t blendColor(uint16_t a, uint16_t b, uint8_t amount) {
   return static_cast<uint16_t>((r << 11) | (g << 5) | bl);
 }
 
-// Continuous palette: strong values reach white early, without hard color steps.
+// Higher contrast palette: keep blues deep and reserve bright tones for strong peaks.
 inline uint16_t color(uint8_t value) {
-  static constexpr uint8_t stops[] = {0, 38, 72, 112, 160, 255};
-  static constexpr uint16_t colors[] = {DEEP_BLUE, 0x0010, BLUE, 0x03FF, CYAN, WHITE};
+  static constexpr uint8_t stops[] = {0, 42, 82, 118, 150, 205};
+  static constexpr uint16_t colors[] = {DEEP_BLUE, 0x000F, 0x0018, 0x03BF, 0x07FF, WHITE};
   for (uint8_t i = 0; i < 5; ++i) {
     if (value <= stops[i + 1]) {
       const uint8_t span = stops[i + 1] - stops[i];
@@ -78,8 +78,7 @@ void draw(Canvas& d, const RadioSnapshot& s, const uint8_t* waterfall, bool avai
   d.drawRect(1, 60, 318, 106, BLUE);
   d.fillRect(x0, y0, width, height, BG);
   if (available && waterfall) {
-    // Very light 4-neighbour edge softening. Keep the original 64x64
-    // cell structure and most of each measured value; strong peaks stay crisp.
+    // Preserve the original measured pixels: no spatial averaging or blur.
     for (uint8_t row = 0; row < 64; ++row) {
       const int y = y0 + static_cast<int>(row) * height / 64;
       const int rowHeight = (static_cast<int>(row + 1) * height / 64) -
@@ -88,16 +87,8 @@ void draw(Canvas& d, const RadioSnapshot& s, const uint8_t* waterfall, bool avai
         const int x = x0 + static_cast<int>(bin) * width / 64;
         const int columnWidth = (static_cast<int>(bin + 1) * width / 64) -
                                 (static_cast<int>(bin) * width / 64);
-        const uint8_t center = waterfall[static_cast<size_t>(row) * 64 + bin];
-        const uint8_t left = waterfall[static_cast<size_t>(row) * 64 + (bin ? bin - 1 : bin)];
-        const uint8_t right = waterfall[static_cast<size_t>(row) * 64 + (bin < 63 ? bin + 1 : bin)];
-        const uint8_t above = waterfall[static_cast<size_t>(row ? row - 1 : row) * 64 + bin];
-        const uint8_t below = waterfall[static_cast<size_t>(row < 63 ? row + 1 : row) * 64 + bin];
-        const uint16_t neighbours = static_cast<uint16_t>(left) + right + above + below;
-        const uint8_t softened = center >= 160
-          ? center
-          : static_cast<uint8_t>((static_cast<uint16_t>(center) * 88 + (neighbours / 4) * 12) / 100);
-        d.fillRect(x, y, columnWidth, rowHeight, color(softened));
+        const uint8_t value = waterfall[static_cast<size_t>(row) * 64 + bin];
+        d.fillRect(x, y, columnWidth, rowHeight, color(value));
       }
     }
   } else {
