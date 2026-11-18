@@ -50,6 +50,7 @@ void draw(Canvas& d, const RadioSnapshot& s, bool wifi,
   constexpr int cellH=4;
   d.drawRect(x0-1, y0-1, width+2, height+2, BLUE);
   d.fillRect(x0, y0, width, height, DEEP_BLUE);
+  d.fillTriangle(154, 48, 166, 48, 160, 55, 0xF800);
 
   const uint8_t rows = panorama ? panorama->rowCount() : 0;
   for (uint8_t r=0; r<rows; ++r) {
