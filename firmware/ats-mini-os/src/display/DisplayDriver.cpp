@@ -1,4 +1,5 @@
 #include "DisplayDriver.h"
+#include "SplashService.h"
 #include "ThemeManager.h"
 // #include "DisplayLayoutAM.h"  // Legacy LW/MW/KW layout disabled; retained as source only.
 #include "DisplayLayoutHJB.h"
@@ -977,6 +978,21 @@ bool DisplayDriver::begin(uint8_t initialBrightness) {
     static_cast<unsigned long>(device_.getDisplayId()),
     static_cast<long>(device_.width()),static_cast<long>(device_.height()));
   Serial.println("[DISPLAY] active layouts: FM DAB/TEF/Audio-Waterfall/RF-Panorama; LW/MW/KW HJB/Waterfall/TinyRadio");
+  return true;
+}
+
+bool DisplayDriver::showBootSplash(uint32_t durationMs) {
+  if (!ready_ || !SplashService::exists()) return false;
+  const bool drawn = device_.drawPngFile(LittleFS, SplashService::IMAGE_PATH);
+  device_.releasePngMemory();
+  if (!drawn) {
+    device_.fillScreen(BLACK);
+    Serial.println("[SPLASH] PNG decode failed; continuing with normal radio UI.");
+    return false;
+  }
+  Serial.printf("[SPLASH] boot image displayed (%ux%u)\\n",
+    static_cast<unsigned>(device_.width()), static_cast<unsigned>(device_.height()));
+  if (durationMs) delay(durationMs);
   return true;
 }
 
