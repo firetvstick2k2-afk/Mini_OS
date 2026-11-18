@@ -3188,3 +3188,13 @@ Prüfstatus:
 - Commit: `e8800fffddd87697e4b9ab4cb2a4eed44c480141`.
 - Build-/Gerätestatus: Änderung committet; nicht gebaut oder am Gerät getestet. Nutzer startet den Build selbst.
 - Keine anderen Menüseiten, Decoder-Kategorien oder Layouts geändert.
+
+
+## Nutzerfeedback – Menüfunktionen „Suche“ und „Scannen“ (2026-11-18)
+
+- Nutzer ist mit den beiden Hauptmenüfunktionen **„Suche“** und **„Scannen“** ausdrücklich unzufrieden.
+- Beide Funktionen entsprechen in ihrer aktuellen Mini-OS-Umsetzung nicht der Vorstellung des Nutzers und wirken für ihn deutlich anders als die entsprechenden Funktionen in **ATS Mini Dev**.
+- Nutzer empfindet die derzeitigen Umsetzungen als für ihn nutzlos und möchte sie in dieser Form nicht behalten.
+- Dies ist zunächst als verbindliches UX-/Produktfeedback für die weitere Planung festgehalten, **keine sofortige Aufforderung, die Funktionen zu löschen oder umzubauen**.
+- Vor einer späteren Änderung: die konkreten Implementierungen in Mini OS und die entsprechenden Funktionen in ATS Mini Dev direkt vergleichen; herausarbeiten, welche Bedienung und welches Verhalten der Nutzer aus Dev erwartet. Danach gezielt abstimmen, ob Anpassung, Ersatz oder Entfernung gewünscht ist.
+- Bis dahin diese Funktionen nicht eigenmächtig ändern oder entfernen.
