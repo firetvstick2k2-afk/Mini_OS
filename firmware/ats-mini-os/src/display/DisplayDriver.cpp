@@ -3,7 +3,6 @@
 // #include "DisplayLayoutAM.h"  // Legacy LW/MW/KW layout disabled; retained as source only.
 #include "DisplayLayoutHJB.h"
 #include "DisplayLayoutSW.h"
-#include "DisplayLayoutWaterfall.h"
 #include "DisplayLayoutFmPanorama.h"
 #include "DisplayStatusBar.h"
 #include "../radio/BandManager.h"
@@ -501,8 +500,8 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     "Zurück", "Display-Helligkeit", "Layout", "Farbschema"
   };
   static const char* const layoutGroupItems[] = { "Zurück", "UKW / FM", "LW / MW / KW" };
-  static const char* const fmLayoutItems[] = { "Zurück", "DAB Style", "TEF6686 -FM Version", "TEF6686 - Newsfeed", "FFT Wasserfall (Alt)", "Live Wasserfall" };
-  static const char* const amLayoutItems[] = { "Zurück", "HJB", "Waterfall", "TinyRadio", "TEF6686 - KW/MW/LW", "Waterfall Live" };
+  static const char* const fmLayoutItems[] = { "Zurück", "DAB Style", "TEF6686 -FM Version", "TEF6686 - Newsfeed", "Decoder", "Live Wasserfall" };
+  static const char* const amLayoutItems[] = { "Zurück", "HJB", "Waterfall", "TinyRadio", "TEF6686 - KW/MW/LW", "Decoder" };
   static const char* const decoderCategoryItems[] = {
     "Zurück", "CW", "FT8", "FT4", "RTTY", "DWD / Pinneberg",
     "NCDXF Beacons", "Zeitzeichen", "Kurzwellen-Rundfunk", "SSB QSO",
@@ -1000,7 +999,7 @@ void DisplayDriver::setTheme(uint8_t index) {
 void DisplayDriver::setFmLayout(uint8_t mode) {
   fmLayout_ = mode <= 5 ? mode : 0;
   lastGeneration_ = UINT32_MAX;
-  Serial.printf("[DISPLAY] FM layout: %s\\n", fmLayout_ == 5 ? "Live Wasserfall" : (fmLayout_ == 4 ? "FFT Wasserfall (Alt)" : (fmLayout_ == 1 ? "HJB" : (fmLayout_ == 3 ? "TEF6686 - Newsfeed" : (fmLayout_ == 2 ? "TEF6686 -FM Version" : "DAB Style")))));
+  Serial.printf("[DISPLAY] FM layout: %s\\n", fmLayout_ == 5 ? "Live Wasserfall" : (fmLayout_ == 4 ? "Decoder" : (fmLayout_ == 1 ? "HJB" : (fmLayout_ == 3 ? "TEF6686 - Newsfeed" : (fmLayout_ == 2 ? "TEF6686 -FM Version" : "DAB Style")))));
 }
 
 void DisplayDriver::setAmLayout(uint8_t mode) {
@@ -1023,8 +1022,8 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   if (returningToRadio) lastGeneration_ = UINT32_MAX;
   // Redraw the file manager promptly while the encoder is moving; this also
   // keeps the selection frame visually attached to the active row.
-  const bool liveWaterfallLayout = (s.modulation == RadioModulation::FM && (fmLayout_ == 4 || fmLayout_ == 5)) ||
-    (s.modulation != RadioModulation::FM && amLayout_ == 9);
+  const bool liveWaterfallLayout = (s.modulation == RadioModulation::FM && fmLayout_ == 5) ||
+    (s.modulation != RadioModulation::FM && amLayout_ == 4);
   const uint32_t redrawInterval = menuOpen ? ((menuPage==21 || menuPage==23 || menuPage==24 || menuPage==28 || menuPage==29) ? 100 : ((menuPage==6 || menuPage==19 || menuPage==22 || menuPage==26 || (menuPage>=30 && menuPage<=40)) ? 20 : 500)) : (liveWaterfallLayout ? 120 : 40);
   if(!returningToRadio && s.generation==lastGeneration_ && now-lastDrawMs_<redrawInterval && !menuStateChanged)return;
   lastGeneration_=s.generation;
@@ -1417,8 +1416,8 @@ void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnect
   // FM logo/RDS screen remains untouched as the DAB Style option.
   if (s.modulation == RadioModulation::FM) {
     if (fmLayout_ == 4) {
-      if (useSprite_) { sprite_.fillSprite(BLACK); LiveWaterfallLayout::drawFm(sprite_, s, radioReady, wifiConnected, audioWaterfall_); sprite_.pushSprite(0, 0); }
-      else { device_.fillScreen(BLACK); LiveWaterfallLayout::drawFm(device_, s, radioReady, wifiConnected, audioWaterfall_); }
+      if (useSprite_) { sprite_.fillSprite(BLACK); SWLayouts::drawDecoder(sprite_, s, radioReady, wifiConnected); sprite_.pushSprite(0, 0); }
+      else { device_.fillScreen(BLACK); SWLayouts::drawDecoder(device_, s, radioReady, wifiConnected); }
       return;
     }
     if (fmLayout_ == 5) {
@@ -1444,7 +1443,7 @@ void DisplayDriver::draw(const RadioSnapshot& s,bool radioReady,bool wifiConnect
   } else {
     auto renderSw = [&](auto& canvas) {
       switch (amLayout_) {
-        case 9: LiveWaterfallLayout::drawAm(canvas, s, radioReady, wifiConnected, audioWaterfall_); break;
+        case 9: SWLayouts::drawDecoder(canvas, s, radioReady, wifiConnected); break;
         case 1: drawHJBLayout(canvas, s, radioReady, wifiConnected, frequencyCursor_); break;
         case 4: SWLayouts::drawDecoder(canvas, s, radioReady, wifiConnected); break;
         case 7: SWLayouts::drawTiny(canvas, s, radioReady, wifiConnected); break;
