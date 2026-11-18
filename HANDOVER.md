@@ -3004,3 +3004,23 @@ Prüfstatus:
 - Änderungen: `FtxDecoder.h`, `FtxDecoderService.h/.cpp`, `ats-mini-os.ino`, `BootDiagnostics.cpp`.
 - Commits: `c9711d2d1fe4a7dd14e141ed6ec2535d51a6d3ee`, `08a6530eec2ec18e81c279fa534d6773ea61db5c`, `b68817bf9c935bdcf8dd007da613908f676a25fe`, `f5b6c6a06534344710ecdffc353f6ffcb0dd9a0c`, `fa41d6b8e8828244e04f2f40b1d17f8c0970a74f`.
 - Änderungen wurden aus dem Zielbranch erneut abgerufen und stichprobenartig geprüft. Kein Build, keine GitHub Action und kein Flash gestartet; Nutzer startet den Compile-/Hardwaretest selbst. CW-Decoder, Display-Layouts und Audio-Hardwarepfad wurden nicht geändert.
+
+## FM Live FFT Waterfall – ADC-Pegelskalierung (2026-11-18)
+
+- Aktiver Arbeitszweig bleibt `firetvstick2k2-afk/Mini_OS`, Branch `dev/first-build-preparation`.
+- Ausgangslage nach erstem Gerätetest: Die neue FM-Live-FFT-Wasserfallfläche war nahezu vollständig weiß und zeigte nur kleine Blöckchen. Frequenzanzeige und Akkuanzeige wurden vom Nutzer ausdrücklich als passend/gut bestätigt und sollen nicht unnötig verändert werden.
+- Ursache im FFT-Pfad eingegrenzt: `AudioCaptureService` liefert rohe 12-Bit-ADC-Werte (0..4095). Die bisherige FFT-Magnituden-Normierung teilte pauschal durch 256 und erzeugte dadurch eine viel zu hohe Anzeige; fast alle Bins liefen in den hellsten Farbwertbereich.
+- In `firmware/ats-mini-os/src/audio/FmAudioFftService.cpp` wurde die FFT-Magnitude auf ADC-Vollaussteuerung und FFT-/Hann-Fenster-Skalierung normiert. Die Anzeige verwendet nun eine dBFS-Skala von ungefähr -84 bis -18 dBFS statt der bisherigen überhöhten Pegelabbildung.
+- Code-Commit: `2ca00b9743dd98bb3238e7b5ee3575e6612d78aa`.
+- Unverändert: `DisplayLayoutFmAudioFft.h` (Layout, Frequenz- und Akkuanzeige), alter dekorativer Decoder-Wasserfall, TEF6686-Layout sowie FFT-Zeilenrate (12 Zeilen/s). Es wurde nur die Pegelberechnung in der FFT-Service-Datei geändert.
+- Status: Nutzer hat den Compile-Build gestartet; Ergebnis steht noch aus. Kein Build-Erfolg behaupten, bis der Nutzer ihn bestätigt. Noch kein neuer Gerätetest der Pegelkorrektur bestätigt.
+- Nächster Schritt: Build-Ergebnis abwarten. Danach Live-FFT auf dem ATS Mini prüfen. Falls weiterhin zu hell/dunkel oder blockig, anhand des tatsächlichen Gerätetests die Pegel-/Farbskala gezielt abstimmen. Frequenz-/Akkuanzeige nicht anfassen.
+
+## Verbindliche Chat-Übergabe-Regel (ab 2026-11-18)
+
+- Dieses `HANDOVER.md` ist die zentrale, maßgebliche Projektübergabe über Chat-Sitzungen hinweg; Modell-Erinnerungen sind nur Zusatz und ersetzen das Dokument nicht.
+- Zu Beginn jeder neuen ATS-Mini-OS-Sitzung: zuerst dieses Dokument aus dem aktiven GitHub-Repository und Branch lesen, danach die betroffenen Dateien/Commits im tatsächlichen Branch prüfen. Niemals allein aus Chat-Erinnerung oder älteren Zusammenfassungen weiterarbeiten.
+- Während einer Arbeitssitzung neue Entscheidungen, bestätigte Nutzerwünsche, Änderungen, Commit-SHAs, Build-/Teststatus und nächste Schritte festhalten.
+- Nach jeder Codeänderung durch ChatGPT HANDOVER.md im selben aktiven Branch aktualisieren und anschließend den Dokumentations-Commit sowie den tatsächlichen Dateistand verifizieren.
+- Buildstatus strikt unterscheiden: nicht gestartet / läuft / fehlgeschlagen / erfolgreich vom Nutzer bestätigt. Gerätetest/Flash ebenfalls nur nach ausdrücklicher Bestätigung als erledigt markieren.
+- Wichtige feste Grenzen: Nutzer startet Builds selbst; keine GitHub Actions eigenständig starten und nicht flashen. Keine Änderungen an nicht betroffenen Layouts/Modulen. Referenzrepository ATS Mini Dev nur als Referenz verwenden; aktives Ziel bleibt Mini_OS.
