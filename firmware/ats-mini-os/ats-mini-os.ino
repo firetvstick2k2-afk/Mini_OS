@@ -1067,7 +1067,7 @@ void loop() {
     if (!fmAudioFft.active() && !fmAudioFft.enter(audioCapture))
       BootDiagnostics::write("[FM FFT][START_FAIL] audio capture unavailable");
     fmAudioFft.update(currentSnapshot.rssi);
-  } else if (fmAudioFft.active()) {
+  } else {
     fmAudioFft.exit();
   }
   const bool waterfallVisible = !menuOpen && (decoderWaterfallSelected || fmAudioFftSelected);
