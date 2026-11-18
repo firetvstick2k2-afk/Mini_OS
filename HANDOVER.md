@@ -3059,3 +3059,12 @@ Prüfstatus:
 - Anschließend den vorhandenen Host-Testlauf ausführen bzw. den Nutzer um den dafür vorgesehenen Test bitten, falls eine Ausführung in der aktuellen Arbeitsumgebung nicht möglich ist. Build-/Geräteteststatus nicht als erfolgreich markieren, solange kein Ergebnis vorliegt.
 - Arbeitspriorität für die nächste Sitzung: FT8-Slot-Timing und Logging wieder aufnehmen. Die FM-Live-FFT-Wasserfall-Optik ist davon getrennt und darf diesen offenen FT8-Punkt nicht verdrängen.
 - Keine GitHub Action eigenständig starten und kein Flash durch ChatGPT; Builds/Gerätetests startet der Nutzer.
+
+
+### Ergänzende FT8-Beobachtung – Decoder-Wasserfall stoppt nach kurzem Aufbau (2026-11-18)
+
+- Nutzer präzisiert das sichtbare Fehlerbild: Der im FT8-Decoder eingebaute Wasserfall beginnt sich von unten aufzubauen, stoppt jedoch nach kurzer Zeit wieder.
+- Dieses Verhalten tritt bei jedem neu empfangenen FT8-Signal erneut auf: kurzer Aufbau von unten, dann Stillstand.
+- Diese Beobachtung gehört zur offenen FT8-Slot-/Timing-Diagnose und soll zusammen mit dem Symptom „Audioblöcke kommen an, aber `slots=0`“ untersucht werden.
+- Noch keine bestätigte Ursache. Insbesondere nicht vorschnell annehmen, dass nur die Displaydarstellung betroffen ist: zu prüfen sind Audio-Chunk-Zufuhr, Slot-/Zeitbasis, Waterfall-Blockfüllung und der Zustand des Decoders nach dem kurzen Aufbau.
+- Nächster Schritt bleibt die Auswertung des aktuellen internen BootDiagnostics-Logs; dabei Wasserfall-Füllstand/Decoder-Collecting-Status und Slot-/Chunk-Zähler zeitlich zueinander in Beziehung setzen.
