@@ -3177,3 +3177,14 @@ Prüfstatus:
 - Nach dem Commit erneut vom aktiven Branch abgerufen und geprüft: neue Sofort-Abstimmung vorhanden; alte Symbole `pendingTuneDelta`, `pendingTuneChangedAtMs` und `kEncoderTuneSettleMs` kommen nicht mehr vor; Decoder-Vorschau verwendet weiterhin die 2000-ms-Konstante.
 - Build-/Gerätestatus: noch nicht gebaut und nicht am Gerät getestet. Nutzer startet den Build selbst.
 - Nächster Schritt: Nutzer kann den Build starten und normales Tuning in mehreren Layouts testen; zusätzlich prüfen, dass die Decoder-Preset-Vorschau weiterhin erst nach 2 Sekunden Ruhe abstimmt.
+
+
+## Hauptmenü – ungültiger 25. Menüeintrag entfernt (2026-11-18)
+
+- Nutzer meldet anhand eines Gerätefotos: Hauptmenü zeigt `25 / 24`; der 25. Eintrag ist leer.
+- Ursache im aktiven Branch gefunden: `DisplayDriver.cpp` enthält genau 24 Einträge in `mainItems[]` und zeigt deshalb korrekt `/ 24`. Die zentrale Encoder-Menünavigation in `ats-mini-os.ino` verwendete jedoch für `menuPage == 0` fälschlich `itemCount = 25`. Dadurch konnte `menuSelection == 24` werden; für diesen Index gibt es weder Label noch gültigen Eintrag in `targetPages[24]` (das Array hat 24 Elemente).
+- Korrektur: Hauptmenü-Navigationsgrenze von 25 auf 24 Einträge geändert. Damit laufen Anzeige, Auswahl und `targetPages[24]` wieder mit den gültigen Indizes 0–23 synchron.
+- Geänderte Datei: `firmware/ats-mini-os/ats-mini-os.ino`.
+- Commit: `e8800fffddd87697e4b9ab4cb2a4eed44c480141`.
+- Build-/Gerätestatus: Änderung committet; nicht gebaut oder am Gerät getestet. Nutzer startet den Build selbst.
+- Keine anderen Menüseiten, Decoder-Kategorien oder Layouts geändert.
