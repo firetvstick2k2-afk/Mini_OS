@@ -17,16 +17,18 @@ void draw(Canvas& d, const RadioSnapshot& s, bool ready, bool wifi,
   drawNetworkBatteryStatus(d, wifi, 8);
 
   // Compact radio header; reserve almost the entire lower display for the
-  // live FFT waterfall. No RSSI or frequency-axis labels in this view.
-  const char* band = fm ? "FM" : (s.bandName[0] ? s.bandName : "ALL");
-  const char* mode = fm ? "FM" :
-    (s.modulation == RadioModulation::AM ? "AM" :
-     s.modulation == RadioModulation::USB ? "USB" : "LSB");
-  d.setFont(&lgfx::fonts::Font0);
-  d.setTextDatum(TL_DATUM);
-  d.setTextColor(CYAN, BG);
-  d.drawString(band, 5, 25);
-  d.drawString(mode, 5, 37);
+  // live FFT waterfall. In FM mode, use the former two-line label area for RDS.
+  if (!fm) {
+    const char* band = s.bandName[0] ? s.bandName : "ALL";
+    const char* mode =
+      (s.modulation == RadioModulation::AM ? "AM" :
+       s.modulation == RadioModulation::USB ? "USB" : "LSB");
+    d.setFont(&lgfx::fonts::Font0);
+    d.setTextDatum(TL_DATUM);
+    d.setTextColor(CYAN, BG);
+    d.drawString(band, 5, 25);
+    d.drawString(mode, 5, 37);
+  }
 
   char frequency[24];
   if (fm) {
@@ -44,15 +46,23 @@ void draw(Canvas& d, const RadioSnapshot& s, bool ready, bool wifi,
   d.setTextDatum(MC_DATUM);
   d.setTextColor(WHITE,BG);
   d.setTextSize(fm ? 0.78f : 0.70f);
-  d.drawString(frequency,174,34);
+  d.drawString(frequency,fm ? 220 : 174,34);
   d.setTextSize(1.0f);
 
-  const char* station=s.stationName[0]?s.stationName:(ready?"":"RADIO OFFLINE");
+  const char* station=s.stationName[0]?s.stationName:(fm?"":(ready?"":"RADIO OFFLINE"));
   if(station && *station) {
     d.setFont(&lgfx::fonts::Font0);
-    d.setTextDatum(MR_DATUM);
     d.setTextColor(GREEN,BG);
-    d.drawString(station,314,45);
+    if (fm) {
+      // RDS occupies the former two-line FM label area, left of the frequency.
+      d.setTextDatum(ML_DATUM);
+      d.setTextSize(1.25f);
+      d.drawString(station,5,36);
+      d.setTextSize(1.0f);
+    } else {
+      d.setTextDatum(MR_DATUM);
+      d.drawString(station,314,45);
+    }
   }
 
   // Nearly edge-to-edge spectrum: real FFT bins from the audio capture,
