@@ -5,7 +5,7 @@
 
 namespace FmAudioFftLayout {
 constexpr uint16_t BG=0x0000, DEEP_BLUE=0x0008, BLUE=0x001F;
-constexpr uint16_t CYAN=0x07FF, WHITE=0xFFFF, PALE_BLUE=0xBFEF;
+constexpr uint16_t CYAN=0x07FF, WHITE=0xFFFF;
 
 inline uint16_t color(uint8_t value) {
   if (value < 12) return DEEP_BLUE;
@@ -13,7 +13,7 @@ inline uint16_t color(uint8_t value) {
   if (value < 72) return BLUE;
   if (value < 112) return 0x03FF;
   if (value < 160) return CYAN;
-  if (value < 210) return PALE_BLUE;
+  // Bring strong FFT levels to white earlier; avoid a broad pale-blue plateau.
   return WHITE;
 }
 
