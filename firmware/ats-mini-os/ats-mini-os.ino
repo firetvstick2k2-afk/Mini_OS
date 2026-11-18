@@ -8,8 +8,6 @@
 #include "src/radio/DecoderFrequencyList.h"
 #include "src/radio/MemoryService.h"
 #include "src/radio/ScanService.h"
-#include "src/radio/FmPanoramaService.h"
-#include "src/radio/FmLivePanoramaService.h"
 #include "src/radio/SeekService.h"
 #include "src/system/PerformanceManager.h"
 #include "src/system/BootDiagnostics.h"
@@ -44,9 +42,6 @@ EiBiService eibi;
 RadioCore radio;
 MemoryService memories;
 ScanService scanner;
-FmPanoramaService fmPanorama;
-FmLivePanoramaService fmLivePanorama;
-uint32_t fmPanoramaCenterKHz = DEFAULT_FM_FREQUENCY_KHZ;
 SeekService seeker;
 uint8_t selectedMemorySlot = 0;
 bool memoryEditActive = false;
@@ -61,6 +56,7 @@ FrequencyKeypad frequencyKeypad;
 AudioCaptureService audioCapture;
 CwDecoderService cwDecoder;
 FtxDecoderService ftxDecoder;
+FmAudioFftService fmAudioFft;
 WifiClient wifi;
 bool wifiPausedForDecoder = false;
 bool eibiDownloadPending = false;
@@ -360,7 +356,7 @@ void setup() {
     display.setTheme(savedTheme);
     display.setFmLayout(savedFmLayout);
     display.setAmLayout(savedAmLayout);
-    display.setFmLivePanorama(&fmLivePanorama);
+    display.setFmAudioFft(&fmAudioFft);
     Serial.printf("[DISPLAY] first UI initialized; brightness=%u/255\n",
       static_cast<unsigned>(display.brightness()));
   }
@@ -471,12 +467,7 @@ void loop() {
         const int16_t rotationDelta = (menuOpen || bfoAdjustmentActive || frequencyCursorActive) && !inputEvent.buttonHeld
           ? (inputEvent.delta > 0 ? 1 : -1) : inputEvent.delta;
         if(inputEvent.buttonHeld&&!menuOpen&&!bfoAdjustmentActive){syncFrequencyCursor();frequencyCursorPos=static_cast<uint8_t>(constrain(static_cast<int>(frequencyCursorPos)-rotationDelta,static_cast<int>(frequencyCursorMinimum()),static_cast<int>(frequencyCursorMaximum())));frequencyCursorActive=true;} else if (menuOpen) {
-          if(menuPage==29 && fmPanorama.state()!=FmPanoramaService::State::Running) {
-            const int64_t next=(int64_t)fmPanoramaCenterKHz+(int64_t)rotationDelta*100;
-            fmPanoramaCenterKHz=(uint32_t)constrain(next,88500LL,107000LL);
-            fmPanorama.invalidate();
-          }
-          else if(menuPage==23 && scanner.state()!=ScanService::State::Running && scanner.count()>0) {
+          if(menuPage==23 && scanner.state()!=ScanService::State::Running && scanner.count()>0) {
             const uint16_t selected=nextSpectrumPeak(scanner,static_cast<uint16_t>(menuSelection),rotationDelta>0?1:-1);
             menuSelection=static_cast<uint8_t>(selected);
             if(scanner.point(selected).frequencyKHz && radio.tune(scanner.point(selected).frequencyKHz)) display.notifyTuning();
@@ -623,12 +614,7 @@ void loop() {
           } else if (memories.entry(selectedMemorySlot).frequencyKHz) {
             if(memories.recall(selectedMemorySlot,radio)){display.notifyTuning();closeMenuToRadio("memory recalled");}
           } else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\n",static_cast<unsigned>(selectedMemorySlot+1));
-        } else if (menuPage == 29) {
-           if(fmPanorama.state()==FmPanoramaService::State::Running) fmPanorama.stop(radio);
-           else if(fmPanorama.state()==FmPanoramaService::State::Done && fmPanorama.count()>0) {
-             if(radio.tune(fmPanoramaCenterKHz)){display.notifyTuning();closeMenuToRadio("FM panorama center selected");}
-           } else if(!fmPanorama.start(radio,fmPanoramaCenterKHz)) Serial.println("[FM PANORAMA] start rejected; FM mode required");
-         } else if (menuPage == 23) {
+        } else if (menuPage == 23) {
           if(scanner.state()==ScanService::State::Running) scanner.stop(radio);
           else if(scanner.count()>0 && scanner.state()!=ScanService::State::Idle) {
             const uint16_t selected=static_cast<uint16_t>(menuSelection);
@@ -667,10 +653,10 @@ void loop() {
           }
         } else if ((menuPage==5 && menuSelection==4)) {fmOpen();
         } else if (menuPage == 0) {
-            // ATS Mini Dev menu order is retained; FM Panorama occupies the former unused spectrum placeholder.
-            static const uint8_t targetPages[25] = {
+            // Main menu without the retired FM Panorama entry.
+            static const uint8_t targetPages[24] = {
               255, 26, 28, 21, 16, 8, 1, 19, 255, 255, 255, 12, 9,
-              24, 23, 22, 25, 7, 11, 11, 11, 5, 29, 18, 20
+              24, 23, 22, 25, 7, 11, 11, 11, 5, 18, 20
             };
             const uint8_t selectedMainItem = menuSelection;
             const uint8_t targetPage = targetPages[selectedMainItem];
@@ -696,16 +682,15 @@ void loop() {
               } else if (menuPage == 11 && selectedMainItem == 17) menuSelection = 6;
               else if (menuPage == 11 && selectedMainItem == 15) menuSelection = 1;
               else menuSelection = 0;
-              if (menuPage == 29) fmPanoramaCenterKHz = static_cast<uint32_t>(constrain(radio.snapshot().frequencyKHz, 88500UL, 107000UL));
               Serial.printf("[MENU] opened selection page %u\n", static_cast<unsigned>(menuPage));
             }
         } else if (menuPage == 18) {
           menuPage = 0;
-          menuSelection = 21;
+          menuSelection = 22;
           Serial.println("[WEATHER] report closed");
         } else if (menuPage == 20) {
           menuPage = 0;
-          menuSelection = 22;
+          menuSelection = 23;
           Serial.println("[MOON] calendar closed");
         } else if (menuPage == 13 && menuSelection == 0) {
           menuPage = 0;
@@ -997,7 +982,6 @@ void loop() {
             } else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\n",static_cast<unsigned>(selectedMemorySlot+1));
           }
           else if (menuPage == 23) { scanner.stop(radio); menuPage=0; menuSelection=11; }
-           else if (menuPage == 29) { fmPanorama.stop(radio); menuPage=0; menuSelection=22; }
           else if (menuPage == 24) { seeker.stop(); menuPage=0; menuSelection=10; }
           else if (menuPage == 21) { cwDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=23; }
           else if (menuPage == 28) { ftxDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=20; }
@@ -1068,7 +1052,6 @@ void loop() {
   }
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] radio.update done");
   scanner.tick(radio);
-  fmPanorama.tick(radio);
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] scanner.tick done");
   seeker.tick(radio);
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] seeker.tick done");
@@ -1079,15 +1062,15 @@ void loop() {
   const RadioSnapshot& currentSnapshot = radio.snapshot();
   const bool decoderWaterfallSelected = currentSnapshot.modulation == RadioModulation::FM
     ? display.fmLayout() == 4 : display.amLayout() == 4;
-  const bool fmPanoramaSelected = !menuOpen && currentSnapshot.modulation == RadioModulation::FM && display.fmLayout() == 5;
-  if (fmPanoramaSelected) {
-    if (radio.isReady() && !fmLivePanorama.active() && !fmLivePanorama.start(radio, static_cast<uint32_t>(constrain(currentSnapshot.frequencyKHz, 88500UL, 107000UL))))
-      BootDiagnostics::write("[FM PANORAMA][START_FAIL] live RF sweep could not start");
-    fmLivePanorama.tick(radio);
-  } else if (fmLivePanorama.active()) {
-    fmLivePanorama.stop(radio);
+  const bool fmAudioFftSelected = !menuOpen && currentSnapshot.modulation == RadioModulation::FM && display.fmLayout() == 5;
+  if (fmAudioFftSelected) {
+    if (!fmAudioFft.active() && !fmAudioFft.enter(audioCapture))
+      BootDiagnostics::write("[FM FFT][START_FAIL] audio capture unavailable");
+    fmAudioFft.update(currentSnapshot.rssi);
+  } else if (fmAudioFft.active()) {
+    fmAudioFft.exit();
   }
-  const bool waterfallVisible = !menuOpen && (decoderWaterfallSelected || fmPanoramaSelected);
+  const bool waterfallVisible = !menuOpen && (decoderWaterfallSelected || fmAudioFftSelected);
   performance.setWaterfallActive(waterfallVisible);
   static char logoCheckedKey[40] = {};
   static bool currentLogoIsLocal = false;
@@ -1131,7 +1114,6 @@ void loop() {
   const MoonCalendar::Snapshot currentMoon = MoonCalendar::calculate(time(nullptr));
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] before display.render");
   RadioSnapshot displaySnapshot = radio.snapshot();
-  if (menuOpen && menuPage == 29) displaySnapshot.frequencyKHz = fmPanoramaCenterKHz;
   if (pendingTuneDelta != 0 && radio.isReady()) {
     const uint32_t step = BandManager::currentStepKHz() ? BandManager::currentStepKHz() : 1;
     uint32_t minimum = displaySnapshot.bandMinimumKHz;
@@ -1146,7 +1128,7 @@ void loop() {
     if (offset < 0) offset += span;
     displaySnapshot.frequencyKHz = minimum + static_cast<uint32_t>(offset);
   }
-  display.render(displaySnapshot,radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal(), selectedMemorySlot, memories.count(), (menuPage==29?fmPanorama.count():scanner.count()), (menuPage==29?fmPanorama.capacity():scanner.capacity()), static_cast<uint8_t>(menuPage==29?static_cast<uint8_t>(fmPanorama.state()):static_cast<uint8_t>(scanner.state())), static_cast<uint8_t>(seeker.state()), (menuPage==29?fmPanorama.data():scanner.data()), memoryEditActive, memoryEditName, memoryEditCursor, &ftxDecoder, wifi.isOff(), systemClock.synchronized());
+  display.render(displaySnapshot,radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal(), selectedMemorySlot, memories.count(), scanner.count(), scanner.capacity(), static_cast<uint8_t>(scanner.state()), static_cast<uint8_t>(seeker.state()), scanner.data(), memoryEditActive, memoryEditName, memoryEditCursor, &ftxDecoder, wifi.isOff(), systemClock.synchronized());
   if (firstLoopDiagnostics) { BootDiagnostics::write("[LOOP][TRACE] display.render done; first loop complete"); firstLoopDiagnostics = false; }
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
