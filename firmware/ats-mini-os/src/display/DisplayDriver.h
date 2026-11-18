@@ -260,8 +260,8 @@ public:
   uint32_t detectedPanelId() const { return device_.getDisplayId(); }
 private:
   Device device_;
-  uint8_t fmLayout_ = 0; // 0 = DAB, 1 = HJB, 2 = TEF FM, 3 = TEF News, 4 = audio waterfall, 5 = RF panorama
-  uint8_t amLayout_ = 9; // Default to the live LW/MW/KW waterfall.
+  uint8_t fmLayout_ = 0; // 0 = DAB, 1 = HJB, 2 = TEF FM, 3 = TEF News, 4 = original decoder waterfall, 5 = RF panorama
+  uint8_t amLayout_ = 4; // Default to the original decoder waterfall.
   FmLivePanoramaService* fmLivePanorama_ = nullptr;
   uint8_t brightness_ = 180;
   uint8_t frequencyCursor_ = 100;
