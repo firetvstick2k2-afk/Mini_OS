@@ -3089,3 +3089,14 @@ Prüfstatus:
 - Code-Commit: `1d82872a731da5aa0f67f432aba68ef5eb67c31e`.
 - Build-/Gerätestatus: Änderung committet; Build und Gerätetest stehen noch aus. Nutzer startet Builds selbst.
 - Nächster Schritt: Nutzer baut und vergleicht die Anzeige. Prüfen, ob Konturen wieder klarer sind, die Blockecken aber weniger hart wirken und weiße Signalspitzen erhalten bleiben. Falls nötig nur den geringen 12-%-Glättungsanteil feinjustieren.
+
+
+## FM Live FFT Waterfall – milchige Darstellung zurücknehmen, Kontrast erhöhen (2026-11-18)
+
+- Nutzerfeedback nach dem letzten Test: Darstellung weiterhin zu milchig; die ursprünglichen klaren Pixel/Blöcke gefielen besser. Zusätzlich wirkt das Blau im Verhältnis zu Weiß zu hell; starke Signale/Weiß sollen deutlicher hervorstechen.
+- In `firmware/ats-mini-os/src/display/DisplayLayoutFmAudioFft.h` wurde die 4-Nachbar-Glättung vollständig entfernt. Die 64x64-Messwerte werden wieder ohne räumliche Mittelung als klare Pixel-/Zellstruktur gezeichnet.
+- Farbpalette kontrastreicher abgestimmt: dunklere Blauwerte, Cyan etwas zurückgenommen; Weiß wird bereits ab Wert 205 vollständig erreicht (vorher erst am oberen Ende des Farbverlaufs). Damit soll Hellblau nicht mehr so flächig dominieren und starke Peaks klarer weiß hervortreten.
+- Unverändert: FFT-Messwerte/-Berechnung, Audio-Capture, 12 Zeilen/s, Frequenz-/Akkuanzeige, Statuszeile, FT8-Decoder-Wasserfall und TEF6686-Layout.
+- Code-Commit: `4e41b44669cefe752b31362d5653f2842a59833d`.
+- Build-/Gerätestatus: Änderung committet; Build und Gerätetest stehen noch aus. Nutzer startet Builds selbst.
+- Nächster Schritt: Nutzer testet mit einem starken FM-Sender. Prüfen, ob Pixelstruktur wieder gefällt, Blau weniger milchig wirkt und Weiß bei starken Peaks deutlicher ist. Falls nötig anschließend nur Farbwerte/Schwellen feinjustieren.
