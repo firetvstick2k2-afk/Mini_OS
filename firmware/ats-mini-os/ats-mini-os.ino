@@ -7,7 +7,6 @@
 #include "src/radio/RadioCore.h"
 #include "src/radio/DecoderFrequencyList.h"
 #include "src/radio/MemoryService.h"
-#include "src/radio/ScanService.h"
 #include "src/radio/SpectrumScannerService.h"
 #include "src/system/PerformanceManager.h"
 #include "src/system/BootDiagnostics.h"
@@ -277,30 +276,7 @@ bool alignFrequencyCursor() {
   }
   return radio.tune(constrain(s.frequencyKHz-s.frequencyKHz%step,s.bandMinimumKHz,s.bandMaximumKHz));
 }
-uint16_t nextSpectrumPeak(const ScanService& scan, uint16_t current, int8_t direction) {
-  const uint16_t count=scan.count();
-  if(count<3 || !direction) return current;
-  uint8_t minR=255,maxR=0;
-  for(uint16_t i=0;i<count;++i){const uint8_t v=scan.point(i).rssi;if(v<minR)minR=v;if(v>maxR)maxR=v;}
-  const uint8_t threshold=static_cast<uint8_t>(minR+(static_cast<uint16_t>(maxR-minR)*5)/100);
-  for(uint16_t offset=1;offset<count;++offset){
-    int32_t candidate=static_cast<int32_t>(current)+static_cast<int32_t>(direction)*offset;
-    while(candidate<0)candidate+=count;
-    candidate%=count;
-    if(candidate==0 || candidate==count-1) continue;
-    const uint8_t v=scan.point(static_cast<uint16_t>(candidate)).rssi;
-    if(v>=threshold && v>=scan.point(static_cast<uint16_t>(candidate-1)).rssi &&
-       v>=scan.point(static_cast<uint16_t>(candidate+1)).rssi) return static_cast<uint16_t>(candidate);
-  }
-  uint16_t best=current;
-  for(uint16_t offset=1;offset<count;++offset){
-    int32_t candidate=static_cast<int32_t>(current)+static_cast<int32_t>(direction)*offset;
-    while(candidate<0)candidate+=count;
-    candidate%=count;
-    if(scan.point(static_cast<uint16_t>(candidate)).rssi>scan.point(best).rssi) best=static_cast<uint16_t>(candidate);
-  }
-  return best;
-}
+
 void fmRefresh(){ fmCount=0; if(!FileManager::list(fmPath,fmEntries,FileManager::MAX_ENTRIES,fmCount)) snprintf(fmMessage,sizeof(fmMessage),"Ordner nicht lesbar"); }
 void fmMessageSet(const char* m){ strncpy(fmMessage,m,sizeof(fmMessage)-1); fmMessage[sizeof(fmMessage)-1]=0; }
 void fmParent(){ if(strcmp(fmPath,"/")==0)return; char* p=strrchr(fmPath,47); if(p==fmPath)fmPath[1]=0; else if(p)*p=0; fmSelection=0; fmRefresh(); }
@@ -612,13 +588,13 @@ void loop() {
             if(memories.recall(selectedMemorySlot,radio)){display.notifyTuning();closeMenuToRadio("memory recalled");}
           } else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\n",static_cast<unsigned>(selectedMemorySlot+1));
         } else if (menuPage == 23) {
-          if(vhfSpectrum.isInput()) vhfSpectrum.clickInput(true,radio);
+          if(vhfSpectrum.isInput()) { vhfSpectrum.clickInput(true,radio); if(vhfSpectrum.state()==SpectrumScannerService::State::Aborted){menuPage=0;menuSelection=16;} }
           else if(vhfSpectrum.isRunning()) vhfSpectrum.cancel(radio);
           else if(vhfSpectrum.state()==SpectrumScannerService::State::Done && vhfSpectrum.accept(radio)) {
             display.notifyTuning();closeMenuToRadio("VHF spectrum peak accepted");
           } else vhfSpectrum.open();
         } else if (menuPage == 24) {
-          if(allBandSpectrum.isInput()) allBandSpectrum.clickInput(true,radio);
+          if(allBandSpectrum.isInput()) { allBandSpectrum.clickInput(true,radio); if(allBandSpectrum.state()==SpectrumScannerService::State::Aborted){menuPage=0;menuSelection=17;} }
           else if(allBandSpectrum.isRunning()) allBandSpectrum.cancel(radio);
           else if(allBandSpectrum.state()==SpectrumScannerService::State::Done && allBandSpectrum.accept(radio)) {
             display.notifyTuning();closeMenuToRadio("All Band spectrum peak accepted");
