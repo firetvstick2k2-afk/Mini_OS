@@ -129,6 +129,8 @@ void updateLastFmFrequencyPersistence() {
 
 void updateVolumePersistence() {
   if (!radio.isReady()) return;
+  // Spectrum scans mute the receiver temporarily; never persist that mute as user volume.
+  if (vhfSpectrum.isRunning() || allBandSpectrum.isRunning()) return;
   const uint8_t currentVolume = radio.volume();
   if (currentVolume != lastObservedVolume) {
     lastObservedVolume = currentVolume;
