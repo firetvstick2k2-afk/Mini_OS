@@ -18,6 +18,7 @@
 #include "src/input/EncoderInput.h"
 #include "src/input/FrequencyKeypad.h"
 #include "src/network/WifiClient.h"
+#include "src/network/NetworkRequestCoordinator.h"
 #include "src/news/NewsService.h"
 #include "src/weather/WeatherService.h"
 #include "src/radio/BandOpeningService.h"
@@ -297,6 +298,7 @@ void setup() {
   const bool storageReady = StorageDiscovery::begin();
   const bool settingsReady = settingsStore.begin();
   BootDiagnostics::begin(settingsStore.bootLogEnabled(true));
+  BootDiagnostics::printf("[NET][COORDINATOR] mutex=%s", NetworkRequestCoordinator::begin() ? "ready" : "FAILED");
 
   // Prepare the News cache folders immediately after LittleFS is mounted,
   // just like the station-logo folders. This is idempotent and never formats
