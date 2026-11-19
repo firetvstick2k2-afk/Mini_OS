@@ -447,6 +447,37 @@ bool TunerDriver::tune(uint32_t frequencyKHz, const RadioBandDefinition& band) {
   return true;
 }
 
+bool TunerDriver::beginSpectrumScan() {
+  if (!ready_) return false;
+  // Match ATS Mini Dev's scan setup. The SI4735 library's delay is a
+  // precision guard after SET_FREQUENCY; tune completion is polled separately.
+  radio_.setMaxDelaySetFrequency(60);
+  return true;
+}
+
+void TunerDriver::endSpectrumScan() {
+  radio_.setMaxDelaySetFrequency(30);
+}
+
+bool TunerDriver::tuneSpectrumScan(uint32_t frequencyKHz) {
+  if (!ready_ || frequencyKHz < minimumFrequencyKHz_ || frequencyKHz > maximumFrequencyKHz_) return false;
+  // Clear the previous STC flag before issuing the next tune, as in ATS Mini Dev.
+  radio_.getStatus(1, 0);
+  const uint16_t tunerFrequency = modulation_ == RadioModulation::FM
+    ? static_cast<uint16_t>(frequencyKHz / 10UL)
+    : static_cast<uint16_t>(frequencyKHz);
+  radio_.setFrequency(tunerFrequency);
+  radio_.clearRadioTextBuffers();
+  lastPiCode_ = 0;
+  return true;
+}
+
+bool TunerDriver::spectrumTuneComplete() {
+  if (!ready_) return false;
+  radio_.getStatus(0, 0);
+  return radio_.getTuneCompleteTriggered();
+}
+
 bool TunerDriver::tune(uint32_t frequencyKHz) {
   if (!ready_ || frequencyKHz < minimumFrequencyKHz_ || frequencyKHz > maximumFrequencyKHz_) return false;
   if (modulation_ == RadioModulation::FM)
