@@ -3507,3 +3507,14 @@ Prüfstatus:
 - Bestätigt: HF-Monitor-Renderpfad ist in Sprite- und Direkt-Displaypfad vorhanden. Keine Änderungen an TEF6686, Decoder-Wasserfall oder anderen Radio-Layouts.
 - Weiterhin offen: PlatformIO-Compile, GitHub Actions, WLAN-/Hardwaretest und Flash. Diese Schritte führt der Nutzer selbst aus.
 - Noch kein Build, keine GitHub Actions und kein Flashvorgang; Compile-only-Build und Gerätetest erfolgen durch den Nutzer.
+
+
+## WLAN-Fallback und sofortiger HF-Datenabruf (2026-11-19)
+
+- Nutzer meldete erneut, dass ein gespeicherter WLAN-Platz 2 nicht verwendet wird, wenn Platz 1 nicht erreichbar ist, und dass der HF-Monitor weiterhin vollständig grau bleibt.
+- WLAN-Fallback gehärtet: Vor dem Wechsel zum nächsten gespeicherten STA-Netz wird der vorherige Verbindungsversuch ausdrücklich getrennt (WiFi.disconnect(false, false)); der Setup-Access-Point bleibt dabei aktiv. Danach wird das nächste gespeicherte Profil gestartet.
+- HF-Monitor: Beim Übergang von nicht verfügbar zu verfügbar (insbesondere beim Öffnen des Monitors oder nach Wiederkehr der WLAN-Verbindung) wird jetzt ausdrücklich ein sofortiger Datenabruf angefordert. Zuvor existierte zwar das Flag refreshRequested_, es wurde aber nie gesetzt; dadurch konnte ein erneutes Öffnen des Monitors auf das reguläre Fünf-Minuten-Intervall warten.
+- Zusätzliche Boot-Log-Diagnose protokolliert nun, ob bands_detail fehlt und wie viele der zehn unterstützten HF-Amateurbänder tatsächlich gültige Werte geliefert haben.
+- Die Live-Quelle wurde separat geprüft: Map For HAM liefert aktuell bands_detail mit gültigen Poor/Fair/Good-Werten für 160m bis 10m. Die anderen Monitorzeilen (LW/MW/SWL, CB, 2m/70cm und UKW/FM) bleiben absichtlich grau, solange keine verifizierte Einzelbandbewertung vorliegt.
+- Geändert: firmware/ats-mini-os/src/network/WifiClient.cpp, firmware/ats-mini-os/src/radio/BandOpeningService.cpp, HANDOVER.md.
+- Statische Prüfung: Änderungspunkte und bestehende Schnittstellen wurden im Branch abgeglichen. Noch kein Compile, keine GitHub Action, kein Geräte-/WLAN-Test und kein Flash; der Nutzer startet den Build und prüft die Hardware.
