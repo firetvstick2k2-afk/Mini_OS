@@ -112,6 +112,10 @@ class TunerDriver {
 public:
   bool begin(uint32_t initialFrequencyKHz);
   bool tune(uint32_t frequencyKHz);
+  bool beginSpectrumScan();
+  void endSpectrumScan();
+  bool tuneSpectrumScan(uint32_t frequencyKHz);
+  bool spectrumTuneComplete();
   bool setBand(const RadioBandDefinition& band);
   bool setPatchProfile(uint8_t profile);
   uint8_t patchProfile() const;
