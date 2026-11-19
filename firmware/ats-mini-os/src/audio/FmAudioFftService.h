@@ -38,4 +38,5 @@ private:
   uint8_t rowsFilled_ = 0;
   volatile bool active_ = false;
   bool attempted_ = false;
+  uint32_t framesProcessed_ = 0;
 };
