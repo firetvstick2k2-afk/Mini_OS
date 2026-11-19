@@ -8,7 +8,7 @@
 #include "src/radio/DecoderFrequencyList.h"
 #include "src/radio/MemoryService.h"
 #include "src/radio/ScanService.h"
-#include "src/radio/SeekService.h"
+#include "src/radio/SpectrumScannerService.h"
 #include "src/system/PerformanceManager.h"
 #include "src/system/BootDiagnostics.h"
 #include "src/system/ClockService.h"
@@ -41,8 +41,8 @@ ClockService systemClock;
 EiBiService eibi;
 RadioCore radio;
 MemoryService memories;
-ScanService scanner;
-SeekService seeker;
+SpectrumScannerService vhfSpectrum(SpectrumScannerService::Kind::VhfFm);
+SpectrumScannerService allBandSpectrum(SpectrumScannerService::Kind::AllBand);
 uint8_t selectedMemorySlot = 0;
 bool memoryEditActive = false;
 uint8_t memoryEditCursor = 0;
@@ -355,6 +355,7 @@ void setup() {
     display.setFmLayout(savedFmLayout);
     display.setAmLayout(savedAmLayout);
     display.setFmAudioFft(&fmAudioFft);
+    display.setSpectrumServices(&vhfSpectrum,&allBandSpectrum);
     Serial.printf("[DISPLAY] first UI initialized; brightness=%u/255\n",
       static_cast<unsigned>(display.brightness()));
   }
@@ -468,10 +469,13 @@ void loop() {
         const int16_t rotationDelta = (menuOpen || bfoAdjustmentActive || frequencyCursorActive) && !inputEvent.buttonHeld
           ? (inputEvent.delta > 0 ? 1 : -1) : inputEvent.delta;
         if(inputEvent.buttonHeld&&!menuOpen&&!bfoAdjustmentActive){syncFrequencyCursor();frequencyCursorPos=static_cast<uint8_t>(constrain(static_cast<int>(frequencyCursorPos)-rotationDelta,static_cast<int>(frequencyCursorMinimum()),static_cast<int>(frequencyCursorMaximum())));frequencyCursorActive=true;} else if (menuOpen) {
-          if(menuPage==23 && scanner.state()!=ScanService::State::Running && scanner.count()>0) {
-            const uint16_t selected=nextSpectrumPeak(scanner,static_cast<uint16_t>(menuSelection),rotationDelta>0?1:-1);
-            menuSelection=static_cast<uint8_t>(selected);
-            if(scanner.point(selected).frequencyKHz && radio.tune(scanner.point(selected).frequencyKHz)) display.notifyTuning();
+          if(menuPage==23) {
+            if(vhfSpectrum.isInput()) vhfSpectrum.rotateInput(rotationDelta);
+            else vhfSpectrum.rotatePeak(rotationDelta,radio);
+          }
+          else if(menuPage==24) {
+            if(allBandSpectrum.isInput()) allBandSpectrum.rotateInput(rotationDelta);
+            else allBandSpectrum.rotatePeak(rotationDelta,radio);
           }
           else if(menuPage==26) {
             int16_t next = (static_cast<int16_t>(menuSelection) + rotationDelta) % (kDecoderCategoryCount + 1);
@@ -608,18 +612,17 @@ void loop() {
             if(memories.recall(selectedMemorySlot,radio)){display.notifyTuning();closeMenuToRadio("memory recalled");}
           } else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\n",static_cast<unsigned>(selectedMemorySlot+1));
         } else if (menuPage == 23) {
-          if(scanner.state()==ScanService::State::Running) scanner.stop(radio);
-          else if(scanner.count()>0 && scanner.state()!=ScanService::State::Idle) {
-            const uint16_t selected=static_cast<uint16_t>(menuSelection);
-            if(selected<scanner.count() && radio.tune(scanner.point(selected).frequencyKHz)) {
-              display.notifyTuning(); closeMenuToRadio("spectrum peak selected");
-            }
-          } else {
-            menuSelection=0;
-            scanner.start(radio);
-          }
+          if(vhfSpectrum.isInput()) vhfSpectrum.clickInput(true,radio);
+          else if(vhfSpectrum.isRunning()) vhfSpectrum.cancel(radio);
+          else if(vhfSpectrum.state()==SpectrumScannerService::State::Done && vhfSpectrum.accept(radio)) {
+            display.notifyTuning();closeMenuToRadio("VHF spectrum peak accepted");
+          } else vhfSpectrum.open();
         } else if (menuPage == 24) {
-          if(seeker.state()==SeekService::State::Running) seeker.stop(); else seeker.start(radio,1,12);
+          if(allBandSpectrum.isInput()) allBandSpectrum.clickInput(true,radio);
+          else if(allBandSpectrum.isRunning()) allBandSpectrum.cancel(radio);
+          else if(allBandSpectrum.state()==SpectrumScannerService::State::Done && allBandSpectrum.accept(radio)) {
+            display.notifyTuning();closeMenuToRadio("All Band spectrum peak accepted");
+          } else allBandSpectrum.open();
         } else if (menuPage == 28) {
           const FtxMode selectedMode = menuSelection == 1 ? FtxMode::FT4 : FtxMode::FT8;
           suspendWifiForDecoder();
@@ -972,8 +975,8 @@ void loop() {
               memoryEditCursor=0; memoryEditActive=true;
             } else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\n",static_cast<unsigned>(selectedMemorySlot+1));
           }
-          else if (menuPage == 23) { scanner.stop(radio); menuPage=0; menuSelection=16; }
-          else if (menuPage == 24) { seeker.stop(); menuPage=0; menuSelection=17; }
+          else if (menuPage == 23) { vhfSpectrum.cancel(radio); menuPage=0; menuSelection=16; }
+          else if (menuPage == 24) { allBandSpectrum.cancel(radio); menuPage=0; menuSelection=17; }
           else if (menuPage == 21) { cwDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=20; }
           else if (menuPage == 28) { ftxDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=21; }
           else if (decoderCategoryForPage(menuPage) >= 0) { menuPage=26; menuSelection=0; lastDecoderPreviewSelection=-1; }
@@ -1033,10 +1036,8 @@ void loop() {
     }
   }
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] radio.update done");
-  scanner.tick(radio);
-  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] scanner.tick done");
-  seeker.tick(radio);
-  if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] seeker.tick done");
+  vhfSpectrum.tick(radio);
+  allBandSpectrum.tick(radio);
   updateLastFmFrequencyPersistence();
   updateVolumePersistence();
   cwDecoder.update();
@@ -1096,7 +1097,7 @@ void loop() {
   const MoonCalendar::Snapshot currentMoon = MoonCalendar::calculate(time(nullptr));
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] before display.render");
   RadioSnapshot displaySnapshot = radio.snapshot();
-  display.render(displaySnapshot,radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal(), selectedMemorySlot, memories.count(), scanner.count(), scanner.capacity(), static_cast<uint8_t>(scanner.state()), static_cast<uint8_t>(seeker.state()), scanner.data(), memoryEditActive, memoryEditName, memoryEditCursor, &ftxDecoder, wifi.isOff(), systemClock.synchronized());
+  display.render(displaySnapshot,radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal(), selectedMemorySlot, memories.count(), 0, 0, 0, 0, nullptr, memoryEditActive, memoryEditName, memoryEditCursor, &ftxDecoder, wifi.isOff(), systemClock.synchronized());
   if (firstLoopDiagnostics) { BootDiagnostics::write("[LOOP][TRACE] display.render done; first loop complete"); firstLoopDiagnostics = false; }
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
