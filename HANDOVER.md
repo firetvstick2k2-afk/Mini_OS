@@ -3518,3 +3518,28 @@ Prüfstatus:
 - Die Live-Quelle wurde separat geprüft: Map For HAM liefert aktuell bands_detail mit gültigen Poor/Fair/Good-Werten für 160m bis 10m. Die anderen Monitorzeilen (LW/MW/SWL, CB, 2m/70cm und UKW/FM) bleiben absichtlich grau, solange keine verifizierte Einzelbandbewertung vorliegt.
 - Geändert: firmware/ats-mini-os/src/network/WifiClient.cpp, firmware/ats-mini-os/src/radio/BandOpeningService.cpp, HANDOVER.md.
 - Statische Prüfung: Änderungspunkte und bestehende Schnittstellen wurden im Branch abgeglichen. Noch kein Compile, keine GitHub Action, kein Geräte-/WLAN-Test und kein Flash; der Nutzer startet den Build und prüft die Hardware.
+
+
+## Erweiterte LittleFS-Fehlerdiagnose für WLAN und HF-Monitor (2026-11-19)
+
+- Nutzer möchte die vorhandene LittleFS-Protokolldatei gezielt zur Diagnose des WLAN-Fallbacks (Profil 1 nicht erreichbar, Profil 2 verfügbar) und des vollständig grauen HF-Bandmonitors verwenden.
+- WLAN-Diagnose erweitert:
+  - Beim Laden der Einstellungen wird für jeden der drei Slots nur protokolliert, ob er belegt ist, SSID-Länge und ob ein Passwort vorhanden ist. SSID-Inhalt und Passwort werden nicht in das Log geschrieben.
+  - Betriebsmodus, Startanforderung, Setup-AP-Startresultat/IP, initialer Verbindungsversuch, Slotnummer und Rückgabestatus von WiFi.begin werden protokolliert.
+  - Jeder Statuswechsel wird mit vorherigem/neuem Status, aktivem Slot, Alter des Verbindungsversuchs und AP-Status festgehalten.
+  - Fallback protokolliert leere Slots, ausgewählten Folgeslot, Ergebnis von WiFi.disconnect, Rückgabestatus von WiFi.begin und den AP-Status.
+  - Timeout- und 15-Sekunden-Warteereignisse enthalten Status, Slot, AP-IP und Zeit seit dem letzten Versuch. Erfolgreiche Verbindung enthält Slot, IP, RSSI, Kanal und freien Heap.
+  - Web-Speichern/Löschen eines Profils protokolliert Slot und Ergebnis, jedoch keine Zugangsdaten.
+- HF-Monitor-Diagnose erweitert:
+  - Öffnen/Schließen der Monitorseite sowie WLAN-/Datendienst-Gate werden mit Betriebsmodus und WiFi.status protokolliert.
+  - Worker-Zyklen unterscheiden sofort angeforderte und reguläre Abrufe; FM-MUF und HF-Feed werden getrennt nachvollziehbar.
+  - HTTPS-Start, http.begin, HTTP-Status/Fehlertext, Content-Length, tatsächlich gelesene Bytes, Laufzeit und Heap werden protokolliert.
+  - JSON-Parse, Quellzeitstempel mit Systemzeit, Vorhandensein/Anzahl von bands_detail sowie die gefundenen Tages-/Nachtwerte jedes der zehn bewerteten HF-Bänder werden einzeln festgehalten.
+  - Veröffentlichung des Snapshots oder Beibehalten des letzten Datenstands wird mit Ergebnis und Laufzeit protokolliert.
+- LittleFS-Log:
+  - Maximale Größe der aktuellen Datei von 128 KiB auf 512 KiB erhöht.
+  - Bei Erreichen der Grenze wird die bisherige Datei nach `/ats-mini-os-boot.previous.log` rotiert und die aktive Datei `/ats-mini-os-boot.log` neu begonnen. Die vorherige Rotationsdatei wird beim nächsten Rotationsvorgang ersetzt.
+  - Bestehendes LittleFS wird weiterverwendet; kein Mount-/Format-/Löschvorgang des Dateisystems wird ausgelöst.
+- Geänderte Dateien: `WifiClient.cpp`, `BandOpeningService.cpp`, `BootDiagnostics.cpp`, `ats-mini-os.ino`, `HANDOVER.md`.
+- Statische Nachprüfung: alle Diagnoseanker im aktuellen Branch erneut abgerufen und geprüft. Kein Build, keine GitHub Action, kein Geräte-/WLAN-Test und kein Flash durch ChatGPT ausgeführt. Nutzer startet den Compile-only-Workflow und führt anschließend den WLAN-/HF-Test durch.
+- Geplante Logauswertung: zeitliche Reihenfolge anhand der Millisekunden-Zeitstempel; zuerst `[WIFI][NVS]`, `[WIFI][ATTEMPT]`, `[WIFI][TIMEOUT]`, `[WIFI][FALLBACK]`, `[WIFI][STATE]`, danach `[BANDOPEN][UI]`, `[BANDOPEN][GATE]`, `[BANDOPEN][HF]` und `[BANDOPEN][HF][BAND]`.
