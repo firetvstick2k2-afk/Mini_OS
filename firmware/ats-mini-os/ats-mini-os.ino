@@ -430,6 +430,10 @@ void loop() {
   const bool bandMonitorOpen = menuOpen && menuPage == 29;
   static bool lastBandMonitorOpen = false;
   if (bandMonitorOpen != lastBandMonitorOpen) {
+    if (bandMonitorOpen) {
+      BootDiagnostics::write("[BANDOPEN][UI] opening monitor; requesting Wi-Fi startup");
+      wifi.ensureStarted();
+    }
     BootDiagnostics::printf("[BANDOPEN][UI] monitor=%s wifi_started=%u wifi_connected=%u data_allowed=%u mode=%u",
       bandMonitorOpen ? "OPEN" : "CLOSED", wifi.isOff() ? 0U : 1U,
       wifi.connected() ? 1U : 0U, wifi.dataServicesAllowed() ? 1U : 0U,
