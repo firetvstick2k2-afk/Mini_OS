@@ -1,4 +1,5 @@
 #include "WifiClient.h"
+#include <string.h>
 #include "../display/SplashService.h"
 #include <LittleFS.h>
 #include "../news/NewsService.h"
