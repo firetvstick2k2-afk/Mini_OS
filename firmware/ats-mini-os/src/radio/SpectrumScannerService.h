@@ -45,7 +45,8 @@ private:
   uint8_t stepIndex_=0, modeIndex_=0, inputStage_=0, keyIndex_=5;
   char input_[2][12]{};
   bool inputError_=false, savedValid_=false;
-  uint32_t tuneStartedMs_=0;
+  uint32_t tuneStartedMs_=0, lastTunePollMs_=0;
+  bool spectrumScanActive_=false;
   RadioCore::SavedState saved_{};
   bool parseValue(uint32_t& value) const;
   bool beginSweep(RadioCore& radio);
