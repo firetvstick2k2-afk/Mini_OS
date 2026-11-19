@@ -50,6 +50,23 @@ bool RadioCore::restoreState(const SavedState& state) {
   if(!setVolume(state.volume))return false;
   return true;
 }
+bool RadioCore::beginSpectrumScan() {
+  if (!ready_ || !tuner_.beginSpectrumScan()) return false;
+  spectrumScanActive_ = true;
+  return true;
+}
+void RadioCore::endSpectrumScan() {
+  if (!spectrumScanActive_) return;
+  tuner_.endSpectrumScan();
+  spectrumScanActive_ = false;
+}
+bool RadioCore::tuneSpectrumScan(uint32_t frequencyKHz) {
+  return ready_ && spectrumScanActive_ && tuner_.tuneSpectrumScan(frequencyKHz);
+}
+bool RadioCore::spectrumTuneComplete() {
+  return ready_ && spectrumScanActive_ && tuner_.spectrumTuneComplete();
+}
+
 bool RadioCore::refreshSignalQuality() {
   if(!ready_)return false;
   tuner_.refreshSignalQuality();
@@ -87,6 +104,8 @@ bool RadioCore::begin(uint32_t initialFrequencyKHz) {
 void RadioCore::update() {
   if (!ready_) return;
   const uint32_t now = millis();
+  // The cooperative spectrum scanner owns tuner status and RSSI polling.
+  if (spectrumScanActive_) return;
   if (now - lastPollMs_ >= 500) {
     lastPollMs_ = now;
     tuner_.refreshSignalQuality();
