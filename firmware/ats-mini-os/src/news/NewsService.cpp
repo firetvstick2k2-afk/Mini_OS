@@ -6,6 +6,7 @@
 #include <string.h>
 #include <esp_heap_caps.h>
 #include "../system/BootDiagnostics.h"
+#include "../network/NetworkRequestCoordinator.h"
 
 namespace {
 // Arduino-ESP32 3.3.x exposes the built-in ESP-IDF certificate bundle through
@@ -210,6 +211,8 @@ bool loadCachedFeed(uint8_t source,NewsService::Snapshot& snap) {
   return added>0;
 }
 bool fetchOne(const char* url,uint8_t source,NewsService::Snapshot& snap) {
+  NetworkRequestGuard networkGuard;
+  if (!networkGuard) { BootDiagnostics::write("[NEWS] network request deferred: coordinator busy"); return false; }
   BootDiagnostics::printf("[NEWS] fetch start feed=%u", static_cast<unsigned>(source + 1));
 
   // Record only the host (never the full URL, which may contain private tokens).
