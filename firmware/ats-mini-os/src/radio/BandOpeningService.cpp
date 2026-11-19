@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include "../system/BootDiagnostics.h"
+#include "../network/NetworkRequestCoordinator.h"
 
 namespace {
 constexpr char kFeedUrl[] = "https://www.mapforham.com/hf-propagation/data/solar.json";
@@ -223,6 +224,8 @@ void BandOpeningService::taskLoop() {
 }
 
 bool BandOpeningService::fetchFmMuf(float& value) {
+  NetworkRequestGuard networkGuard;
+  if (!networkGuard) { BootDiagnostics::write("[BANDOPEN][FM_MUF] deferred: network coordinator busy"); return false; }
   const uint32_t startedAt = millis();
   BootDiagnostics::write("[BANDOPEN][FM_MUF] HTTPS begin");
   WiFiClientSecure client;
@@ -274,6 +277,8 @@ bool BandOpeningService::fetchFmMuf(float& value) {
 }
 
 bool BandOpeningService::fetchConditions(Snapshot& result) {
+  NetworkRequestGuard networkGuard;
+  if (!networkGuard) { BootDiagnostics::write("[BANDOPEN][HF] deferred: network coordinator busy"); return false; }
   const uint32_t startedAt = millis();
   BootDiagnostics::printf("[BANDOPEN][HF] HTTPS begin url=MapForHAM wifi=%d heap=%u",
     static_cast<int>(WiFi.status()), static_cast<unsigned>(ESP.getFreeHeap()));
