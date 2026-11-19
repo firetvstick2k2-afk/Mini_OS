@@ -89,7 +89,7 @@ void SpectrumScannerService::tick(RadioCore& radio) {
   Point& p=points_[scanIndex_];p.frequencyKHz=startKHz_+static_cast<uint32_t>(scanIndex_)*(kind_==Kind::VhfFm?100:stepKHz_);
   p.rssi=static_cast<uint8_t>(constrain(s.rssi,0,255));p.snr=static_cast<uint8_t>(constrain(s.snr,0,255));
   ++scanIndex_;count_=scanIndex_;
-  if(scanIndex_>=planned_){state_=State::Done;selected_=count_/2;restore(radio);return;}
+  if(scanIndex_>=planned_){state_=State::Done;selected_=count_/2;radio.restoreState(saved_);return;}
   if(!radio.tune(startKHz_+static_cast<uint32_t>(scanIndex_)*(kind_==Kind::VhfFm?100:stepKHz_))){state_=State::Error;restore(radio);return;}
   tuneStartedMs_=millis();
 }
@@ -104,7 +104,13 @@ void SpectrumScannerService::rotatePeak(int16_t delta,RadioCore& radio) {
   int best=-1;uint8_t bestR=0;candidate=selected_;
   for(uint16_t n=0;n<count_-1;++n){candidate+=direction;if(candidate<0)candidate=count_-1;if(candidate>=count_)candidate=0;if(candidate==selected_)break;if(candidate==0||candidate==count_-1)continue;if(best<0||points_[candidate].rssi>bestR){best=candidate;bestR=points_[candidate].rssi;}}
   if(best>=0)selected_=static_cast<uint16_t>(best);
-  (void)radio;
+  if(selected_<count_){
+    const uint8_t band=kind_==Kind::VhfFm?0:1;
+    if(radio.selectBand(band)){
+      radio.setModulation(kind_==Kind::VhfFm?RadioModulation::FM:kAllModes[modeIndex_]);
+      radio.tune(points_[selected_].frequencyKHz);
+    }
+  }
 }
 bool SpectrumScannerService::accept(RadioCore& radio) {
   if(state_!=State::Done||selected_>=count_)return false;
