@@ -3553,3 +3553,13 @@ Prüfstatus:
 - Geändert: `firmware/ats-mini-os/src/network/WifiClient.cpp`.
 - Code-Commit: `e6116546a34598665792476843669726f9780305`.
 - Kein Build, keine GitHub Action und kein Flash ausgeführt. Nutzer startet den Compile-only-Build und testet die Setup-Seite am Gerät.
+
+
+## HF-Bandmonitor – HTTP-403-Zugriffskorrektur (2026-11-19)
+
+- Auswertung des aktuellen LittleFS-Logs: Der Monitor wurde geöffnet, WLAN war verbunden und der Map-For-HAM-Aufruf endete mit HTTP 403. Der FM-MUF-Zusatzabruf schlug separat fehl; er war nicht die Ursache des HF-403.
+- Der Live-JSON-Feed wurde unabhängig geprüft und liefert gültige `bands_detail`-Einträge für 160m bis 10m. Die Feldnamen und Werte `band_m`, `day`, `night`, `Poor/Fair/Good` stimmen mit dem Parser überein.
+- HF-HTTP-Anfrage ergänzt um einen eindeutigen Firmware-User-Agent und `Accept: application/json`. Antwortdiagnose protokolliert bei HTTP-Fehlern zusätzlich Content-Type und Server-Header, um eine mögliche Schutz-/Proxy-Antwort zu erkennen.
+- HF-Fehler-Retry auf fünf Minuten gesetzt, entsprechend der Feed-Nutzungsbedingungen (höchstens eine Abfrage alle fünf Minuten).
+- Geändert: ausschließlich `firmware/ats-mini-os/src/radio/BandOpeningService.cpp` sowie diese Handover-Dokumentation. WLAN-Setup, Scan, AP-Verhalten und Radio-Layouts unverändert.
+- Noch offen: Compile-only-Build und Gerätetest durch den Nutzer. Kein Build, keine GitHub Action und kein Flash durch ChatGPT gestartet. Der User-Agent-Fix ist eine gezielte Kompatibilitätsmaßnahme, aber ohne ESP32-Neutest noch nicht als wirksam bestätigt.
