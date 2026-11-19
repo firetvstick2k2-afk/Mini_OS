@@ -427,7 +427,17 @@ void loop() {
   newsService.update(wifi.connected() && wifi.dataServicesAllowed());
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] newsService.update done");
   weatherService.update(wifi.connected() && wifi.dataServicesAllowed());
-  bandOpeningService.update(wifi.connected() && wifi.dataServicesAllowed() && menuOpen && menuPage == 29);
+  const bool bandMonitorOpen = menuOpen && menuPage == 29;
+  static bool lastBandMonitorOpen = false;
+  if (bandMonitorOpen != lastBandMonitorOpen) {
+    BootDiagnostics::printf("[BANDOPEN][UI] monitor=%s wifi_started=%u wifi_connected=%u data_allowed=%u mode=%u",
+      bandMonitorOpen ? "OPEN" : "CLOSED", wifi.isOff() ? 0U : 1U,
+      wifi.connected() ? 1U : 0U, wifi.dataServicesAllowed() ? 1U : 0U,
+      static_cast<unsigned>(wifi.mode()));
+    lastBandMonitorOpen = bandMonitorOpen;
+  }
+  const bool bandNetworkGate = wifi.connected() && wifi.dataServicesAllowed() && bandMonitorOpen;
+  bandOpeningService.update(bandNetworkGate);
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] weatherService.update done");
   systemClock.update(wifi.connected());
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] systemClock.update done");
@@ -645,6 +655,8 @@ void loop() {
                 static_cast<unsigned>(selectedMainItem));
             } else {
               menuPage = targetPage;
+              if (menuPage == 29)
+                BootDiagnostics::write("[BANDOPEN][UI] user selected HF monitor; requesting network startup");
               if (menuPage == 18 || menuPage == 29) wifi.ensureStarted();
               if (menuPage == 19) frequencyKeypad.open(radio.snapshot());
               if (menuPage == 23) vhfSpectrum.open();
