@@ -374,7 +374,10 @@ void drawBandOpeningScreen(Canvas& c, const BandOpeningService::Snapshot* snapsh
     const auto& band=BandOpeningService::band(index);
     const int y=31+slot*33;
     const auto row=snapshot ? snapshot->rows[index] : BandOpeningService::Row{};
-    const auto overall=row.day!=BandOpeningService::Status::Unknown ? row.day : row.night;
+    auto overall=row.day;
+    if(overall==BandOpeningService::Status::Unknown) overall=row.night;
+    else if(row.night!=BandOpeningService::Status::Unknown && static_cast<uint8_t>(row.night)<static_cast<uint8_t>(overall)) overall=row.night;
+    if(snapshot && snapshot->stale) overall=BandOpeningService::Status::Unknown;
     uint16_t dot=GREY;
     if(overall==BandOpeningService::Status::Poor) dot=RED;
     else if(overall==BandOpeningService::Status::Fair) dot=YELLOW;
@@ -393,7 +396,7 @@ void drawBandOpeningScreen(Canvas& c, const BandOpeningService::Snapshot* snapsh
   }
   c.setTextDatum(TL_DATUM); c.setFont(&lgfx::fonts::Font0); c.setTextColor(GREY,DARK);
   if(!snapshot || !snapshot->valid) c.drawString(snapshot && snapshot->fetching ? "Lade HF-Daten..." : "Grau = keine verlaesslichen Daten",10,158);
-  else c.drawString(snapshot->stale ? "Map For HAM: Daten veraltet" : "Map For HAM: HF-Prognose",10,158);
+  else c.drawString(snapshot->stale ? "Daten veraltet - Ampel grau" : "Map For HAM: Tag/Nacht, schlechterer Wert",10,158);
 }
 
 template <typename Canvas>
