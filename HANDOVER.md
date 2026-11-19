@@ -3371,3 +3371,22 @@ Prüfstatus:
 - Vollständige Abhängigkeitsfreiheit ist in einer Firmware nicht immer möglich. Abhängigkeiten deshalb nicht verstecken, sondern sichtbar, explizit, möglichst klein und kontrollierbar halten. Gemeinsam genutzte Ressourcen und Integrationspunkte klar benennen.
 - Bei Planung, Portierung, Änderung und Rückbau eines Features diese vier Ziele (A–D) berücksichtigen. Vorhandene stabile Funktionen schützen; gezielte, begrenzte Code-Duplizierung ist akzeptabel, wenn sie Kopplung reduziert und die Wartbarkeit verbessert.
 - Dieser Leitfaden ist ein dauerhafter Architekturgrundsatz für alle künftigen Mini-OS-Arbeiten und ergänzt die Regeln zur Referenz-Portierung, Modul-Isolation und zum Schutz aller Layouts.
+
+
+## Verwaiste FM-Panorama-Reste entfernt (2026-11-19)
+
+- Der vom Nutzer bestätigte alte FM-Panorama-Bildschirm ist nicht mehr Bestandteil der aktiven Mini-OS-Oberfläche. Im Branch lagen jedoch noch fünf unreferenzierte Quellcodedateien des alten Panorama-Features.
+- Ursache des zuletzt gemeldeten GitHub-Actions-Compilefehlers: `FmPanoramaService.h` inkludierte `ScanService.h`, das bereits im Zuge der Spectrum-Portierung entfernt worden war. Die alte Panorama-Servicekette war damit verwaist und nicht mehr baubar.
+- Vor dem Entfernen wurden die aktuellen Dateien/SHAs frisch aus `dev/first-build-preparation` abgerufen. Die aktiven Integrationsstellen `ats-mini-os.ino`, `DisplayDriver.cpp/.h` und `MenuSSB.cpp/.h` enthielten keine Panorama-Aufrufe oder Includes. Die neue FM-Audio-FFT wird separat über `DisplayLayoutFmAudioFft.h` eingebunden und bleibt erhalten.
+- Entfernt wurden ausschließlich:
+  - `src/display/DisplayLayoutFmPanorama.h`
+  - `src/radio/FmLivePanoramaService.cpp/.h`
+  - `src/radio/FmPanoramaService.cpp/.h`
+- Lösch-Commits auf diesem Branch:
+  - `9df8aa1f531e128910e318bfbdccf6a693079d04` – altes Panorama-Layout
+  - `f5d84170aa16f5d6301778c8e3d0e1b15cf0c682` – Live-Panorama-Implementierung
+  - `707e323be57b4c9b215589c4bd253716646eab42` – Live-Panorama-Header
+  - `5ba15896957d912e16d53257e32f816917228556` – Panorama-Service-Implementierung
+  - `5085b439c4ffe6ade6c21da78660764b1566d5e7` – Panorama-Service-Header
+- Keine Änderungen an FM Audio FFT, Decoder-Wasserfall, TEF6686-Layout, Spectrum-Scanner oder anderen Layouts.
+- Build/Actions/Flash wurden nicht gestartet. Der Nutzer startet den nächsten Build selbst. Nach dem Löschen ist ein erneuter Compile-only-Build erforderlich, um zu bestätigen, dass der gemeldete Include-Fehler behoben ist.
