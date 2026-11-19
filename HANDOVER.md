@@ -3296,3 +3296,22 @@ Prüfstatus:
   - db7c740739142ce82652eb049417e4ebf303fdc7 – legacy ScanService source removal.
 - Verifikation nach den Änderungen: VHF-Menürouting, neue Display-Ansicht, RadioCore-State-API und kooperativer Tick erneut vom aktiven Branch abgerufen. Keine aktiven ScanService-/SeekService-Referenzen in ats-mini-os.ino oder DisplayDriver verbleibend. Build nicht gestartet; keine GitHub Actions und kein Flash durch ChatGPT.
 - Nächster Schritt: Menüpunkt 18 / All Band Spectrum als eigenständige Portierung aktivieren, alten SeekService vollständig entfernen und dessen kHz-Keypad, AM/USB/LSB-Auswahl, Schrittweiten, Bereichsprüfung und Peak-Übernahme integrieren.
+
+
+## Menüpunkt 18 – All Band Spectrum portiert (2026-11-19)
+
+- Nach Abschluss und Speicherung des VHF-Schritts wurde separat Menüpunkt 18 / All Band Spectrum integriert. Menüpunkt 18 ist jetzt direkt mit der zweiten Instanz von SpectrumScannerService verbunden; kein Untermenü.
+- Dev-Referenz live geprüft: ats-mini/AllBandSpectrum.h/.cpp (100–30000 kHz, max. 1000-kHz-Breite, max. 201 Messpunkte, Schrittweiten 5/10/25/50/100/250/500/1000 kHz, AM/USB/LSB, eigener kHz-Keypad, Peaknavigation, eigene Messpuffer und Dev-Graphdarstellung).
+- Umsetzung nutzt eine zweite, vollständig getrennte SpectrumScannerService-Instanz (Kind::AllBand): eigener Eingabestatus, Modus-/Schrittweitenwahl, Sweep-Zähler, 201-Punkte-Puffer und Peak-Auswahl; keine gemeinsamen veränderlichen Scanpuffer mit VHF.
+- Eingabevalidierung: 100–30000 kHz, Ende größer Start, maximal 1000 kHz Breite, Teilbarkeit durch gewählte Schrittweite, maximal 201 Messpunkte; für USB/LSB muss der Start bei mindestens 1800 kHz liegen.
+- Der Sweep bleibt kooperativ und nutzt RadioCore; kein direkter SI4735-Zugriff und keine blockierenden Warte-/Sweep-Schleifen. AM/USB/LSB-Modus und neutraler BFO werden vor der Messung gesetzt.
+- VHF und All Band verwenden getrennte Service-Instanzen und getrennte Sample-Puffer. Die gemeinsame Klasse kapselt nur das wiederverwendbare Verhalten; alle Instanzdaten sind unabhängig.
+- Menüpunkt 18 ist wieder aktiviert (interne Seite 24). Der alte SeekService-Handler, die alte Suchanzeige und SeekService.h/.cpp wurden entfernt.
+- Geänderte Dateien in diesem Schritt: ats-mini-os.ino und SpectrumScannerService.cpp; SeekService.h/.cpp gelöscht. Die DisplayDriver-Ansicht für Seite 24 war bereits im vorigen UI-Schritt vorbereitet und wird jetzt über den All-Band-Servicepointer aktiv.
+- Commits dieses Schritts:
+  - 757d590ebe93747ebddaf257bb82d77dec948360 – All Band Menü-/Ereignis-/Loop-Integration.
+  - cd677b5148cb2d86080e7eb93e27f4eed93769e5 und 7d34153d407f997a68702fa59b2e066a44a9f66a – alte SeekService-Dateien entfernt.
+  - 1caa06bc764903466bdafa021dc02a1a9ba0949f – neutraler BFO während Sweep und Peakübernahme.
+- Verifikation: Menü-Mapping 17→Seite 23 und 18→Seite 24, beide Service-Instanzen, getrennte Tick-Aufrufe, beide Display-Routen und die alten ScanService-/SeekService-Referenzen wurden erneut vom aktiven Branch abgerufen. Keine aktiven Alt-Service-Referenzen in ats-mini-os.ino oder DisplayDriver.
+- Build-/Gerätestatus: kein Build gestartet, keine GitHub Actions gestartet, kein Gerät geflasht. Nutzer startet den Build selbst. Hardwaretest ausstehend; insbesondere beide Keypads, Scanabbruch, Peaknavigation, Frequenzübernahme und Wiederherstellung des vorherigen Radiozustands testen.
+- Nächster Schritt: Nutzer kann den Build starten. Bei Compilerfehlern den konkreten CI-/Buildlog prüfen und gezielt korrigieren; keine Layoutänderungen an TEF6686 oder Decoder-Wasserfall vornehmen.
