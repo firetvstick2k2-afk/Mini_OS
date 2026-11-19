@@ -45,6 +45,7 @@ public:
   uint8_t avcGain() const { return tuner_.avcGain(); }
   bool setBandwidthChoice(uint8_t choice);
   bool setStepChoice(uint8_t choice);
+  bool setStepKHz(uint16_t stepKHz);
   uint8_t stepChoice() const { return tuner_.stepChoice(); }
   uint8_t stepChoiceCount() const { return tuner_.stepChoiceCount(); }
   uint8_t bandwidthChoice() const { return tuner_.bandwidthChoice(); }
