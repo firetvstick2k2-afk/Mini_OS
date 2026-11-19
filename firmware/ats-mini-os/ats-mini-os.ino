@@ -35,6 +35,23 @@
 namespace {
 constexpr uint32_t SERIAL_BAUD = 115200;
 
+const char* resetReasonName(esp_reset_reason_t reason) {
+  switch (reason) {
+    case ESP_RST_UNKNOWN: return "UNKNOWN";
+    case ESP_RST_POWERON: return "POWERON";
+    case ESP_RST_EXT: return "EXTERNAL_PIN";
+    case ESP_RST_SW: return "SOFTWARE";
+    case ESP_RST_PANIC: return "PANIC_EXCEPTION";
+    case ESP_RST_INT_WDT: return "INTERRUPT_WATCHDOG";
+    case ESP_RST_TASK_WDT: return "TASK_WATCHDOG";
+    case ESP_RST_WDT: return "OTHER_WATCHDOG";
+    case ESP_RST_DEEPSLEEP: return "DEEP_SLEEP";
+    case ESP_RST_BROWNOUT: return "BROWNOUT";
+    case ESP_RST_SDIO: return "SDIO";
+    default: return "UNMAPPED";
+  }
+}
+
 
 constexpr uint32_t DEFAULT_FM_FREQUENCY_KHZ = 95400;
 PerformanceManager performance;
@@ -311,14 +328,16 @@ void setup() {
   } else {
     BootDiagnostics::write("[NEWS] cache directories skipped: LittleFS unavailable");
   }
-  BootDiagnostics::printf("BOOT START reset_reason=%d free_heap=%u max_block=%u min_free=%u storage=%s partition=%s anchor=%s",
-    static_cast<int>(esp_reset_reason()),
+  const esp_reset_reason_t bootResetReason = esp_reset_reason();
+  BootDiagnostics::printf("BOOT START reset_reason=%d (%s) free_heap=%u max_block=%u min_free=%u storage=%s partition=%s anchor=%s",
+    static_cast<int>(bootResetReason), resetReasonName(bootResetReason),
     static_cast<unsigned>(ESP.getFreeHeap()),
     static_cast<unsigned>(ESP.getMaxAllocHeap()),
     static_cast<unsigned>(ESP.getMinFreeHeap()),
     storageReady ? "READY" : "UNAVAILABLE",
     StorageDiscovery::partitionLabel(),
     StorageDiscovery::anchorPath());
+  BootDiagnostics::memorySnapshot("BOOT_START");
   eibi.begin();
   FileManager::begin();
   stationLogoClient.begin();
@@ -1069,6 +1088,14 @@ void loop() {
   const bool decoderWaterfallSelected = currentSnapshot.modulation == RadioModulation::FM
     ? display.fmLayout() == 4 : display.amLayout() == 4;
   const bool fmAudioFftSelected = !menuOpen && currentSnapshot.modulation == RadioModulation::FM && display.fmLayout() == 5;
+  static bool lastFmAudioFftSelected = false;
+  if (fmAudioFftSelected != lastFmAudioFftSelected) {
+    BootDiagnostics::printf("[FM FFT][LAYOUT] %s freq_khz=%lu",
+      fmAudioFftSelected ? "START" : "STOP",
+      static_cast<unsigned long>(currentSnapshot.frequencyKHz));
+    BootDiagnostics::memorySnapshot(fmAudioFftSelected ? "FM_FFT_LAYOUT_START" : "FM_FFT_LAYOUT_STOP");
+    lastFmAudioFftSelected = fmAudioFftSelected;
+  }
   if (fmAudioFftSelected) {
     if (!fmAudioFft.active() && !fmAudioFft.enter(audioCapture))
       BootDiagnostics::write("[FM FFT][START_FAIL] audio capture unavailable");
