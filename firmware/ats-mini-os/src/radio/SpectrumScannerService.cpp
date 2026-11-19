@@ -100,16 +100,23 @@ void SpectrumScannerService::tick(RadioCore& radio) {
   tuneStartedMs_=millis();
 }
 void SpectrumScannerService::rotatePeak(int16_t delta,RadioCore& radio) {
-  if(state_!=State::Done||count_<3||!delta)return;
-  uint8_t minR=255,maxR=0;for(uint16_t i=0;i<count_;++i){minR=min(minR,points_[i].rssi);maxR=max(maxR,points_[i].rssi);}
-  const uint8_t threshold=static_cast<uint8_t>(minR+((uint16_t)(maxR-minR)*5)/100);
-  const int direction=delta>0?1:-1;int candidate=selected_;bool found=false;
-  for(uint16_t n=0;n<count_;++n){candidate+=direction;if(candidate<0)candidate=count_-1;if(candidate>=count_)candidate=0;if(candidate==0||candidate==count_-1)continue;
-    const uint8_t here=points_[candidate].rssi;
-    if(here>=threshold&&here>=points_[candidate-1].rssi&&here>points_[candidate+1].rssi){selected_=candidate;found=true;break;}}
-  if(!found){int best=-1;uint8_t bestR=0;candidate=selected_;
-    for(uint16_t n=0;n<count_-1;++n){candidate+=direction;if(candidate<0)candidate=count_-1;if(candidate>=count_)candidate=0;if(candidate==selected_)break;if(candidate==0||candidate==count_-1)continue;if(best<0||points_[candidate].rssi>bestR){best=candidate;bestR=points_[candidate].rssi;}}
-    if(best>=0)selected_=static_cast<uint16_t>(best);
+  if(state_!=State::Done||count_<2||!delta)return;
+  const int direction=delta>0?1:-1;
+  if(count_==2) {
+    // A two-point scan has no interior peak; allow direct selection of either sample.
+    selected_=static_cast<uint16_t>((selected_+direction+count_)%count_);
+  } else {
+    uint8_t minR=255,maxR=0;
+    for(uint16_t i=0;i<count_;++i){minR=min(minR,points_[i].rssi);maxR=max(maxR,points_[i].rssi);}
+    const uint8_t threshold=static_cast<uint8_t>(minR+((uint16_t)(maxR-minR)*5)/100);
+    int candidate=selected_;bool found=false;
+    for(uint16_t n=0;n<count_;++n){candidate+=direction;if(candidate<0)candidate=count_-1;if(candidate>=count_)candidate=0;if(candidate==0||candidate==count_-1)continue;
+      const uint8_t here=points_[candidate].rssi;
+      if(here>=threshold&&here>=points_[candidate-1].rssi&&here>points_[candidate+1].rssi){selected_=candidate;found=true;break;}}
+    if(!found){int best=-1;uint8_t bestR=0;candidate=selected_;
+      for(uint16_t n=0;n<count_-1;++n){candidate+=direction;if(candidate<0)candidate=count_-1;if(candidate>=count_)candidate=0;if(candidate==selected_)break;if(candidate==0||candidate==count_-1)continue;if(best<0||points_[candidate].rssi>bestR){best=candidate;bestR=points_[candidate].rssi;}}
+      if(best>=0)selected_=static_cast<uint16_t>(best);
+    }
   }
   if(selected_<count_&&radio.selectBand(kind_==Kind::VhfFm?0:1)){
     radio.setModulation(kind_==Kind::VhfFm?RadioModulation::FM:kAllModes[modeIndex_]);
