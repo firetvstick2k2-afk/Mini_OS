@@ -5,6 +5,7 @@
 #include <ArduinoJson.h>
 #include <string.h>
 #include <time.h>
+#include <stdio.h>
 #include "../system/BootDiagnostics.h"
 
 namespace {
@@ -60,6 +61,7 @@ bool timestampIsFresh(const char* value) {
   int year=0, month=0, day=0, hour=0, minute=0, second=0;
   if (!value || sscanf(value,"%4d-%2d-%2dT%2d:%2d:%2d",&year,&month,&day,&hour,&minute,&second)!=6)
     return false;
+  if (year < 2024 || month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59 || second > 60) return false;
   const int64_t days=civilDays(year,static_cast<unsigned>(month),static_cast<unsigned>(day));
   int64_t epoch=days*86400LL+hour*3600LL+minute*60LL+second;
   const size_t length=strlen(value);
