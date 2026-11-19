@@ -3463,3 +3463,15 @@ Prüfstatus:
 - Korrektur-Commit: `d963f5d49d17e8b8f1555754efcc1dd710e5091f`.
 - Die übrigen im Log sichtbaren Encoder-/Display-Meldungen waren Warnungen; sie waren nicht der gemeldete Abbruchgrund.
 - **Status:** Quelltextkorrektur committed. Noch kein erneuter Build; Nutzer startet den nächsten Compile-only-Lauf selbst. Keine Actions erneut gestartet und kein Flash ausgeführt.
+
+
+## Korrektur HF-Bandöffnungs-Monitor – Feed-Aktualitätsfenster (2026-11-19)
+
+- Nutzer meldete alle Ampelkreise auf allen Monitorseiten grau, obwohl WLAN aktiv war.
+- Aktueller Live-Feed geprüft: `updated=2026-11-19T02:45:11+00:00`; die `bands_detail`-Daten enthalten gültige `Poor/Fair/Good`-Werte für die zehn bewerteten HF-Bänder.
+- Ursache für die komplette Ablehnung identifiziert: `timestampIsFresh()` verwarf jeden Datensatz älter als 20 Minuten. Map For HAM dokumentiert, dass der Feed normalerweise etwa alle 5 Minuten aktualisiert wird, bei Upstream-Ausfall aber den letzten gültigen Datenstand weiter ausliefert. Ein 20-Minuten-Limit führte deshalb bei Feed-Verzögerung zu einem vollständig grauen Monitor.
+- Korrektur: Aktualitätsfenster auf 2 Stunden erweitert. Daten älter als 2 Stunden oder mehr als 5 Minuten in der Zukunft werden weiterhin abgelehnt; es werden keine Ampelfarben erfunden.
+- Geändert: ausschließlich `firmware/ats-mini-os/src/radio/BandOpeningService.cpp`.
+- Code-Commit: `bf3af14bfc3f59000ae94099f1f334e918602b3d`.
+- Quelle: Map For HAM Feed-Dokumentation, Update etwa alle 5 Minuten und Auslieferung letzter gültiger Werte bei Upstream-Ausfall: https://www.mapforham.com/hf-propagation/data-feeds/.
+- Noch offen: erneuter Compile-only-Build und Gerätetest durch den Nutzer. Kein Build, keine Action und kein Flash durch ChatGPT gestartet.
