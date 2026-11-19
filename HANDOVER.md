@@ -3543,3 +3543,13 @@ Prüfstatus:
 - Geänderte Dateien: `WifiClient.cpp`, `BandOpeningService.cpp`, `BootDiagnostics.cpp`, `ats-mini-os.ino`, `HANDOVER.md`.
 - Statische Nachprüfung: alle Diagnoseanker im aktuellen Branch erneut abgerufen und geprüft. Kein Build, keine GitHub Action, kein Geräte-/WLAN-Test und kein Flash durch ChatGPT ausgeführt. Nutzer startet den Compile-only-Workflow und führt anschließend den WLAN-/HF-Test durch.
 - Geplante Logauswertung: zeitliche Reihenfolge anhand der Millisekunden-Zeitstempel; zuerst `[WIFI][NVS]`, `[WIFI][ATTEMPT]`, `[WIFI][TIMEOUT]`, `[WIFI][FALLBACK]`, `[WIFI][STATE]`, danach `[BANDOPEN][UI]`, `[BANDOPEN][GATE]`, `[BANDOPEN][HF]` und `[BANDOPEN][HF][BAND]`.
+
+
+## WLAN-Setup – Passwort direkt sichtbar eingeben (2026-11-19)
+
+- Das Passwortfeld der WLAN-Einrichtungsseite verwendet jetzt `type='text'` statt `type='password'`. Eingegebene Zeichen sind damit sofort lesbar; die Browser-Funktion zum Ein-/Ausblenden (Auge) entfällt.
+- `autocomplete='off'` verhindert, dass der Browser das Feld als gespeichertes Passwortfeld behandelt.
+- Speicherung und Übertragung des Passworts bleiben unverändert; die LittleFS-Diagnose protokolliert weiterhin keine Zugangsdaten.
+- Geändert: `firmware/ats-mini-os/src/network/WifiClient.cpp`.
+- Code-Commit: `e6116546a34598665792476843669726f9780305`.
+- Kein Build, keine GitHub Action und kein Flash ausgeführt. Nutzer startet den Compile-only-Build und testet die Setup-Seite am Gerät.
