@@ -3,6 +3,7 @@
 #include <WiFi.h>
 #include <LittleFS.h>
 #include "../storage/StorageDiscovery.h"
+#include "../network/NetworkRequestCoordinator.h"
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <esp_heap_caps.h>
@@ -17,6 +18,8 @@ constexpr size_t kMaxSearchBytes = 45000;
 struct LookupJob { StationLogoClient* self; RadioSnapshot state; };
 String httpGet(const String& url, size_t maxBytes, int& status) {
   status = -1;
+  NetworkRequestGuard networkGuard;
+  if (!networkGuard) { Serial.println("[LOGO] deferred: network coordinator busy"); return String(); }
   WiFiClientSecure secure;
   secure.setInsecure();
   HTTPClient http;
