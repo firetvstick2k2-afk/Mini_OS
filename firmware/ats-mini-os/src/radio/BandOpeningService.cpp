@@ -6,6 +6,7 @@
 #include <string.h>
 #include <time.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "../system/BootDiagnostics.h"
 
 namespace {
@@ -114,6 +115,14 @@ bool BandOpeningService::begin() {
 }
 void BandOpeningService::update(bool wifiConnected) {
   wifiConnected_ = wifiConnected;
+  if (!wifiConnected) {
+    Snapshot current = snapshot();
+    if (current.valid || current.fmMufValid) {
+      current.stale = true;
+      current.fmMufStale = true;
+      publish(current);
+    }
+  }
 }
 Snapshot BandOpeningService::snapshot() const {
   Snapshot copy;
@@ -187,7 +196,7 @@ bool BandOpeningService::fetchFmMuf(float& value) {
   JsonVariantConst field = doc["europe"]["max_frequency"];
   if (!field.is<const char*>() && !field.is<float>() && !field.is<double>() && !field.is<int>()) return false;
   if (field.is<const char*>() && strcmp(field.as<const char*>(), "No data") == 0) return false;
-  const float parsed = field.as<float>();
+  const float parsed = field.is<const char*>() ? strtof(field.as<const char*>(), nullptr) : field.as<float>();
   if (!isfinite(parsed) || parsed < 30.0f || parsed > 300.0f) return false;
   value = parsed;
   return true;
