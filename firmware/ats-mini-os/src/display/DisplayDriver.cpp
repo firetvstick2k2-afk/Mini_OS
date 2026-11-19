@@ -1092,7 +1092,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
       sprite_.pushSprite(0,0);
     } else {
       device_.fillScreen(BLACK);
-      drawMenu(device_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled, weatherSnapshot, moonSnapshot);
+      drawMenu(device_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled, weatherSnapshot, moonSnapshot, bandOpeningSnapshot);
     }
     return;
   }
