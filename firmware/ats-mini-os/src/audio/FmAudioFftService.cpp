@@ -1,22 +1,30 @@
 #include "FmAudioFftService.h"
 #include <math.h>
 #include <string.h>
+#include "../system/BootDiagnostics.h"
 
 bool FmAudioFftService::enter(AudioCaptureService& capture) {
   if (active_) return capture_ == &capture;
+  BootDiagnostics::memorySnapshot("FM_FFT_ENTER_REQUEST");
   if (attempted_) return false;
   attempted_ = true;
 #if defined(LILYGO_SI473X)
   (void)capture;
   return false;
 #else
-  if (!capture.begin()) return false;
+  if (!capture.begin()) {
+    BootDiagnostics::write("[FM FFT][START_FAIL] audio capture begin failed");
+    BootDiagnostics::memorySnapshot("FM_FFT_CAPTURE_BEGIN_FAIL");
+    return false;
+  }
+  BootDiagnostics::memorySnapshot("FM_FFT_CAPTURE_READY");
   capture_ = &capture;
   portENTER_CRITICAL(&mux_);
   memset(sampleRing_, 0, sizeof(sampleRing_));
   memset(waterfall_, 0, sizeof(waterfall_));
   memset(smoothedBins_, 0, sizeof(smoothedBins_));
   samplesSeen_ = lastFrameAt_ = 0;
+  framesProcessed_ = 0;
   lastFrequencyKHz_ = 0;
   holdRowsUntilMs_ = 0;
   nextRow_ = rowsFilled_ = 0;
@@ -24,14 +32,24 @@ bool FmAudioFftService::enter(AudioCaptureService& capture) {
   portEXIT_CRITICAL(&mux_);
   if (!capture_->subscribe(this, onAudioSamples)) {
     capture_ = nullptr;
+    BootDiagnostics::write("[FM FFT][START_FAIL] audio capture subscribe failed");
+    BootDiagnostics::memorySnapshot("FM_FFT_SUBSCRIBE_FAIL");
     return false;
   }
   active_ = true;
+  BootDiagnostics::write("[FM FFT] live audio FFT waterfall active");
+  BootDiagnostics::memorySnapshot("FM_FFT_ACTIVE");
   return true;
 #endif
 }
 
 void FmAudioFftService::exit() {
+  if (active_ || capture_) {
+    BootDiagnostics::printf("[FM FFT] exit frames=%lu samples=%lu rows=%u",
+      static_cast<unsigned long>(framesProcessed_), static_cast<unsigned long>(samplesSeen_),
+      static_cast<unsigned>(rowsFilled_));
+    BootDiagnostics::memorySnapshot("FM_FFT_EXIT");
+  }
   active_ = false;
   if (capture_) capture_->unsubscribe(this);
   capture_ = nullptr;
@@ -159,6 +177,12 @@ void FmAudioFftService::processFrame(int16_t rssi) {
   nextRow_ = static_cast<uint8_t>((nextRow_ + 1) % kRows);
   if (rowsFilled_ < kRows) ++rowsFilled_;
   portEXIT_CRITICAL(&mux_);
+  ++framesProcessed_;
+  BootDiagnostics::memorySnapshot("FM_FFT_FRAME");
+  BootDiagnostics::printf("[FM FFT][FRAME] frame=%lu samples=%lu rows=%u next_row=%u bins=%u fft_stack_bytes=%u",
+    static_cast<unsigned long>(framesProcessed_), static_cast<unsigned long>(samplesSeen_),
+    static_cast<unsigned>(rowsFilled_), static_cast<unsigned>(nextRow_),
+    static_cast<unsigned>(kBins), static_cast<unsigned>(sizeof(float) * kFftSize * 2U + kBins));
 }
 
 void FmAudioFftService::copyWaterfall(uint8_t* destination) const {
