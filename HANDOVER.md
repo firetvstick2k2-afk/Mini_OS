@@ -3423,3 +3423,19 @@ Prüfstatus:
 - FM-DX.org ist nun zusätzlich als reine UKW-MUF-Information eingebunden: `/includes/tools/get_muf.php`, Region `europe.max_frequency` (MHz laut Community-Plugin-Referenz), Abruf höchstens einmal pro 60 Sekunden. Die Zahl wird neben der UKW/FM-Zeile angezeigt; der Ampelpunkt bleibt bewusst grau, da keine belastbaren Ampel-Schwellen/Methodik für diesen Endpunkt verifiziert wurden. Fehler/No data zeigen keine Zahl. Nutzung bleibt privat; keine Weiterverteilung. Eine ausdrückliche API-Lizenz/Erlaubnis für fremde Firmwareprojekte war nicht auffindbar; die Integration erfolgt daher ausschließlich auf ausdrücklichen Nutzerwunsch, mit 60-s-Limit und ohne Weitergabe.
 
 - Der Bandöffnungsdienst führt seine Abfragen nur aus, solange der Monitor geöffnet ist. Beim Verlassen werden gespeicherte Statuswerte als veraltet markiert; beim erneuten Öffnen werden sie neu abgefragt.
+
+
+## Statische Nachprüfung HF-Bandöffnungs-Monitor (2026-11-19)
+
+- Nachprüfung ausschließlich auf `dev/first-build-preparation`; `main` blieb unangetastet.
+- Compile-relevanter Integrationsfehler gefunden und behoben: Der Nicht-Sprite-/direkte Displaypfad rief `drawMenu()` ohne den neuen `BandOpeningService::Snapshot*`-Parameter auf. Beide Renderpfade übergeben jetzt denselben Snapshot.
+- Unabhängige Datenquellen entkoppelt: Ein erfolgreicher HF-Refresh ersetzt nicht länger versehentlich die zuvor geladene FM-DX-MUF-Angabe. Die FM-DX-Werte haben eine eigene 60-s-Abrufkadenz, HF bleibt bei mindestens 5 Minuten.
+- `<math.h>` explizit eingebunden für die Plausibilitätsprüfung des numerischen FM-DX-Wertes.
+- Monitor-Zeilenabstand leicht angepasst, damit die vierte Zeile und die Statusfußzeile auf dem 320×170-Display nicht kollidieren.
+- Statische Quelltextprüfung nach den Korrekturen: beide `drawMenu()`-Aufrufe übergeben den Snapshot; Header-Deklaration und Implementierung von `DisplayDriver::render()` stimmen beim neuen optionalen Parameter überein; Service-Worker wird in `setup()` gestartet; Service erhält nur bei geöffnetem Monitor und aktiven Datendiensten WLAN-Freigabe; Menüeintrag 25, Zielseite 29 und acht Monitorseiten stimmen überein; 29 Banddefinitionen sind vorhanden.
+- Der aktuelle Map-For-HAM-JSON-Feed wurde gegen die Implementierung geprüft: `updated` ist ISO-8601 mit Zeitzonenoffset; `bands_detail` verwendet numerisches `band_m` und die Strings `Poor`, `Fair`, `Good`. Die zehn im Dienst bewerteten HF-Amateurbänder stimmen mit den gelieferten Einzelbandfeldern überein. Quelle: https://www.mapforham.com/hf-propagation/data/solar.json ; Methodik und Grenzen: https://www.mapforham.com/hf-propagation/about/.
+- **FM-DX-Status:** Die regionale Angabe `europe.max_frequency` wird privat, höchstens einmal pro Minute, als MUF-Zusatzinformation angezeigt. Sie wird ausdrücklich nicht in Rot/Gelb/Grün übersetzt; die Ampel bleibt für UKW/FM grau. Keine Weiterverteilung.
+- **Datenabdeckung:** Rot/Gelb/Grün nur für die zehn unterstützten HF-Einzelbänder, sofern die Quelle aktuelle Daten liefert. LW/MW/SWL, 11m-CB, 2m, 70cm und UKW/FM bleiben grau, weil keine für diese Anzeige validierte direkte Bewertung integriert ist. 2m/70cm sind Informationszeilen, keine Zusage zur Empfangsfähigkeit des ATS Mini.
+- **Noch offen:** kein echter PlatformIO-Compile, keine GitHub Action, kein Hardware-/WLAN-Test und kein Flash. Diese Schritte bleiben beim Nutzer. Statische Quelltextprüfung ist kein Ersatz für einen Build.
+- Korrektur zu früheren Planungsnotizen: FM-DX-MUF ist inzwischen wie oben beschrieben integriert; frühere Aussagen, dass FM-DX noch nicht eingebunden sei, sind überholt.
+- Letzte Korrektur-Commits: `7cecb97c067352d141600402ea758f5376e8f7a9` (Display-Snapshot-Argument), `70f05486c6178b2094700e0c9689f6fcf841b9c8` (FM-DX-Snapshot erhalten), `f1635c8c6f1ec580ce1315ea1400208c38ffb466` (Zeilenabstand).
