@@ -3439,3 +3439,16 @@ Prüfstatus:
 - **Noch offen:** kein echter PlatformIO-Compile, keine GitHub Action, kein Hardware-/WLAN-Test und kein Flash. Diese Schritte bleiben beim Nutzer. Statische Quelltextprüfung ist kein Ersatz für einen Build.
 - Korrektur zu früheren Planungsnotizen: FM-DX-MUF ist inzwischen wie oben beschrieben integriert; frühere Aussagen, dass FM-DX noch nicht eingebunden sei, sind überholt.
 - Letzte Korrektur-Commits: `7cecb97c067352d141600402ea758f5376e8f7a9` (Display-Snapshot-Argument), `70f05486c6178b2094700e0c9689f6fcf841b9c8` (FM-DX-Snapshot erhalten), `f1635c8c6f1ec580ce1315ea1400208c38ffb466` (Zeilenabstand).
+
+
+## WLAN-Webeinrichtung mit drei Speicherplätzen (2026-11-19)
+
+- WLAN-Suche über die ESP32-WLAN-Scan-API; gefundene SSIDs lassen sich antippen und übernehmen.
+- Passwort eingeben und einen der drei Speicherplätze wählen; die Übersicht zeigt SSIDs bzw. freie Plätze.
+- Einzelne Einträge können gelöscht oder durch Speichern in demselben Slot überschrieben werden.
+- Bestehende NVS-Schlüssel `ssid1..ssid3` und `pass1..pass3` bleiben unverändert.
+- SSIDs werden in JSON sicher maskiert; Passwörter erscheinen nicht in Status-/Scan-Antworten.
+- Automatische Verbindungsversuche rotieren jetzt mit stabilem Startindex durch die drei Slots.
+- Setup-AP `10.1.1.1`, News-, Wetter- und Bootbildbereiche bleiben erhalten; `/wifi/save` bleibt registriert.
+- Geändert: `WifiClient.cpp`, `WifiClient.h`, `HANDOVER.md`. Kein Build, keine Actions, kein Flash; Compile-only-Build und Gerätetest stehen aus.
+
