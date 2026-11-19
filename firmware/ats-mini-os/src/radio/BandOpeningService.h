@@ -5,7 +5,7 @@ class BandOpeningService {
 public:
   enum class Status : uint8_t { Unknown = 0, Poor, Fair, Good };
   static constexpr uint8_t kBandsPerPage = 4;
-  static constexpr uint8_t kBandCount = 28;
+  static constexpr uint8_t kBandCount = 25;
   struct Band {
     const char* name;
     const char* type;
