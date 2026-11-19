@@ -3261,3 +3261,11 @@ Prüfstatus:
 - Alle Änderungen ausschließlich in `firetvstick2k2-afk/Mini_OS`, Branch `dev/first-build-preparation`. ATS Mini Dev wurde nicht verändert.
 - Verifikation: geänderte Menülabels, 24er-Zielseitenmapping und zentrale Rücksprungpositionen nach den Commits erneut vom Branch abgerufen. Build wurde nicht gestartet; Nutzer startet Builds selbst. Hardwaretest ausstehend.
 - Nächster Schritt nach Nutzerprüfung: ausschließlich alten Menüpunkt-17-Handler entfernen und VHF Spectrum als eigenständiges Mini-OS-Modul portieren. Erst nach Abschluss/Verifikation dieses Schritts den alten Menüpunkt-18-Handler entfernen und All Band Spectrum portieren.
+
+
+## Menübeschriftung FT8/4 präzisiert (2026-11-19)
+
+- Nutzer bat um Ergänzung des Menüworts „Dekoder“ bei Menüpunkt 22. Der sichtbare Eintrag lautet nun **„FT8/4 Dekoder“** statt „FT8/4“.
+- Geändert: `firmware/ats-mini-os/src/display/DisplayDriver.cpp`.
+- Commit: `410b15fa3b5538ea9b0fc8b981520ec0967cc898`.
+- Build nicht gestartet; Nutzer startet Builds selbst.
