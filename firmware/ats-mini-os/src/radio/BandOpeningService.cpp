@@ -38,12 +38,9 @@ const BandOpeningService::Band kBands[BandOpeningService::kBandCount] = {
   {"12m Band", "AFU", 24800, 25000, 12},
   {"11m Band", "CB", 25600, 26100, 0},
   {"10m Band", "AFU", 28000, 29700, 10},
-  {"6m Band", "AFU", 50000, 54000, 6},
-  {"2m Band", "AFU", 144000, 148000, 0},
+  {"2m Band", "AFU", 144000, 146000, 0},
   {"70cm Band", "AFU", 430000, 440000, 0},
-  {"UKW / FM", "FM-DX", 64000, 108000, 0},
-  {"MW / LW", "SWL", 100, 1800, 0},
-  {"CB / 11m", "CB", 25000, 28000, 0}
+  {"UKW / FM", "FM-DX", 64000, 108000, 0}
 };
 
 BandOpeningService::Status parseStatus(JsonVariantConst value) {
