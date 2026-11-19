@@ -81,7 +81,10 @@ bool timestampIsFresh(const char* value) {
   // Without a synchronized system clock, the feed timestamp cannot be aged reliably.
   if (now < 1700000000) return true;
   const int64_t age=static_cast<int64_t>(now)-epoch;
-  return age >= -300 && age <= 20*60;
+  // The feed normally refreshes every ~5 minutes, but serves its last valid
+  // upstream values during outages. Keep a 2-hour grace window so a temporary
+  // source outage does not blank every band; older data is still rejected.
+  return age >= -300 && age <= 2*60*60;
 }
 
 BandOpeningService::Status parseStatus(JsonVariantConst value) {
