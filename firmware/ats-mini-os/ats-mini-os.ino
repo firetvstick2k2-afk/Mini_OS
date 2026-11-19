@@ -665,6 +665,8 @@ void loop() {
               menuPage = targetPage;
               if (menuPage == 18) wifi.ensureStarted();
               if (menuPage == 19) frequencyKeypad.open(radio.snapshot());
+              if (menuPage == 23) vhfSpectrum.open();
+              if (menuPage == 24) allBandSpectrum.open();
               else if (menuPage == 21) {
                 suspendWifiForDecoder();
                 const bool entered = cwDecoder.enter(audioCapture, wifi.isOff());
