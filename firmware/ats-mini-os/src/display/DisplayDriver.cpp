@@ -1058,6 +1058,35 @@ bool DisplayDriver::showBootSplash(uint32_t durationMs) {
   return true;
 }
 
+bool DisplayDriver::showBootSplashMemory(uint32_t freePsramBytes, uint32_t freeSramBytes) {
+  if (!ready_) return false;
+  bool drawn = false;
+  if (SplashService::exists()) {
+    drawn = device_.drawPngFile(LittleFS, SplashService::IMAGE_PATH);
+    device_.releasePngMemory();
+  }
+  if (!drawn) device_.fillScreen(BLACK);
+
+  const int width = device_.width();
+  const int height = device_.height();
+  const int panelHeight = 43;
+  device_.fillRect(0, height - panelHeight, width, panelHeight, BLACK);
+  char memoryLine[72];
+  snprintf(memoryLine, sizeof(memoryLine), "Free PSRAM: %lu KB   Free SRAM: %lu KB",
+    static_cast<unsigned long>(freePsramBytes / 1024U),
+    static_cast<unsigned long>(freeSramBytes / 1024U));
+  device_.setTextDatum(MC_DATUM);
+  device_.setTextColor(WHITE, BLACK);
+  device_.setFont(&lgfx::fonts::Font2);
+  device_.drawCenterString("CLICK TO START", width / 2, height - 33);
+  device_.setFont(&lgfx::fonts::Font0);
+  device_.drawCenterString(memoryLine, width / 2, height - 10);
+  Serial.printf("[SPLASH] memory screen shown; PSRAM=%lu KB SRAM=%lu KB\n",
+    static_cast<unsigned long>(freePsramBytes / 1024U),
+    static_cast<unsigned long>(freeSramBytes / 1024U));
+  return true;
+}
+
 void DisplayDriver::setBrightness(uint8_t value) {
   if (value < 10) value = 10;
   brightness_ = value;
