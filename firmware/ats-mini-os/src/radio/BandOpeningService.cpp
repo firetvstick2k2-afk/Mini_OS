@@ -122,7 +122,6 @@ void BandOpeningService::update(bool wifiConnected) {
   wifiConnected_ = wifiConnected;
   Snapshot connectionState = snapshot();
   connectionState.waitingForWifi = !wifiConnected;
-  if (wifiConnected) connectionState.fetchFailed = false;
   publish(connectionState);
   // Opening the monitor (or regaining router access) must trigger a fetch
   // immediately instead of waiting for the previous five-minute cadence.
