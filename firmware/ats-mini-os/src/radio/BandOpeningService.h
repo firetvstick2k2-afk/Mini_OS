@@ -25,6 +25,8 @@ public:
     bool valid = false;
     bool stale = true;
     bool fetching = false;
+    bool waitingForWifi = true;
+    bool fetchFailed = false;
     float fmMufMHz = 0.0f;
     bool fmMufValid = false;
     bool fmMufStale = true;
