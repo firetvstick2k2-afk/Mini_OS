@@ -120,6 +120,10 @@ bool BandOpeningService::begin() {
 void BandOpeningService::update(bool wifiConnected) {
   const bool wasConnected = wifiConnected_;
   wifiConnected_ = wifiConnected;
+  Snapshot connectionState = snapshot();
+  connectionState.waitingForWifi = !wifiConnected;
+  if (wifiConnected) connectionState.fetchFailed = false;
+  publish(connectionState);
   // Opening the monitor (or regaining router access) must trigger a fetch
   // immediately instead of waiting for the previous five-minute cadence.
   if (wifiConnected && !wasConnected) {
@@ -177,12 +181,15 @@ void BandOpeningService::taskLoop() {
         static_cast<unsigned>(ESP.getFreeHeap()));
       Snapshot current = snapshot();
       current.fetching = true;
+      current.fetchFailed = false;
       publish(current);
       Snapshot fresh;
       if (fetchConditions(fresh)) {
         fresh.valid = true;
         fresh.stale = false;
         fresh.fetching = false;
+        fresh.waitingForWifi = false;
+        fresh.fetchFailed = false;
         fresh.updatedAtMs = millis();
         // Preserve the independently refreshed FM-DX value when the HF feed
         // snapshot is replaced; the two endpoints have different cadences.
@@ -196,6 +203,7 @@ void BandOpeningService::taskLoop() {
       } else {
         current = snapshot();
         current.fetching = false;
+        current.fetchFailed = true;
         current.stale = true;
         publish(current);
         lastAttemptMs_ = millis() - kRefreshIntervalMs + kRetryIntervalMs;
