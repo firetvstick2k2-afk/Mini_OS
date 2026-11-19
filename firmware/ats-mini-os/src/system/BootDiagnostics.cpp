@@ -14,7 +14,30 @@ bool ready = false;
 bool storageAvailable = false;
 bool logEnabled = true;
 constexpr char LOG_PATH[] = "/ats-mini-os-boot.log";
-constexpr size_t MAX_LOG_BYTES = 131072;
+constexpr size_t MAX_LOG_BYTES = 512UL * 1024UL;
+constexpr char PREVIOUS_LOG_PATH[] = "/ats-mini-os-boot.previous.log";
+
+bool rotateLogLocked() {
+  if (logFile) logFile.close();
+  if (LittleFS.exists(PREVIOUS_LOG_PATH) && !LittleFS.remove(PREVIOUS_LOG_PATH)) {
+    ready = false;
+    Serial.println("[BOOTLOG] could not remove previous rotated log");
+    return false;
+  }
+  if (LittleFS.exists(LOG_PATH) && !LittleFS.rename(LOG_PATH, PREVIOUS_LOG_PATH)) {
+    ready = false;
+    Serial.println("[BOOTLOG] could not rotate full log; preserving current file");
+    return false;
+  }
+  logFile = LittleFS.open(LOG_PATH, "a");
+  ready = static_cast<bool>(logFile);
+  if (ready) {
+    logFile.printf("\n=== LOG ROTATED; NEW SESSION %lu ms ===\n", static_cast<unsigned long>(millis()));
+    logFile.flush();
+    Serial.println("[BOOTLOG] full log rotated to /ats-mini-os-boot.previous.log");
+  }
+  return ready;
+}
 
 bool openLogLocked() {
   if (!storageAvailable) return false;
@@ -22,11 +45,7 @@ bool openLogLocked() {
   File existing = LittleFS.open(LOG_PATH, "r");
   const size_t currentSize = existing ? existing.size() : 0;
   if (existing) existing.close();
-  if (currentSize >= MAX_LOG_BYTES) {
-    ready = false;
-    Serial.println("[BOOTLOG] log reached 128 KiB limit; preserving existing file");
-    return false;
-  }
+  if (currentSize >= MAX_LOG_BYTES && !rotateLogLocked()) return false;
   logFile = LittleFS.open(LOG_PATH, "a");
   ready = static_cast<bool>(logFile);
   if (ready) {
@@ -54,7 +73,10 @@ void begin(bool enabled) {
   if (xSemaphoreTake(logMutex, pdMS_TO_TICKS(500)) != pdTRUE) return;
   openLogLocked();
   xSemaphoreGive(logMutex);
-  Serial.printf("[BOOTLOG] %s: %s\n", ready ? "append ready" : "open failed", LOG_PATH);
+  Serial.printf("[BOOTLOG] %s: %s (limit=%u bytes; previous=%s)\n",
+    ready ? "append ready" : "open failed", LOG_PATH,
+    static_cast<unsigned>(MAX_LOG_BYTES), PREVIOUS_LOG_PATH);
+  if (ready) write("[BOOTLOG] persistent LittleFS diagnostics active");
 }
 
 void setEnabled(bool enabled) {
@@ -80,9 +102,15 @@ void write(const char* message) {
   Serial.println(message);
   if (!logEnabled || !ready || !logMutex) return;
   if (xSemaphoreTake(logMutex, pdMS_TO_TICKS(250)) != pdTRUE) return;
-  if (logEnabled && logFile && logFile.size() < MAX_LOG_BYTES) {
-    logFile.printf("[%10lu] %s\n", static_cast<unsigned long>(millis()), message);
-    logFile.flush();
+  if (logEnabled && logFile) {
+    if (logFile.size() >= MAX_LOG_BYTES && !rotateLogLocked()) {
+      xSemaphoreGive(logMutex);
+      return;
+    }
+    if (logFile) {
+      logFile.printf("[%10lu] %s\n", static_cast<unsigned long>(millis()), message);
+      logFile.flush();
+    }
   }
   xSemaphoreGive(logMutex);
 }
