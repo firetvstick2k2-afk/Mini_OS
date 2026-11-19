@@ -301,7 +301,7 @@ void WifiClient::handleRoot() {
             "<section><h3>Netzwerk hinzufügen</h3><p>Netzwerke in Reichweite suchen und auswählen.</p>"
             "<button type='button' id='scan'>WLAN-Netze suchen</button><div id='scanlist' class='muted'></div>"
             "<form id='wifiForm'><label>Ausgewählte SSID</label><input id='ssid' name='ssid' maxlength='32' required>"
-            "<label>WLAN-Passwort</label><input id='password' name='password' type='password' maxlength='63' autocomplete='new-password'>"
+            "<label>WLAN-Passwort</label><input id='password' name='password' type='text' maxlength='63' autocomplete='off'>"
             "<label>Speicherplatz</label><select id='slot' name='slot'></select>"
             "<button type='submit'>Speichern und verbinden</button></form><p id='message' class='muted'></p></section>");
   page += F("<section><h2>News-Ticker</h2><p>Eigene RSS- oder Atom-Feeds eintragen. Aktualisierung nur bei aktiver WLAN-Internetverbindung.</p>");
