@@ -41,7 +41,6 @@ EiBiService eibi;
 RadioCore radio;
 MemoryService memories;
 SpectrumScannerService vhfSpectrum(SpectrumScannerService::Kind::VhfFm);
-SpectrumScannerService allBandSpectrum(SpectrumScannerService::Kind::AllBand);
 uint8_t selectedMemorySlot = 0;
 bool memoryEditActive = false;
 uint8_t memoryEditCursor = 0;
@@ -331,7 +330,7 @@ void setup() {
     display.setFmLayout(savedFmLayout);
     display.setAmLayout(savedAmLayout);
     display.setFmAudioFft(&fmAudioFft);
-    display.setSpectrumServices(&vhfSpectrum,&allBandSpectrum);
+    display.setSpectrumServices(&vhfSpectrum,nullptr);
     Serial.printf("[DISPLAY] first UI initialized; brightness=%u/255\n",
       static_cast<unsigned>(display.brightness()));
   }
@@ -448,10 +447,6 @@ void loop() {
           if(menuPage==23) {
             if(vhfSpectrum.isInput()) vhfSpectrum.rotateInput(rotationDelta);
             else vhfSpectrum.rotatePeak(rotationDelta,radio);
-          }
-          else if(menuPage==24) {
-            if(allBandSpectrum.isInput()) allBandSpectrum.rotateInput(rotationDelta);
-            else allBandSpectrum.rotatePeak(rotationDelta,radio);
           }
           else if(menuPage==26) {
             int16_t next = (static_cast<int16_t>(menuSelection) + rotationDelta) % (kDecoderCategoryCount + 1);
@@ -593,12 +588,6 @@ void loop() {
           else if(vhfSpectrum.state()==SpectrumScannerService::State::Done && vhfSpectrum.accept(radio)) {
             display.notifyTuning();closeMenuToRadio("VHF spectrum peak accepted");
           } else vhfSpectrum.open();
-        } else if (menuPage == 24) {
-          if(allBandSpectrum.isInput()) { allBandSpectrum.clickInput(true,radio); if(allBandSpectrum.state()==SpectrumScannerService::State::Aborted){menuPage=0;menuSelection=17;} }
-          else if(allBandSpectrum.isRunning()) allBandSpectrum.cancel(radio);
-          else if(allBandSpectrum.state()==SpectrumScannerService::State::Done && allBandSpectrum.accept(radio)) {
-            display.notifyTuning();closeMenuToRadio("All Band spectrum peak accepted");
-          } else allBandSpectrum.open();
         } else if (menuPage == 28) {
           const FtxMode selectedMode = menuSelection == 1 ? FtxMode::FT4 : FtxMode::FT8;
           suspendWifiForDecoder();
@@ -628,7 +617,7 @@ void loop() {
             // Menu-only reorder: spectrum entries temporarily keep their legacy page handlers.
             static const uint8_t targetPages[24] = {
               255, 1, 19, 8, 16, 9, 12, 22, 25, 7, 11, 255,
-              11, 255, 255, 255, 23, 24, 20, 18, 21, 28, 26, 5
+              11, 255, 255, 255, 23, 255, 20, 18, 21, 28, 26, 5
             };
             const uint8_t selectedMainItem = menuSelection;
             const uint8_t targetPage = targetPages[selectedMainItem];
@@ -642,7 +631,6 @@ void loop() {
               if (menuPage == 18) wifi.ensureStarted();
               if (menuPage == 19) frequencyKeypad.open(radio.snapshot());
               if (menuPage == 23) vhfSpectrum.open();
-              if (menuPage == 24) allBandSpectrum.open();
               else if (menuPage == 21) {
                 suspendWifiForDecoder();
                 const bool entered = cwDecoder.enter(audioCapture, wifi.isOff());
@@ -954,7 +942,7 @@ void loop() {
             } else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\n",static_cast<unsigned>(selectedMemorySlot+1));
           }
           else if (menuPage == 23) { vhfSpectrum.cancel(radio); menuPage=0; menuSelection=16; }
-          else if (menuPage == 24) { allBandSpectrum.cancel(radio); menuPage=0; menuSelection=17; }
+          
           else if (menuPage == 21) { cwDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=20; }
           else if (menuPage == 28) { ftxDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=21; }
           else if (decoderCategoryForPage(menuPage) >= 0) { menuPage=26; menuSelection=0; lastDecoderPreviewSelection=-1; }
@@ -1015,7 +1003,6 @@ void loop() {
   }
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] radio.update done");
   vhfSpectrum.tick(radio);
-  allBandSpectrum.tick(radio);
   updateLastFmFrequencyPersistence();
   updateVolumePersistence();
   cwDecoder.update();
