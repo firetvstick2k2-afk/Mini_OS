@@ -23,6 +23,9 @@ public:
     bool valid = false;
     bool stale = true;
     bool fetching = false;
+    float fmMufMHz = 0.0f;
+    bool fmMufValid = false;
+    bool fmMufStale = true;
   };
   bool begin();
   void update(bool wifiConnected);
@@ -33,10 +36,12 @@ private:
   static void taskEntry(void* context);
   void taskLoop();
   bool fetchConditions(Snapshot& result);
+  bool fetchFmMuf(float& value);
   void publish(const Snapshot& value);
   volatile bool wifiConnected_ = false;
   volatile bool refreshRequested_ = false;
   uint32_t lastAttemptMs_ = 0;
+  uint32_t lastMufAttemptMs_ = 0;
   TaskHandle_t taskHandle_ = nullptr;
   mutable portMUX_TYPE snapshotMux_ = portMUX_INITIALIZER_UNLOCKED;
   Snapshot snapshot_{};
