@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../storage/StorageDiscovery.h"
+#include "../network/NetworkRequestCoordinator.h"
 
 namespace {
 constexpr uint16_t kMinimumScheduleFrequency = 100;
@@ -32,15 +33,21 @@ bool EiBiService::beginDownload(bool wifiConnected) {
     return false;
   }
 
+  if (!NetworkRequestCoordinator::acquire(0)) {
+    strncpy(statusText_, "EiBi: network busy; retry later", sizeof(statusText_) - 1);
+    return false;
+  }
   http_.setTimeout(12000);
   http_.setConnectTimeout(12000);
   if (!http_.begin(kEiBiUrl)) {
+    NetworkRequestCoordinator::release();
     strncpy(statusText_, "EiBi: HTTP init failed", sizeof(statusText_) - 1);
     return false;
   }
   const int code = http_.GET();
   if (code != HTTP_CODE_OK) {
     http_.end();
+    NetworkRequestCoordinator::release();
     snprintf(statusText_, sizeof(statusText_), "EiBi: HTTP error %d", code);
     return false;
   }
@@ -48,6 +55,7 @@ bool EiBiService::beginDownload(bool wifiConnected) {
   output_ = LittleFS.open(kTempPath, "w");
   if (!output_) {
     http_.end();
+    NetworkRequestCoordinator::release();
     strncpy(statusText_, "EiBi: cannot create temp file", sizeof(statusText_) - 1);
     return false;
   }
@@ -255,6 +263,7 @@ void EiBiService::finishDownload(bool success, const char* message) {
     output_.close();
   }
   http_.end();
+  NetworkRequestCoordinator::release();
   downloading_ = false;
   if (success && entryCount_ > 0) {
     LittleFS.remove(kBackupPath);
