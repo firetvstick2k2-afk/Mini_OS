@@ -35,7 +35,7 @@ RadioCore::SavedState RadioCore::captureState() const {
   state.frequencyKHz=snapshot_.frequencyKHz;
   state.modulation=snapshot_.modulation;
   state.bfoOffsetHz=snapshot_.bfoOffsetHz;
-  state.stepKHz=BandManager::currentStepKHz();
+  state.stepKHz=tuner_.stepKHz();
   state.bandwidthChoice=tuner_.bandwidthChoice();
   return state;
 }
