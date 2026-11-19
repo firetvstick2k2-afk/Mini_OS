@@ -3209,3 +3209,13 @@ Prüfstatus:
 - Korrektur-Commit: `28d4277ab60f7d35cd227e79d3b4674a7f2d414f`.
 - Nach dem Update erneut vom Branch abzurufen und zu verifizieren. Build wurde nicht gestartet; Nutzer startet den nächsten Actions-Lauf selbst.
 - Die sonstigen Compiler-Warnungen im fehlgeschlagenen Lauf waren nicht build-abbrechend und wurden in dieser gezielten Korrektur nicht verändert.
+
+
+## Verbindliche Referenzregel – ATS Mini Dev als vollständige Funktionsquelle (2026-11-19)
+
+- Nutzer stellt ausdrücklich klar: `13HN2709/ATS-Mini-Dev` ist **nicht** das Arbeits-Repository und niemals das Ziel für unsere Änderungen. Das aktive Arbeitsrepository bleibt ausschließlich `firetvstick2k2-afk/Mini_OS`, Branch `dev/first-build-preparation`.
+- ATS Mini Dev darf und soll als Quelle genutzt werden: Bereits dort vorhandene Funktionen, Implementierungen, Bedienabläufe, Darstellungen, Farben, Grafiken und sonstige passende Bestandteile dürfen vollständig und möglichst **1:1** übernommen werden, sofern sie dort bereits existieren.
+- Die Übernahme erfolgt immer angepasst an die Architektur des Mini OS: modular, mit klaren Schnittstellen und getrennten Zuständigkeiten. Keine unkontrollierte Übernahme globaler Zustände/Callbacks, die mit anderen Funktionen kollidieren könnten; stattdessen Dev-Verhalten möglichst originalgetreu in eigenständige Mini-OS-Module/Services portieren.
+- Ziel ist Funktions- und Darstellungsparität mit ATS Mini Dev, ohne die Modularität des Mini OS aufzugeben. Bestehende Mini-OS-Funktionen, Layouts und Dienste dürfen sich durch die Integration nicht gegenseitig beeinflussen.
+- Vor jeder Portierung beide Seiten live prüfen: vollständige relevante Dev-Dateien und Abhängigkeiten sowie aktuelle Mini-OS-Zieldateien, Aufrufstellen und Modulgrenzen. Fehlende Abhängigkeiten/Hardwareunterschiede transparent dokumentieren; keine Funktion als 1:1 übernommen bezeichnen, wenn sie technisch angepasst oder nur teilweise portiert wurde.
+- Alle Änderungen werden ausschließlich im aktiven Mini-OS-Repository committet. ATS Mini Dev bleibt Referenz/Quelle und wird nicht verändert.
