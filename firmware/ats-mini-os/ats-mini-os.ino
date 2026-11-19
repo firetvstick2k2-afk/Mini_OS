@@ -427,7 +427,7 @@ void loop() {
   newsService.update(wifi.connected() && wifi.dataServicesAllowed());
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] newsService.update done");
   weatherService.update(wifi.connected() && wifi.dataServicesAllowed());
-  bandOpeningService.update(wifi.connected() && wifi.dataServicesAllowed());
+  bandOpeningService.update(wifi.connected() && wifi.dataServicesAllowed() && menuOpen && menuPage == 29);
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] weatherService.update done");
   systemClock.update(wifi.connected());
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] systemClock.update done");
