@@ -758,99 +758,33 @@ void drawSpectrumServicePage(Canvas& c,const SpectrumScannerService& scanner,boo
   c.setTextColor(yellow,panel);c.drawString(scanner.count()?"DREHEN: PEAK   KLICK: UEBERNEHMEN":"LANG: ABBRUCH",12,151);
 }
 template <typename Canvas>
-void drawRadioUtilityPage(Canvas& c,uint8_t page,uint8_t selection,const RadioSnapshot& s,
-                          uint8_t memorySlot,uint8_t memoryCount,bool memoryEditActive,const char* memoryEditName,uint8_t memoryEditCursor,uint16_t scanCount,
-                          uint16_t scanCapacity,uint8_t scanState,uint8_t seekState,const ScanService::Point* scanPoints) {
-  constexpr uint16_t navy=0x0008, blue=0x001F, cyan=0x07FF, green=0x07E0, yellow=0xFFE0, red=0xF800;
-  c.fillScreen(navy); c.drawRect(5,5,310,160,blue);
-  c.setTextDatum(MC_DATUM); c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
-  c.setTextColor(cyan,navy);
-  const char* title=page==22?"SENDERSPEICHER":(page==23?"SPECTRUM SCAN":(page==29?"FM PANORAMA":"SEEK / SENDERSUCHE"));
-  c.drawString(title,160,18);
-  c.setFont(&lgfx::fonts::FreeSans9pt7b); c.setTextColor(0xFFFF,navy);
-  char line[64];
-  if(page==22) {
-    snprintf(line,sizeof(line),"SLOT %02u / 99",static_cast<unsigned>(memorySlot+1)); c.drawString(line,160,43);
-    snprintf(line,sizeof(line),"BELEGT: %u",static_cast<unsigned>(memoryCount)); c.drawString(line,160,65);
-    if(memoryEditActive) {
-      c.setTextColor(yellow,navy); c.drawString("NAME BEARBEITEN",160,88);
-      c.setTextColor(0xFFFF,navy); c.drawString(memoryEditName,160,112);
-      const int nameWidth=c.textWidth(memoryEditName);
-      char cursorPrefix[16] = {};
-      const size_t prefixLength=min(static_cast<size_t>(memoryEditCursor),sizeof(cursorPrefix)-1);
-      memcpy(cursorPrefix,memoryEditName,prefixLength);
-      const int cursorWidth=c.textWidth(cursorPrefix);
-      c.drawFastHLine(160-nameWidth/2+cursorWidth,124,8,yellow);
-      c.setTextColor(green,navy); c.drawString("DREHEN: ZEICHEN / KLICK: WEITER",160,148);
-      c.setTextColor(yellow,navy); c.drawString("LANG: NAMEN SPEICHERN",160,162);
-    } else {
-      snprintf(line,sizeof(line),"%s",s.stationName[0]?s.stationName:s.bandName); c.drawString(line,160,91);
-      if(s.modulation==RadioModulation::FM) snprintf(line,sizeof(line),"%.2f MHz",s.frequencyKHz/1000.0f);
-      else snprintf(line,sizeof(line),"%lu kHz",static_cast<unsigned long>(s.frequencyKHz));
-      c.drawString(line,160,115);
-      c.setTextColor(green,navy); c.drawString("KLICK: ABRUF / LEEREN SLOT SPEICHERN",160,145);
-      c.setTextColor(yellow,navy); c.drawString("LANG: SPEICHERN / NAME BEARBEITEN",160,162);
-    }
-  } else if(page==23) {
-    snprintf(line,sizeof(line),"MESSPUNKTE: %u / %u",scanCount,scanCapacity); c.drawString(line,160,43);
-    const int gx=20, gy=57, gw=280, gh=67;
-    c.drawRect(gx,gy,gw,gh,blue);
-    c.drawFastHLine(gx+1,gy+gh-2,gw-2,0x4208);
-    c.drawFastHLine(gx+1,gy+gh/2,gw-2,0x2104);
-    if(scanPoints && scanCount>0) {
-      const uint16_t visible=scanCount>ScanService::kMaxPoints?ScanService::kMaxPoints:scanCount;
-      int peakIndex=0; uint8_t peakRssi=0;
-      for(uint16_t i=0;i<visible;++i) {
-        const uint8_t level=scanPoints[i].rssi;
-        if(level>peakRssi){peakRssi=level;peakIndex=i;}
-        if(i>0) {
-          const int x1=gx+2+static_cast<int>((static_cast<uint32_t>(i-1)*(gw-4))/(visible>1?visible-1:1));
-          const int x2=gx+2+static_cast<int>((static_cast<uint32_t>(i)*(gw-4))/(visible>1?visible-1:1));
-          const int y1=gy+gh-3-static_cast<int>((static_cast<uint16_t>(scanPoints[i-1].rssi)*(gh-7))/100);
-          const int y2=gy+gh-3-static_cast<int>((static_cast<uint16_t>(level)*(gh-7))/100);
-          c.drawLine(x1,y1,x2,y2,green);
-        }
-      }
-      const uint16_t selected=selection<visible?selection:static_cast<uint16_t>(peakIndex);
-      const int px=gx+2+static_cast<int>((static_cast<uint32_t>(selected)*(gw-4))/(visible>1?visible-1:1));
-      const int py=gy+gh-3-static_cast<int>((static_cast<uint16_t>(scanPoints[selected].rssi)*(gh-7))/100);
-      const int peakX=gx+2+static_cast<int>((static_cast<uint32_t>(peakIndex)*(gw-4))/(visible>1?visible-1:1));
-      const int peakY=gy+gh-3-static_cast<int>((static_cast<uint16_t>(peakRssi)*(gh-7))/100);
-      c.fillCircle(peakX,peakY,2,green);
-      c.drawCircle(px,py,4,yellow);
-      snprintf(line,sizeof(line),"SEL %lu kHz  RSSI %u",static_cast<unsigned long>(scanPoints[selected].frequencyKHz),static_cast<unsigned>(scanPoints[selected].rssi));
-      c.setTextColor(yellow,navy); c.drawString(line,160,135);
-    } else {
-      c.setTextColor(0x7BEF,navy); c.drawString("NO SCAN DATA",160,88);
-    }
-    const char* status=scanState==1?"SCAN LAEUFT":scanState==2?"SCAN FERTIG":scanState==3?"ABGEBROCHEN":scanState==4?"FEHLER":"BEREIT";
-    c.setTextColor(scanState==4?red:(scanState==1?green:yellow),navy); c.drawString(status,160,150);
-    c.setTextColor(cyan,navy); c.drawString(scanCount>0 && scanState!=1?"DREHEN: PEAK  KLICK: UEBERNEHMEN":"KLICK: START / STOP   LANG: ABBRUCH",160,163);
-  } else if(page==29) {
-    const int gx=20,gy=54,gw=280,gh=72;
-    c.drawRect(gx,gy,gw,gh,blue); c.drawFastHLine(gx+1,gy+gh-2,gw-2,0x4208); c.drawFastHLine(gx+1,gy+gh/2,gw-2,0x2104);
-    if(scanPoints && scanCount>0) for(uint16_t i=0;i<scanCount && i<21;++i) {
-      const int x=gx+2+(int)((uint32_t)i*(gw-4)/(21-1));
-      const int y=gy+gh-3-(int)((uint16_t)scanPoints[i].rssi*(gh-9)/100);
-      c.drawFastVLine(x,y,gy+gh-3-y,scanPoints[i].rssi>=55?yellow:green);
-      if(i>0){const int px=gx+2+(int)((uint32_t)(i-1)*(gw-4)/(21-1));const int py=gy+gh-3-(int)((uint16_t)scanPoints[i-1].rssi*(gh-9)/100);c.drawLine(px,py,x,y,green);}
-    } else {c.setTextColor(0x7BEF,navy);c.drawString("NO PANORAMA DATA",160,88);}
-    c.fillTriangle(155,gy+1,165,gy+1,160,gy+10,red);
-    snprintf(line,sizeof(line),"MITTE %.2f MHz",s.frequencyKHz/1000.0f); c.setTextColor(yellow,navy);c.drawString(line,160,137);
-    const char* status=scanState==1?"SCAN LAEUFT":scanState==2?"SCAN FERTIG":scanState==3?"ABGEBROCHEN":scanState==4?"FEHLER":"BEREIT";
-    c.setTextColor(scanState==4?red:(scanState==1?green:yellow),navy);c.drawString(status,160,151);
-    c.setTextColor(cyan,navy);c.drawString(scanState==1?"KLICK: STOPP   LANG: ZURUECK":(scanCount?"DREHEN: FENSTER  KLICK: MITTE":"KLICK: SCAN STARTEN"),160,163);
-  } else {
-    const char* status=seekState==1?"SUCHE LAEUFT":seekState==2?"SENDER GEFUNDEN":seekState==3?"KEIN SENDER GEFUNDEN":seekState==4?"ABGEBROCHEN":seekState==5?"FEHLER":"BEREIT";
-    c.setTextColor(seekState==1?green:(seekState==5?red:yellow),navy); c.drawString(status,160,68);
-    if(s.modulation==RadioModulation::FM) snprintf(line,sizeof(line),"%.2f MHz",s.frequencyKHz/1000.0f);
+void drawRadioUtilityPage(Canvas& c,uint8_t selection,const RadioSnapshot& s,
+                          uint8_t memorySlot,uint8_t memoryCount,bool memoryEditActive,const char* memoryEditName,uint8_t memoryEditCursor) {
+  constexpr uint16_t navy=0x0008,blue=0x001F,cyan=0x07FF,green=0x07E0,yellow=0xFFE0;
+  c.fillScreen(navy);c.drawRect(5,5,310,160,blue);
+  c.setTextDatum(MC_DATUM);c.setFont(&lgfx::fonts::FreeSansBold9pt7b);c.setTextColor(cyan,navy);
+  c.drawString("SENDER SPEICHER",160,18);
+  c.setFont(&lgfx::fonts::FreeSans9pt7b);c.setTextColor(0xFFFF,navy);
+  char line[64];snprintf(line,sizeof(line),"SLOT %02u / 99",static_cast<unsigned>(memorySlot+1));c.drawString(line,160,43);
+  snprintf(line,sizeof(line),"BELEGT: %u",static_cast<unsigned>(memoryCount));c.drawString(line,160,65);
+  if(memoryEditActive){
+    c.setTextColor(yellow,navy);c.drawString("NAME BEARBEITEN",160,88);
+    c.setTextColor(0xFFFF,navy);c.drawString(memoryEditName,160,112);
+    const int nameWidth=c.textWidth(memoryEditName);char cursorPrefix[16]={};
+    const size_t prefixLength=min(static_cast<size_t>(memoryEditCursor),sizeof(cursorPrefix)-1);
+    memcpy(cursorPrefix,memoryEditName,prefixLength);const int cursorWidth=c.textWidth(cursorPrefix);
+    c.drawFastHLine(160-nameWidth/2+cursorWidth,124,8,yellow);
+    c.setTextColor(green,navy);c.drawString("DREHEN: ZEICHEN / KLICK: WEITER",160,148);
+    c.setTextColor(yellow,navy);c.drawString("LANG: NAMEN SPEICHERN",160,162);
+  }else{
+    snprintf(line,sizeof(line),"%s",s.stationName[0]?s.stationName:s.bandName);c.drawString(line,160,91);
+    if(s.modulation==RadioModulation::FM)snprintf(line,sizeof(line),"%.2f MHz",s.frequencyKHz/1000.0f);
     else snprintf(line,sizeof(line),"%lu kHz",static_cast<unsigned long>(s.frequencyKHz));
-    c.setTextColor(0xFFFF,navy); c.drawString(line,160,96);
-    c.setTextColor(cyan,navy); c.drawString("KLICK: SUCHLAUF STARTEN / STOPPEN",160,151);
+    c.drawString(line,160,115);c.setTextColor(green,navy);c.drawString("KLICK: ABRUF / LEEREN SLOT SPEICHERN",160,145);
+    c.setTextColor(yellow,navy);c.drawString("LANG: SPEICHERN / NAME BEARBEITEN",160,162);
   }
-  c.setTextDatum(TL_DATUM); c.setFont(&lgfx::fonts::Font0);
+  c.setTextDatum(TL_DATUM);c.setFont(&lgfx::fonts::Font0);
 }
-
 template <typename Canvas>
 void drawDecoderFrequencyPage(Canvas& c,uint8_t category,uint8_t selection) {
   constexpr uint16_t navy=0x0008, blue=0x001F, cyan=0x07FF, green=0x07E0, white=0xFFFF, yellow=0xFFE0;
@@ -1096,7 +1030,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   lastMenuBootLogEnabled_=bootLogEnabled;
   if (menuOpen) {
     if(menuPage>=30 && menuPage<=40){const uint8_t category=static_cast<uint8_t>(menuPage-30);if(useSprite_){sprite_.fillSprite(BLACK);drawDecoderFrequencyPage(sprite_,category,menuSelection);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawDecoderFrequencyPage(device_,category,menuSelection);}return;}
-    if(menuPage==23&&vhfSpectrum_){if(useSprite_){drawSpectrumServicePage(sprite_,*vhfSpectrum_,false);sprite_.pushSprite(0,0);}else drawSpectrumServicePage(device_,*vhfSpectrum_,false);return;} if(menuPage==24&&allBandSpectrum_){if(useSprite_){drawSpectrumServicePage(sprite_,*allBandSpectrum_,true);sprite_.pushSprite(0,0);}else drawSpectrumServicePage(device_,*allBandSpectrum_,true);return;} if(menuPage==22 || menuPage==29){if(useSprite_){sprite_.fillSprite(BLACK);drawRadioUtilityPage(sprite_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawRadioUtilityPage(device_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);}return;}
+    if(menuPage==23&&vhfSpectrum_){if(useSprite_){drawSpectrumServicePage(sprite_,*vhfSpectrum_,false);sprite_.pushSprite(0,0);}else drawSpectrumServicePage(device_,*vhfSpectrum_,false);return;} if(menuPage==24&&allBandSpectrum_){if(useSprite_){drawSpectrumServicePage(sprite_,*allBandSpectrum_,true);sprite_.pushSprite(0,0);}else drawSpectrumServicePage(device_,*allBandSpectrum_,true);return;} if(menuPage==22){if(useSprite_){sprite_.fillSprite(BLACK);drawRadioUtilityPage(sprite_,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawRadioUtilityPage(device_,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor);}return;}
     if(menuPage==21){if(useSprite_){sprite_.fillSprite(BLACK);drawLegacyCWPage(sprite_,s,cwWifiBlocked,cwText,cwSignal);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawLegacyCWPage(device_,s,cwWifiBlocked,cwText,cwSignal);}return;}
     if(menuPage==28){if(useSprite_){sprite_.fillSprite(BLACK);drawFtxDecoderPage(sprite_,s,menuSelection,ftxService,ftxWifiOff,ftxUtcSynchronized);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFtxDecoderPage(device_,s,menuSelection,ftxService,ftxWifiOff,ftxUtcSynchronized);}return;}
     if(menuPage==19 && keypadView){if(useSprite_){sprite_.fillSprite(BLACK);drawFrequencyKeypad(sprite_,*keypadView);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFrequencyKeypad(device_,*keypadView);}return;}
