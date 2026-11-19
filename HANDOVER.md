@@ -1,3 +1,18 @@
+# Arbeitsfortschritt – Bootpause und Rücknahme der RAM-Verwaltungsänderungen (2026-11-19)
+
+Auf `dev/first-build-preparation` wurden die RAM-spezifischen Änderungen zurückgenommen und die Startanzeige angepasst:
+
+- Die zusätzliche interne-/PSRAM-Heap-Telemetrie (`heap_caps`) wurde aus dem 2-Sekunden-Heartbeat entfernt; die bisherige Heap-/Stack-Grunddiagnose bleibt erhalten.
+- Der HF-Bandöffnungs-Worker wird wieder beim Boot initialisiert, statt seine 12-KiB-Task-Stack erst beim Öffnen des Monitors anzulegen. Die Banddaten-, Status- und graue-Icon-Logik bleibt erhalten.
+- Der Bootlogo-Aufruf wurde ans Ende von `setup()` verschoben, nach Radio-, WLAN- und Service-Initialisierung.
+- Die Bootanzeige zeigt `Free PSRAM`, `Free SRAM` und `CLICK TO START`. Ein kurzer Druck auf den Encoder gibt den Start des normalen Radio-Layouts frei. Falls kein gültiges Splash-Bild vorhanden ist, wird die Anzeige auf schwarzem Hintergrund gezeigt.
+- `Free SRAM` wird als freier interner Heap (ESP.getFreeHeap()) in KiB angezeigt; `Free PSRAM` als freier PSRAM-Speicher in KiB.
+- Netzwerkkoordination, Netzwerk-Serialisierung, Bootlog-Rotation, Radio-Speicherplätze und sonstige Funktionen wurden nicht zurückgesetzt.
+
+Prüfstatus: Quelltextänderungen und Rückbezug wurden statisch vorbereitet; kein Build, kein GitHub-Actions-Lauf und kein Flash wurden gestartet. Gerätetest/Compile bleiben offen.
+
+---
+
 # Übergabeprotokoll – ATS Mini OS
 
 ## Verbindlicher Arbeitsablauf für jede weitere Änderung
