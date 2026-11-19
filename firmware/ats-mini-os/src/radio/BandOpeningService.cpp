@@ -248,6 +248,8 @@ bool BandOpeningService::fetchConditions(Snapshot& result) {
     BootDiagnostics::printf("[BANDOPEN] rejected stale/invalid source timestamp: %s\\n", updated);
     return false;
   }
+  strncpy(result.sourceUpdated, updated, sizeof(result.sourceUpdated) - 1);
+  result.sourceUpdated[sizeof(result.sourceUpdated) - 1] = '\0';
   JsonArrayConst details = doc["bands_detail"].as<JsonArrayConst>();
   if (details.isNull() || details.size() == 0) return false;
 
