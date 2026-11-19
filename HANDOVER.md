@@ -3452,3 +3452,14 @@ Prüfstatus:
 - Setup-AP `10.1.1.1`, News-, Wetter- und Bootbildbereiche bleiben erhalten; `/wifi/save` bleibt registriert.
 - Geändert: `WifiClient.cpp`, `WifiClient.h`, `HANDOVER.md`. Kein Build, keine Actions, kein Flash; Compile-only-Build und Gerätetest stehen aus.
 
+
+
+## Compile-Fehlerkorrektur nach GitHub-Actions-Lauf 44451296850 (2026-11-19)
+
+- Der vom Nutzer gestartete Compile-only-Lauf auf `dev/first-build-preparation` (Commit `1fe41b7a6ffb12979abbdabe163fc18e6f890740`) schlug im Schritt **Compile ATS Mini OS scaffold** fehl.
+- Maßgebliche Fehlermeldung: `src/radio/BandOpeningService.cpp:128:1: error: 'Snapshot' does not name a type`.
+- Ursache: Der Rückgabetyp der außerhalb des Klassenbereichs definierten Methode `BandOpeningService::snapshot()` war als unqualifiziertes `Snapshot` angegeben. Korrektur: `BandOpeningService::Snapshot BandOpeningService::snapshot() const`.
+- Geändert wurde ausschließlich `firmware/ats-mini-os/src/radio/BandOpeningService.cpp`; keine WLAN-Logik, Display-/Layoutlogik oder andere Module wurden verändert.
+- Korrektur-Commit: `d963f5d49d17e8b8f1555754efcc1dd710e5091f`.
+- Die übrigen im Log sichtbaren Encoder-/Display-Meldungen waren Warnungen; sie waren nicht der gemeldete Abbruchgrund.
+- **Status:** Quelltextkorrektur committed. Noch kein erneuter Build; Nutzer startet den nächsten Compile-only-Lauf selbst. Keine Actions erneut gestartet und kein Flash ausgeführt.
