@@ -3574,3 +3574,12 @@ Prüfstatus:
 - Snapshot-Zustand ergänzt um `waitingForWifi` und `fetchFailed`. Diagnose bleibt unter den vorhandenen `[BANDOPEN]`-Log-Tags.
 - Geändert: `BandOpeningService.h/.cpp`, `DisplayDriver.cpp`, `ats-mini-os.ino` und diese Dokumentation.
 - Statische Prüfung nach Änderung: WLAN-Start erfolgt nur beim Übergang in den geöffneten Monitor; Banddatenabruf bleibt an verbundene WLAN-Datendienste und geöffnete Monitorseite gebunden; Warte-/Lade-/Fehleransichten sind getrennt; vorhandene gültige Daten werden weiterhin als ALT markiert. Kein Build, keine GitHub Action, kein Hardwaretest und kein Flash durch ChatGPT gestartet.
+
+
+## Speicherverwaltung – Phase 1 (2026-11-19)
+
+- Der HF-Bandmonitor reserviert seinen 12-KiB-FreeRTOS-Worker-Stack nicht mehr bereits beim Firmwarestart. Der Worker wird erst beim geöffneten Monitor und verfügbarer WLAN-/Datendienstverbindung angelegt. Beim ersten Start bleibt der bisherige Abrufablauf mit sofortiger Aktualisierungsanforderung erhalten.
+- Der bestehende 2-Sekunden-Heartbeat protokolliert zusätzlich getrennt den internen 8-Bit-Heap (frei/größter Block) sowie PSRAM (Gesamt/frei/größter Block). Die bisherigen Heap- und Loop-Stack-Werte bleiben erhalten.
+- Geändert: `firmware/ats-mini-os/ats-mini-os.ino`, `firmware/ats-mini-os/src/radio/BandOpeningService.cpp`.
+- Keine Änderung an WLAN-Konfiguration, WLAN-Setup, Radio-Layouts, Slot A, Partitionen oder LittleFS-Daten. Kein Build, keine GitHub Action und kein Flash ausgeführt.
+- Noch offen: Compile-only-Build und Gerätetest durch den Nutzer. Insbesondere prüfen, dass der HF-Monitor beim ersten Öffnen den Worker anlegt und den sofortigen Feed-Abruf ausführt. Danach anhand der Heartbeats internen Heap und PSRAM vor/nach dem Öffnen vergleichen.
