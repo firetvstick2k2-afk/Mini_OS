@@ -80,7 +80,7 @@ bool SpectrumScannerService::beginSweep(RadioCore& radio) {
   const uint8_t targetBand=kind_==Kind::VhfFm?0:1;
   if(!radio.selectBand(targetBand)){state_=State::Error;restore(radio);return false;}
   const RadioModulation mode=kind_==Kind::VhfFm?RadioModulation::FM:kAllModes[modeIndex_];
-  if(!radio.setModulation(mode)||!radio.setBfoOffsetHz(0)||!radio.tune(startKHz_)){state_=State::Error;restore(radio);return false;}
+  if(!radio.setModulation(mode)||!radio.setBfoOffsetHz(0)||!radio.setVolume(0)||!radio.tune(startKHz_)){state_=State::Error;restore(radio);return false;}
   planned_=static_cast<uint16_t>((endKHz_-startKHz_)/(kind_==Kind::VhfFm?100:stepKHz_)+1);
   count_=scanIndex_=selected_=0;state_=State::Running;tuneStartedMs_=millis();
   return true;
