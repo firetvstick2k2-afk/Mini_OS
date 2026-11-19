@@ -109,7 +109,7 @@ bool BandOpeningService::begin() {
   if (taskHandle_) return true;
   Snapshot initial;
   publish(initial);
-  const BaseType_t created = xTaskCreatePinnedToCore(taskEntry, "BandOpenWorker", 8192, this, 1, &taskHandle_, 0);
+  const BaseType_t created = xTaskCreatePinnedToCore(taskEntry, "BandOpenWorker", 12288, this, 1, &taskHandle_, 0);
   BootDiagnostics::printf("[BANDOPEN] worker %s\n", created == pdPASS ? "created" : "creation failed");
   return created == pdPASS;
 }
@@ -195,8 +195,9 @@ bool BandOpeningService::fetchFmMuf(float& value) {
   if (deserializeJson(doc, body)) return false;
   JsonVariantConst field = doc["europe"]["max_frequency"];
   if (!field.is<const char*>() && !field.is<float>() && !field.is<double>() && !field.is<int>()) return false;
-  if (field.is<const char*>() && strcmp(field.as<const char*>(), "No data") == 0) return false;
-  const float parsed = field.is<const char*>() ? strtof(field.as<const char*>(), nullptr) : field.as<float>();
+  const char* text = field.is<const char*>() ? field.as<const char*>() : nullptr;
+  if (field.is<const char*>() && (!text || strcmp(text, "No data") == 0)) return false;
+  const float parsed = text ? strtof(text, nullptr) : field.as<float>();
   if (!isfinite(parsed) || parsed < 30.0f || parsed > 300.0f) return false;
   value = parsed;
   return true;
