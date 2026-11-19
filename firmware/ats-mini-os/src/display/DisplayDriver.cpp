@@ -364,7 +364,7 @@ void drawBandOpeningScreen(Canvas& c, const BandOpeningService::Snapshot* snapsh
   c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
   c.setTextColor(CYAN,DARK);
   c.drawString("HF BANDOEFFNUNGS-MONITOR",10,7);
-  char pageText[16]; snprintf(pageText,sizeof(pageText),"%u/7",static_cast<unsigned>(page+1));
+  char pageText[16]; snprintf(pageText,sizeof(pageText),"%u/8",static_cast<unsigned>(page+1));
   c.setFont(&lgfx::fonts::Font2); c.setTextColor(WHITE,DARK); c.drawRightString(pageText,c.width()-10,10);
   c.drawFastHLine(9,27,c.width()-18,BLUE);
   const uint8_t first=static_cast<uint8_t>(page*BandOpeningService::kBandsPerPage);
