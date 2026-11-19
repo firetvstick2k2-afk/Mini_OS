@@ -5,7 +5,7 @@
 
 class RadioCore {
 public:
-  struct SavedState { uint8_t bandIndex=0; uint32_t frequencyKHz=0; RadioModulation modulation=RadioModulation::FM; int16_t bfoOffsetHz=0; uint16_t stepKHz=0; uint8_t bandwidthChoice=0; };
+  struct SavedState { uint8_t bandIndex=0; uint32_t frequencyKHz=0; RadioModulation modulation=RadioModulation::FM; int16_t bfoOffsetHz=0; uint16_t stepKHz=0; uint8_t bandwidthChoice=0; uint8_t volume=25; };
   SavedState captureState() const;
   bool restoreState(const SavedState& state);
   bool refreshSignalQuality();
