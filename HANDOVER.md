@@ -3583,3 +3583,13 @@ Prüfstatus:
 - Geändert: `firmware/ats-mini-os/ats-mini-os.ino`, `firmware/ats-mini-os/src/radio/BandOpeningService.cpp`.
 - Keine Änderung an WLAN-Konfiguration, WLAN-Setup, Radio-Layouts, Slot A, Partitionen oder LittleFS-Daten. Kein Build, keine GitHub Action und kein Flash ausgeführt.
 - Noch offen: Compile-only-Build und Gerätetest durch den Nutzer. Insbesondere prüfen, dass der HF-Monitor beim ersten Öffnen den Worker anlegt und den sofortigen Feed-Abruf ausführt. Danach anhand der Heartbeats internen Heap und PSRAM vor/nach dem Öffnen vergleichen.
+
+
+## Netzwerk-Koordination – Phase 2 (2026-11-19)
+
+- Neuer `NetworkRequestCoordinator` mit FreeRTOS-Mutex serialisiert speicherintensive HTTP-/HTTPS-Transaktionen der NEWS-, Wetter-, HF-Bandmonitor- und Stationslogo-Dienste.
+- EiBi hält denselben Mutex vom Start der gestreamten Downloadverbindung bis zum Abschluss oder Abbruch. Ist der Kanal belegt, wird ein neuer Download abgewiesen und kann später erneut angefordert werden.
+- NEWS, Wetter, HF-Monitor und Stationslogo warten begrenzt auf den Kanal. Bleibt er belegt, wird die Abfrage zurückgestellt; die vorhandenen Refresh-/Retry-Zyklen übernehmen den nächsten Versuch.
+- Die Koordination verhindert parallele HTTP-/TLS-Transaktionen dieser Dienste. Sie reduziert nicht automatisch die dauerhaft reservierten Worker-Task-Stacks; dafür wäre ein gemeinsamer Netzwerk-Worker ein separater, größerer Umbau.
+- Geändert: `firmware/ats-mini-os/ats-mini-os.ino`, `src/network/NetworkRequestCoordinator.h/.cpp`, `src/news/NewsService.cpp`, `src/weather/WeatherService.cpp`, `src/radio/BandOpeningService.cpp`, `src/logo/StationLogoClient.cpp`, `src/eibi/EiBiService.cpp`.
+- Kein Build, keine GitHub Action und kein Flash. Compile-only- und Gerätetest bleiben offen.
