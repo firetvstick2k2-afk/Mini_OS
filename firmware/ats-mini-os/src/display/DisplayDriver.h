@@ -13,6 +13,7 @@
 #include "../storage/FileManager.h"
 #include "../input/FrequencyKeypad.h"
 #include "../radio/ScanService.h"
+#include "../radio/SpectrumScannerService.h"
 #include "../audio/FmAudioFftService.h"
 #include "../digital/ftx/FtxDecoderService.h"
 
@@ -254,7 +255,7 @@ public:
   void setFmLayout(uint8_t mode);
   uint8_t amLayout() const { return amLayout_; }
   void setAmLayout(uint8_t mode);
-  void setFmAudioFft(FmAudioFftService* service) { fmAudioFft_ = service; lastGeneration_ = UINT32_MAX; }
+  void setFmAudioFft(FmAudioFftService* service) { fmAudioFft_ = service; lastGeneration_ = UINT32_MAX; }\n  void setSpectrumServices(SpectrumScannerService* vhf, SpectrumScannerService* allBand) { vhfSpectrum_ = vhf; allBandSpectrum_ = allBand; lastGeneration_ = UINT32_MAX; }
   uint8_t brightness() const { return brightness_; }
   void setBrightness(uint8_t value);
   uint8_t themeIndex() const { return themeIndex_; }
@@ -265,7 +266,7 @@ private:
   Device device_;
   uint8_t fmLayout_ = 0; // 0 = DAB, 1 = HJB, 2 = TEF FM, 3 = TEF News, 4 = original decoder waterfall, 5 = live audio FFT waterfall
   uint8_t amLayout_ = 4; // Default to the original decoder waterfall.
-  FmAudioFftService* fmAudioFft_ = nullptr;
+  FmAudioFftService* fmAudioFft_ = nullptr;\n  SpectrumScannerService* vhfSpectrum_ = nullptr;\n  SpectrumScannerService* allBandSpectrum_ = nullptr;
   uint8_t fmFftBuffer_[FmAudioFftService::kRows * FmAudioFftService::kBins]{};
   uint8_t brightness_ = 180;
   uint8_t frequencyCursor_ = 100;
