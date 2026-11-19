@@ -46,13 +46,11 @@ bool SpectrumScannerService::parseValue(uint32_t& value) const {
 bool SpectrumScannerService::clickInput(bool shortPress,RadioCore& radio) {
   if(state_!=State::Input)return false;
   if(!shortPress){cancel(radio);return true;}
-  const char* key=keyIndex_==(kind_==Kind::VhfFm?99:16)?"":keys()[keyIndex_];
-  (void)key;
+  if(kind_==Kind::AllBand&&keyIndex_==16){modeIndex_=(modeIndex_+1)%3;return true;}
   const char* selectedKey=keys()[keyIndex_];
   char* value=input_[inputStage_];const size_t len=strlen(value);inputError_=false;
   if(strcmp(selectedKey,"CLOSE")==0){cancel(radio);return true;}
   if(strcmp(selectedKey,"BS")==0){if(len)value[len-1]=0;return true;}
-  if(kind_==Kind::AllBand&&keyIndex_==16){modeIndex_=(modeIndex_+1)%3;return true;}
   if(strcmp(selectedKey,"STEP")==0&&kind_==Kind::AllBand){stepIndex_=(stepIndex_+1)%8;stepKHz_=kAllSteps[stepIndex_];return true;}
   if(strcmp(selectedKey,"MHz")==0)return true;
   if(strcmp(selectedKey,".")==0&&kind_==Kind::AllBand)return true;
