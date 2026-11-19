@@ -749,9 +749,9 @@ void drawSpectrumServicePage(Canvas& c,const SpectrumScannerService& scanner,boo
   for(int i=1;i<5;++i)c.drawFastHLine(x0+1,y0+(h*i)/5,w-2,0x000F);
   for(int i=1;i<10;++i)c.drawFastVLine(x0+(w*i)/10,y0+1,h-2,0x000F);
   if(scanner.count()>1){uint8_t mn=255,mx=0;for(uint16_t i=0;i<scanner.count();++i){mn=min(mn,scanner.point(i).rssi);mx=max(mx,scanner.point(i).rssi);}if(mx<=mn)mx=mn+1;
-    int px=x0+1,py=y0+h-2;
-    for(uint16_t i=0;i<scanner.count();++i){const int x=x0+1+static_cast<int>((uint32_t)i*(w-3)/(scanner.count()-1));const int y=y0+h-2-static_cast<int>((uint16_t)(scanner.point(i).rssi-mn)*(h-4)/(mx-mn));if(i)c.drawLine(px,py,x,y,cyan);if(i==scanner.selected())c.fillCircle(x,y,3,red);px=x;py=y;}
-    const int sx=x0+1+static_cast<int>((uint32_t)scanner.selected()*(w-3)/(scanner.count()-1));c.drawCircle(sx,py,4,yellow);
+    int px=x0+1,py=y0+h-2,selectedX=px,selectedY=py;
+    for(uint16_t i=0;i<scanner.count();++i){const int x=x0+1+static_cast<int>((uint32_t)i*(w-3)/(scanner.count()-1));const int y=y0+h-2-static_cast<int>((uint16_t)(scanner.point(i).rssi-mn)*(h-4)/(mx-mn));if(i)c.drawLine(px,py,x,y,cyan);if(i==scanner.selected()){c.fillCircle(x,y,3,red);selectedX=x;selectedY=y;}px=x;py=y;}
+    c.drawCircle(selectedX,selectedY,4,yellow);
   }
   c.setTextDatum(TL_DATUM);c.setFont(&lgfx::fonts::Font0);c.setTextColor(cyan,panel);
   c.drawString(scanner.state()==SpectrumScannerService::State::Running?"SCAN LAEUFT":scanner.state()==SpectrumScannerService::State::Done?"SCAN FERTIG":scanner.state()==SpectrumScannerService::State::Error?"SCAN FEHLER":"ABGEBROCHEN",12,136);
