@@ -391,7 +391,11 @@ void drawBandOpeningScreen(Canvas& c, const BandOpeningService::Snapshot* snapsh
       snprintf(range,sizeof(range),"%.3f - %.3f MHz",band.minimumKHz/1000.0f,band.maximumKHz/1000.0f);
     else snprintf(range,sizeof(range),"%lu - %lu kHz",static_cast<unsigned long>(band.minimumKHz),static_cast<unsigned long>(band.maximumKHz));
     c.drawString(range,42,y+15);
-    c.setTextDatum(TR_DATUM); c.setTextColor(GREY,DARK); c.drawString(band.type,c.width()-10,y+15);
+    c.setTextDatum(TR_DATUM); c.setTextColor(GREY,DARK);
+    if(index==BandOpeningService::kBandCount-1 && snapshot && snapshot->fmMufValid && !snapshot->fmMufStale) {
+      char mufText[24]; snprintf(mufText,sizeof(mufText),"MUF %.1f MHz",snapshot->fmMufMHz);
+      c.drawString(mufText,c.width()-10,y+15);
+    } else c.drawString(band.type,c.width()-10,y+15);
     c.drawFastHLine(42,y+30,c.width()-54,0x2104);
   }
   c.setTextDatum(TL_DATUM); c.setFont(&lgfx::fonts::Font0); c.setTextColor(GREY,DARK);
