@@ -267,7 +267,8 @@ private:
   uint8_t fmLayout_ = 0; // 0 = DAB, 1 = HJB, 2 = TEF FM, 3 = TEF News, 4 = original decoder waterfall, 5 = live audio FFT waterfall
   uint8_t amLayout_ = 4; // Default to the original decoder waterfall.
   FmAudioFftService* fmAudioFft_ = nullptr;
-  SpectrumScannerService* vhfSpectrum_ = nullptr;\n  SpectrumScannerService* allBandSpectrum_ = nullptr;
+  SpectrumScannerService* vhfSpectrum_ = nullptr;
+  SpectrumScannerService* allBandSpectrum_ = nullptr;
   uint8_t fmFftBuffer_[FmAudioFftService::kRows * FmAudioFftService::kBins]{};
   uint8_t brightness_ = 180;
   uint8_t frequencyCursor_ = 100;
