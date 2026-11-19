@@ -5,6 +5,7 @@
 #include <stdarg.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
+#include <freertos/task.h>
 
 namespace BootDiagnostics {
 namespace {
@@ -113,6 +114,20 @@ void write(const char* message) {
     }
   }
   xSemaphoreGive(logMutex);
+}
+
+void memorySnapshot(const char* stage) {
+  const uint32_t freeHeap = ESP.getFreeHeap();
+  const uint32_t minFreeHeap = ESP.getMinFreeHeap();
+  const uint32_t largestBlock = ESP.getMaxAllocHeap();
+  const uint32_t psramTotal = ESP.getPsramSize();
+  const uint32_t psramFree = psramTotal ? ESP.getFreePsram() : 0;
+  const uint32_t stackHighWater = static_cast<uint32_t>(uxTaskGetStackHighWaterMark(nullptr));
+  printf("[RAM] stage=%s free_heap=%u min_free_heap=%u largest_heap_block=%u psram_free=%u psram_total=%u task_stack_high_water_words=%u",
+    stage ? stage : "UNNAMED", static_cast<unsigned>(freeHeap),
+    static_cast<unsigned>(minFreeHeap), static_cast<unsigned>(largestBlock),
+    static_cast<unsigned>(psramFree), static_cast<unsigned>(psramTotal),
+    static_cast<unsigned>(stackHighWater));
 }
 
 void printf(const char* format, ...) {
