@@ -1,3 +1,20 @@
+# Arbeitsfortschritt – Layout-Auswahl nur temporär (2026-11-19)
+
+Auf `dev/first-build-preparation` wurde die Layout-Persistenz für Diagnosetests deaktiviert:
+
+- Beim Start wird FM immer mit Layout-ID `0` (DAB Style) initialisiert.
+- LW/MW/KW startet weiterhin mit dem bisherigen Standard Layout-ID `9`.
+- Änderungen der FM- und LW/MW/KW-Layouts gelten nur bis zum nächsten Neustart.
+- Die Layoutauswahl schreibt keine Layoutwerte mehr in NVS. Andere Einstellungen wie Helligkeit, Theme, Lautstärke und Frequenz bleiben davon unberührt.
+- Die Änderung betrifft nur die Layoutauswahl; sie startet das Gerät beim Umschalten nicht absichtlich neu. Die bisherige Menü-Rückkehr zum Radio bleibt bestehen.
+
+Commit:
+- `2a16252` – Use DAB layout by default without persisting layout changes
+
+Prüfstatus: Quelltextänderung vorgenommen; kein Build, kein GitHub-Actions-Lauf und kein Flash gestartet. Compile-/Gerätetest durch den Nutzer offen.
+
+---
+
 # Arbeitsfortschritt – Bootpause und Rücknahme der RAM-Verwaltungsänderungen (2026-11-19)
 
 Auf `dev/first-build-preparation` wurden die RAM-spezifischen Änderungen zurückgenommen und die Startanzeige angepasst:
