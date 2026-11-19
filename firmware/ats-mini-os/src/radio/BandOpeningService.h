@@ -4,8 +4,9 @@
 class BandOpeningService {
 public:
   enum class Status : uint8_t { Unknown = 0, Poor, Fair, Good };
-  static constexpr uint8_t kBandsPerPage = 4;
+  static constexpr uint8_t kBandsPerPage = 2;
   static constexpr uint8_t kBandCount = 29;
+  static constexpr uint8_t kPageCount = (kBandCount + kBandsPerPage - 1) / kBandsPerPage;
   struct Band {
     const char* name;
     const char* type;
@@ -20,6 +21,7 @@ public:
   struct Snapshot {
     Row rows[kBandCount]{};
     uint32_t updatedAtMs = 0;
+    char sourceUpdated[25] = {};
     bool valid = false;
     bool stale = true;
     bool fetching = false;
