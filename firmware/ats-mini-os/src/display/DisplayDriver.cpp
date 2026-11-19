@@ -372,7 +372,7 @@ void drawBandOpeningScreen(Canvas& c, const BandOpeningService::Snapshot* snapsh
     const uint8_t index=static_cast<uint8_t>(first+slot);
     if(index>=BandOpeningService::kBandCount) break;
     const auto& band=BandOpeningService::band(index);
-    const int y=31+slot*33;
+    const int y=31+slot*31;
     const auto row=snapshot ? snapshot->rows[index] : BandOpeningService::Row{};
     auto overall=row.day;
     if(overall==BandOpeningService::Status::Unknown) overall=row.night;
