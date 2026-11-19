@@ -3415,3 +3415,5 @@ Prüfstatus:
 - Geänderte Integrationsdateien: `ats-mini-os.ino`, `DisplayDriver.cpp/.h`; neue Service-Dateien oben. Keine Änderungen an TEF6686-Radioansicht, Decoder-Wasserfall, FM-FFT oder Spectrum-Scanner.
 - Quellenhinweis: Map For HAM, Solar Data Feeds und Methodology: https://www.mapforham.com/hf-propagation/data-feeds/ und https://www.mapforham.com/hf-propagation/about/. Die Prognose ist ein unverbindlicher Indikator, keine Empfangsgarantie.
 - Kein Build, keine GitHub Action und kein Flash gestartet. Nutzer führt den Build/Test selbst durch.
+
+- Ergänzung: LW und die drei vorhandenen MW-Band-Presets (MW1/MW2/MW3) werden ebenfalls als SWL-Zeilen angezeigt. Damit umfasst die Monitorliste alle aktuellen BandManager-Presets außer dem Sammel-Preset ALL; die Liste hat acht Seiten.
