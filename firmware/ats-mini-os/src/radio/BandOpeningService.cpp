@@ -4,6 +4,7 @@
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
 #include <string.h>
+#include <time.h>
 #include "../system/BootDiagnostics.h"
 
 namespace {
@@ -11,8 +12,6 @@ constexpr char kFeedUrl[] = "https://www.mapforham.com/hf-propagation/data/solar
 constexpr uint32_t kRefreshIntervalMs = 5UL * 60UL * 1000UL;
 constexpr uint32_t kRetryIntervalMs = 60UL * 1000UL;
 constexpr size_t kMaxResponseBytes = 16384;
-constexpr uint16_t kBlue = 0x001F;
-
 // These are the exact receive windows in BandManager.cpp, represented in kHz.
 // Rows without a matching Map For HAM band_detail entry intentionally remain grey.
 const BandOpeningService::Band kBands[BandOpeningService::kBandCount] = {
@@ -46,6 +45,39 @@ const BandOpeningService::Band kBands[BandOpeningService::kBandCount] = {
   {"70cm Band", "AFU", 430000, 440000, 0},
   {"UKW / FM", "FM-DX", 64000, 108000, 0}
 };
+
+
+int64_t civilDays(int year, unsigned month, unsigned day) {
+  year -= month <= 2;
+  const int era = (year >= 0 ? year : year - 399) / 400;
+  const unsigned yoe = static_cast<unsigned>(year - era * 400);
+  const unsigned mp = month > 2 ? month - 3 : month + 9;
+  const unsigned doy = (153 * mp + 2) / 5 + day - 1;
+  const unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+  return static_cast<int64_t>(era) * 146097 + doe - 719468;
+}
+bool timestampIsFresh(const char* value) {
+  int year=0, month=0, day=0, hour=0, minute=0, second=0;
+  if (!value || sscanf(value,"%4d-%2d-%2dT%2d:%2d:%2d",&year,&month,&day,&hour,&minute,&second)!=6)
+    return false;
+  const int64_t days=civilDays(year,static_cast<unsigned>(month),static_cast<unsigned>(day));
+  int64_t epoch=days*86400LL+hour*3600LL+minute*60LL+second;
+  const size_t length=strlen(value);
+  if (length>=6) {
+    const char* zone=value+length-6;
+    if ((*zone=='+' || *zone=='-') && zone[3]==':') {
+      const int offsetHours=(zone[1]-'0')*10+(zone[2]-'0');
+      const int offsetMinutes=(zone[4]-'0')*10+(zone[5]-'0');
+      const int offset=(offsetHours*60+offsetMinutes)*60;
+      epoch += (*zone=='+') ? -offset : offset;
+    }
+  }
+  const time_t now=time(nullptr);
+  // Without a synchronized system clock, the feed timestamp cannot be aged reliably.
+  if (now < 1700000000) return true;
+  const int64_t age=static_cast<int64_t>(now)-epoch;
+  return age >= -300 && age <= 20*60;
+}
 
 BandOpeningService::Status parseStatus(JsonVariantConst value) {
   if (!value.is<const char*>()) return BandOpeningService::Status::Unknown;
@@ -153,7 +185,10 @@ bool BandOpeningService::fetchConditions(Snapshot& result) {
     return false;
   }
   const char* updated = doc["updated"] | "";
-  if (!updated[0]) return false;
+  if (!updated[0] || !timestampIsFresh(updated)) {
+    BootDiagnostics::printf("[BANDOPEN] rejected stale/invalid source timestamp: %s\\n", updated);
+    return false;
+  }
   JsonArrayConst details = doc["bands_detail"].as<JsonArrayConst>();
   if (details.isNull() || details.size() == 0) return false;
 
