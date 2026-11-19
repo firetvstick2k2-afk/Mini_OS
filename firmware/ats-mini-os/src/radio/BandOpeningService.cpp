@@ -14,7 +14,7 @@ namespace {
 constexpr char kFeedUrl[] = "https://www.mapforham.com/hf-propagation/data/solar.json";
 constexpr char kFmMufUrl[] = "https://fmdx.org/includes/tools/get_muf.php";
 constexpr uint32_t kRefreshIntervalMs = 5UL * 60UL * 1000UL;
-constexpr uint32_t kRetryIntervalMs = 60UL * 1000UL;
+constexpr uint32_t kRetryIntervalMs = 5UL * 60UL * 1000UL;
 constexpr size_t kMaxResponseBytes = 16384;
 // These are the exact receive windows in BandManager.cpp, represented in kHz.
 // Rows without a matching Map For HAM band_detail entry intentionally remain grey.
@@ -269,15 +269,20 @@ bool BandOpeningService::fetchConditions(Snapshot& result) {
   HTTPClient http;
   http.setTimeout(8000);
   http.setReuse(false);
+  http.setUserAgent("ATS-Mini-OS/1.0 (+https://github.com/firetvstick2k2-afk/Mini_OS)");
+  const char* responseHeaders[] = {"Content-Type", "Server"};
+  http.collectHeaders(responseHeaders, 2);
   if (!http.begin(client, kFeedUrl)) {
     BootDiagnostics::write("[BANDOPEN][HF] http.begin FAILED (TLS/URL/client setup)");
     return false;
   }
-  BootDiagnostics::write("[BANDOPEN][HF] http.begin OK; GET started");
+  http.addHeader("Accept", "application/json");
+  BootDiagnostics::write("[BANDOPEN][HF] http.begin OK; GET started with JSON Accept and firmware User-Agent");
   const int status = http.GET();
   if (status != HTTP_CODE_OK) {
-    BootDiagnostics::printf("[BANDOPEN][HF] GET failed http=%d error=%s elapsed_ms=%lu",
-      status, http.errorToString(status).c_str(), static_cast<unsigned long>(millis() - startedAt));
+    BootDiagnostics::printf("[BANDOPEN][HF] GET failed http=%d error=%s content_type=%s server=%s elapsed_ms=%lu",
+      status, http.errorToString(status).c_str(), http.header("Content-Type").c_str(),
+      http.header("Server").c_str(), static_cast<unsigned long>(millis() - startedAt));
     http.end();
     return false;
   }
