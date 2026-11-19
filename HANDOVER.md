@@ -3563,3 +3563,14 @@ Prüfstatus:
 - HF-Fehler-Retry auf fünf Minuten gesetzt, entsprechend der Feed-Nutzungsbedingungen (höchstens eine Abfrage alle fünf Minuten).
 - Geändert: ausschließlich `firmware/ats-mini-os/src/radio/BandOpeningService.cpp` sowie diese Handover-Dokumentation. WLAN-Setup, Scan, AP-Verhalten und Radio-Layouts unverändert.
 - Noch offen: Compile-only-Build und Gerätetest durch den Nutzer. Kein Build, keine GitHub Action und kein Flash durch ChatGPT gestartet. Der User-Agent-Fix ist eine gezielte Kompatibilitätsmaßnahme, aber ohne ESP32-Neutest noch nicht als wirksam bestätigt.
+
+
+## HF-Bandmonitor – WLAN-Wartefenster beim Öffnen (2026-11-19)
+
+- Beim erstmaligen Öffnen von Menüseite 29 wird `wifi.ensureStarted()` aufgerufen. Dadurch startet der gespeicherte WLAN-Modus bedarfsgesteuert; WLAN-Setup, AP-Name und AP-Verhalten werden nicht verändert.
+- Der Monitor zeigt bei noch fehlender Routerverbindung einen eigenen Wartebildschirm „WARTE AUF WLAN“ statt 29 grauer Bandzeilen. Sobald WLAN verbunden ist, stößt der vorhandene Service den sofortigen HF-Abruf an.
+- Während des Abrufs zeigt das Display „WLAN VERBUNDEN / Lade HF-Banddaten ...“. Erst nach erfolgreichem Feed-Parsing erscheint die eigentliche Bandübersicht. Bei fehlgeschlagenem Abruf ohne vorherige gültige Daten erscheint „HF-DATEN NICHT ERHALTEN“ mit Hinweis auf den nächsten Versuch in fünf Minuten.
+- Ein bereits gültiger Snapshot bleibt bei späteren temporären Ausfällen weiterhin sichtbar und wird wie bisher als ALT markiert.
+- Snapshot-Zustand ergänzt um `waitingForWifi` und `fetchFailed`. Diagnose bleibt unter den vorhandenen `[BANDOPEN]`-Log-Tags.
+- Geändert: `BandOpeningService.h/.cpp`, `DisplayDriver.cpp`, `ats-mini-os.ino` und diese Dokumentation.
+- Statische Prüfung nach Änderung: WLAN-Start erfolgt nur beim Übergang in den geöffneten Monitor; Banddatenabruf bleibt an verbundene WLAN-Datendienste und geöffnete Monitorseite gebunden; Warte-/Lade-/Fehleransichten sind getrennt; vorhandene gültige Daten werden weiterhin als ALT markiert. Kein Build, keine GitHub Action, kein Hardwaretest und kein Flash durch ChatGPT gestartet.
