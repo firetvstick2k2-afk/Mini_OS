@@ -7,6 +7,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <math.h>
 #include "../system/BootDiagnostics.h"
 
 namespace {
@@ -161,6 +162,12 @@ void BandOpeningService::taskLoop() {
         fresh.stale = false;
         fresh.fetching = false;
         fresh.updatedAtMs = millis();
+        // Preserve the independently refreshed FM-DX value when the HF feed
+        // snapshot is replaced; the two endpoints have different cadences.
+        const Snapshot latest = snapshot();
+        fresh.fmMufMHz = latest.fmMufMHz;
+        fresh.fmMufValid = latest.fmMufValid;
+        fresh.fmMufStale = latest.fmMufStale;
         publish(fresh);
         BootDiagnostics::write("[BANDOPEN] HF conditions updated (Map For HAM)");
       } else {
