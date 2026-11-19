@@ -3329,3 +3329,13 @@ Prüfstatus:
 - Keine Änderungen an TEF6686-Layout, altem Decoder-Wasserfall, FM Live FFT, Scanner-Keypads, Sweep-Algorithmus oder RadioCore-State-Vertrag.
 - Build-/Gerätestatus: kein lokaler Build und keine GitHub Actions gestartet; keine Firmware geflasht. Ein echter Compile-only-Build sowie Hardwaretests bleiben offen. Vor dem Build insbesondere Lautstärke-Persistenz, Zwei-Punkt-Peaknavigation, Auswahlring, beide Keypads, Abbruch, Peakübernahme und Wiederherstellung des Radiozustands testen.
 - Nächster Schritt: Nutzer startet den Compile-only-Build selbst. Bei Compilerfehlern den konkreten Buildlog auswerten und ausschließlich die nachgewiesene Ursache korrigieren.
+
+## Verbindliche Layout-Schutzregel – alle Layouts (2026-11-19)
+
+- **Grundsatz: Alle vorhandenen Layouts bleiben unangetastet.** Änderungen an Layout-Dateien, Layout-Darstellung, Anordnung, Farben, Schriften, Elementen oder layoutbezogener Logik sind grundsätzlich zu vermeiden, wenn sich die gewünschte Funktion außerhalb der Layouts umsetzen lässt.
+- Das gilt ausdrücklich für **sämtliche Layouts**, nicht nur für TEF6686. Kein Layout darf beiläufig, vorsorglich, aus Gründen der Vereinheitlichung oder im Zuge einer anderen Funktion verändert werden.
+- **Änderung auf ausdrücklichen Wunsch:** Wenn der Nutzer ein bestimmtes Layout oder eine konkrete Layout-Anpassung ausdrücklich beauftragt, darf genau dieser gewünschte Umfang umgesetzt werden. Andere Layouts bleiben weiterhin geschützt.
+- **Technische Notwendigkeit:** Falls eine Änderung an einem oder mehreren Layouts aus technischer Sicht tatsächlich unvermeidbar erscheint, gilt: **vorher anhalten, den Grund und die betroffenen Dateien/Layouts verständlich erklären und ausdrücklich beim Nutzer nachfragen.** Ohne dessen Zustimmung keine Layout-Änderung.
+- Wenn eine Funktion layoutübergreifend benötigt wird, zuerst eine Lösung in Service-, Controller-, Daten- oder gemeinsamer Logik prüfen. Layouts möglichst nur als unveränderte Anzeige-/Darstellungsschicht verwenden.
+- Vor jedem Eingriff prüfen, welche Layout-Dateien und Renderpfade betroffen wären. Änderungen strikt auf den freigegebenen Umfang begrenzen und anschließend mit einem Diff kontrollieren, dass keine weiteren Layouts unbeabsichtigt verändert wurden.
+- Diese Regel ist eine dauerhafte Projektvorgabe und gilt für alle folgenden Arbeiten und Übergaben, bis der Nutzer sie ausdrücklich ändert.
