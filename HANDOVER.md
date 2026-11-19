@@ -3501,5 +3501,9 @@ Commits:
 
 Prüfstatus:
 - Änderungen wurden auf dem aktiven Branch vorgenommen.
-- Quelltext-/Schnittstellenprüfung und erneutes Abrufen der Dateien stehen im Anschluss an die Commits.
+- Statische Nachprüfung nach den Commits am 2026-11-19 durchgeführt: `BandOpeningService.h/.cpp` und `DisplayDriver.cpp` erneut aus dem aktiven Branch abgerufen.
+- Bestätigt: `kBandsPerPage = 2`, `kBandCount = 29` und dynamische Seitenzahl `(29 + 2 - 1) / 2 = 15`; die Anzeige rendert die jeweils zwei zugehörigen Bandzeilen.
+- Bestätigt: der Quellzeitstempel wird im Footer als `TT.MM.JJJJ HH:MM UTC` dargestellt; ein veralteter Snapshot erhält den Hinweis `ALT`. Statusfarben bleiben an die gelieferten `Poor/Fair/Good`-Werte gebunden; unbekannte Werte bleiben grau.
+- Bestätigt: HF-Monitor-Renderpfad ist in Sprite- und Direkt-Displaypfad vorhanden. Keine Änderungen an TEF6686, Decoder-Wasserfall oder anderen Radio-Layouts.
+- Weiterhin offen: PlatformIO-Compile, GitHub Actions, WLAN-/Hardwaretest und Flash. Diese Schritte führt der Nutzer selbst aus.
 - Noch kein Build, keine GitHub Actions und kein Flashvorgang; Compile-only-Build und Gerätetest erfolgen durch den Nutzer.
