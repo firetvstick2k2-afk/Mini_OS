@@ -1,3 +1,24 @@
+# Arbeitsfortschritt – FM FFT Wasserfall RAM-Diagnose (2026-11-19)
+
+Auf `dev/first-build-preparation` wird die Diagnose gezielt für das **FM Live FFT Waterfall Layout (FM Layout-ID 5)** ergänzt. Der FT8/FT4-Decoder und dessen Wasserfall werden nicht verändert.
+
+- `BootDiagnostics::memorySnapshot(stage)` schreibt bei jedem Aufruf freien internen Heap, minimalen Heap seit Boot, größten zusammenhängenden Heap-Block, freien/gesamten PSRAM und Stack-High-Water-Mark der aufrufenden Task.
+- Beim Boot wird die Reset-Ursache numerisch und als Klartext protokolliert (z. B. Reset Reason 3 = `SOFTWARE` / `ESP_RST_SW`).
+- FM-Layoutwechsel, Eintritt/Start/Fehler/Austritt des Live-FFT-Services und jede tatsächlich gespeicherte FFT-Wasserfallzeile erhalten eigene RAM-Snapshots.
+- Für jeden gespeicherten FFT-Frame wird zusätzlich eine fortlaufende Frame-Nummer, Sample-Zähler, gefüllte Zeilen, nächste Zeile, Bin-Anzahl und die Größe der lokalen FFT-Arbeitsarrays protokolliert. Es gibt keine künstliche Begrenzung oder Zusammenfassung der RAM-Messpunkte; 100 Messungen ergeben 100 RAM-Einträge.
+- Die FFT-Arbeitsarrays `real[512]` und `imag[512]` liegen lokal in `processFrame()` (zusammen 4096 Byte, zuzüglich weiterer lokaler Daten). Der Stack-High-Water-Mark wird deshalb pro Frame mitgeschrieben.
+- Die bestehende BootDiagnostics-Schreibroutine flusht jede Zeile sofort in LittleFS. Frame-für-Frame-Diagnose erhöht daher die Schreibaktivität und kann die FFT-Darstellung beeinflussen. Das ist für diesen Diagnosetest bewusst in Kauf genommen; die vorhandene Logrotation bleibt unverändert bei 512 KiB mit vorheriger Logdatei.
+
+Geänderte Dateien:
+- `firmware/ats-mini-os/src/system/BootDiagnostics.h/.cpp`
+- `firmware/ats-mini-os/src/audio/FmAudioFftService.cpp/.h`
+- `firmware/ats-mini-os/src/display/DisplayDriver.cpp`
+- `firmware/ats-mini-os/ats-mini-os.ino`
+
+Prüfstatus: Quelltextänderungen vorbereitet; erneutes Abrufen und Verifizieren folgt. Kein Build, kein GitHub-Actions-Lauf und kein Flash durch ChatGPT.
+
+---
+
 # Arbeitsfortschritt – Layout-Auswahl nur temporär (2026-11-19)
 
 Auf `dev/first-build-preparation` wurde die Layout-Persistenz für Diagnosetests deaktiviert:
