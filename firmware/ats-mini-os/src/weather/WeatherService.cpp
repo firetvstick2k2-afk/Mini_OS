@@ -8,6 +8,7 @@
 #include <time.h>
 #include <string.h>
 #include "../system/BootDiagnostics.h"
+#include "../network/NetworkRequestCoordinator.h"
 
 namespace {
 constexpr char kWeatherNamespace[] = "weather";
@@ -186,6 +187,8 @@ void WeatherService::taskLoop() {
   }
 }
 bool WeatherService::fetchJson(const String& url, String& body) {
+  NetworkRequestGuard networkGuard;
+  if (!networkGuard) { BootDiagnostics::write("[WEATHER] network request deferred: coordinator busy"); return false; }
   const char* requestType = url.indexOf("openplzapi.org") >= 0 ? "postcode" :
     url.indexOf("geocoding-api.open-meteo.com") >= 0 ? "geocoding" :
     url.indexOf("current_weather") >= 0 ? "current" : "forecast";
