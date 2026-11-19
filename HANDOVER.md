@@ -3269,3 +3269,30 @@ Prüfstatus:
 - Geändert: `firmware/ats-mini-os/src/display/DisplayDriver.cpp`.
 - Commit: `410b15fa3b5538ea9b0fc8b981520ec0967cc898`.
 - Build nicht gestartet; Nutzer startet Builds selbst.
+
+
+## Menüpunkt 17 – VHF Spectrum portiert (2026-11-19)
+
+- Nutzer hat die Portierung beider Spektrumanzeigen beauftragt, dabei ausdrücklich in getrennten Schritten: zuerst Menüpunkt 17 / VHF Spectrum vollständig ersetzen und speichern, danach Menüpunkt 18 / All Band Spectrum separat integrieren.
+- Dev-Referenz erneut live geprüft: ats-mini/SpectrumScanner.h/.cpp (VHF 88.00–108.00 MHz, 100-kHz Schritt, bis 201 Messpunkte, eigener MHz-Keypad, Peak-Navigation, FM-Modus, blau/cyan/neon-grüne Darstellung). Dev verwendet globale SI4735-/UI-Zustände und einen blockierenden Sweep; diese Implementierungsdetails wurden nicht direkt übernommen.
+- Mini-OS-Portierung:
+  - Neues eigenständiges Modul src/radio/SpectrumScannerService.h/.cpp, Instanz für VHF, mit eigenem Keypad-/Sweep-/Pufferzustand.
+  - Sweep läuft kooperativ im Loop: pro Tick maximal ein Messpunkt; nach 360 ms wird die Signalqualität gezielt über RadioCore aktualisiert. Kein blockierender 201-Punkte-Loop.
+  - Nutzt ausschließlich RadioCore, nicht SI4735 direkt.
+  - Eigenständige Start-/Endfrequenzeingabe, MHz-Anzeige, feste FM-Anzeige, 100-kHz-Raster, Bereichs-/Punktzahlprüfung und zusätzliche Prüfung gegen das konfigurierte FM-Region-Limit.
+  - Eigener Graph mit Dev-Farben, Peak-Markierung, Encoder-Peaknavigation und Übernahme der ausgewählten Frequenz.
+  - Abbruch und Abschluss der Messung stellen den zuvor aktiven Band-/Frequenz-/Modulations-/BFO-/Schritt-/Bandbreitenzustand wieder her. Die ursprüngliche Radiokonfiguration bleibt bis zur bewussten Peak-Übernahme gesichert.
+  - RadioCore erhielt dafür einen expliziten SavedState-Capture/Restore-Vertrag sowie gezieltes Signalqualitäts-Refresh und rohe Schrittweiten-Wiederherstellung.
+- Menüpunkt 17 (interne Seite 23) ist nun ausschließlich mit VHF Spectrum verbunden. Der bisherige generische ScanService-Handler und die zugehörige generische Scan-/Peak-Anzeige wurden aus dem aktiven Code entfernt; ScanService.h/.cpp wurden gelöscht.
+- DisplayDriver rendert die neue separate VHF-Keypad-/Graphansicht. Decoder-Wasserfall, FM Live FFT und TEF6686-Layout blieben unangetastet.
+- Menüpunkt 18 „All Band Spectrum“ ist in diesem Zwischencommit bewusst noch deaktiviert (Mapping 255), bis die zweite Portierung separat erfolgt. Der bisherige SeekService ist bis zum zweiten Schritt noch nicht portiert/ersetzt.
+- Geänderte/neue Dateien: src/radio/SpectrumScannerService.h/.cpp, src/radio/RadioCore.h/.cpp, src/display/DisplayDriver.h/.cpp, ats-mini-os.ino; entfernt src/radio/ScanService.h/.cpp.
+- Wichtige Code-Commits:
+  - 7096abd35f542044e84116b617ce3ae2f6126872 – SpectrumScannerService interface.
+  - ed07d02a14631313c47eb62832ad22b11b69e018 – cooperative scanner implementation.
+  - c90d94d94eb661fd12acd2b04d448beb501f0edc / b634fc0075ede2c272b8d3449b7f19abcd8959b4 / 497dc782f89d605e01810480adc742f5d80e2b64 – RadioCore saved-state API.
+  - 21e6ed4c8ded61a8403c95e67e3055abd3eeaaae / c5f988eb611c95b1de2b7335ea560cde499fe1e8 / a35f0dc79afd1249b11896fae92bc968f3771ca8 – Spectrum UI and removal of legacy render paths.
+  - f54f6f53b0a909614d404d14d79509c759a081d9 / 9b18c97659c18de293def0c4c88aca8dd67ba3dd / c9b900598c9f35f67cf849d9cac52ead85ba274d – VHF event routing and removal of old scanner integration.
+  - db7c740739142ce82652eb049417e4ebf303fdc7 – legacy ScanService source removal.
+- Verifikation nach den Änderungen: VHF-Menürouting, neue Display-Ansicht, RadioCore-State-API und kooperativer Tick erneut vom aktiven Branch abgerufen. Keine aktiven ScanService-/SeekService-Referenzen in ats-mini-os.ino oder DisplayDriver verbleibend. Build nicht gestartet; keine GitHub Actions und kein Flash durch ChatGPT.
+- Nächster Schritt: Menüpunkt 18 / All Band Spectrum als eigenständige Portierung aktivieren, alten SeekService vollständig entfernen und dessen kHz-Keypad, AM/USB/LSB-Auswahl, Schrittweiten, Bereichsprüfung und Peak-Übernahme integrieren.
