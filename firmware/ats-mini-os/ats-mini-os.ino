@@ -19,6 +19,7 @@
 #include "src/network/WifiClient.h"
 #include "src/news/NewsService.h"
 #include "src/weather/WeatherService.h"
+#include "src/radio/BandOpeningService.h"
 #include "src/logo/StationLogoClient.h"
 #include "src/system/PartitionDiagnostics.h"
 #include "src/storage/StorageDiscovery.h"
@@ -62,6 +63,7 @@ bool eibiDownloadPending = false;
 uint32_t eibiDownloadRequestedAtMs = 0;
 NewsService newsService;
 WeatherService weatherService;
+BandOpeningService bandOpeningService;
 StationLogoClient stationLogoClient;
 uint32_t lastStatusMs = 0;
 uint32_t lastObservedFmFrequencyKHz = DEFAULT_FM_FREQUENCY_KHZ;
@@ -388,6 +390,7 @@ void setup() {
   if (storageReady) display.showBootSplash(2500);
   wifi.setNewsService(&newsService);
   wifi.setWeatherService(&weatherService);
+  bandOpeningService.begin();
   BootDiagnostics::printf("[BOOT][STAGE] before wifi.begin free_heap=%u max_block=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
   wifi.begin();
   BootDiagnostics::printf("[BOOT][STAGE] after wifi.begin (deferred) free_heap=%u max_block=%u min_free=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
@@ -424,6 +427,7 @@ void loop() {
   newsService.update(wifi.connected() && wifi.dataServicesAllowed());
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] newsService.update done");
   weatherService.update(wifi.connected() && wifi.dataServicesAllowed());
+  bandOpeningService.update(wifi.connected() && wifi.dataServicesAllowed());
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] weatherService.update done");
   systemClock.update(wifi.connected());
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] systemClock.update done");
@@ -496,7 +500,7 @@ void loop() {
               Serial.printf("[MENU] volume=%u/63\n", static_cast<unsigned>(radio.volume()));
             }
           } else {
-            const int16_t itemCount = menuPage == 0 ? 24 : menuPage == 26 ? (kDecoderCategoryCount + 1) : decoderCategoryForPage(menuPage) >= 0 ? (kDecoderCategorySize[decoderCategoryForPage(menuPage)] + 1) : menuPage == 25 ? 19 : menuPage == 22 ? MemoryService::kSlotCount : menuPage == 18 ? 2 : menuPage == 20 ? 1 :
+            const int16_t itemCount = menuPage == 0 ? 25 : menuPage == 29 ? 7 : menuPage == 26 ? (kDecoderCategoryCount + 1) : decoderCategoryForPage(menuPage) >= 0 ? (kDecoderCategorySize[decoderCategoryForPage(menuPage)] + 1) : menuPage == 25 ? 19 : menuPage == 22 ? MemoryService::kSlotCount : menuPage == 18 ? 2 : menuPage == 20 ? 1 :
               menuPage == 2 ? 4 : menuPage == 4 ? 6 : menuPage == 5 ? 11 : menuPage == 17 ? 5 : menuPage == 13 ? 3 :
               ((menuPage == 14) ? 6 : (menuPage == 15) ? 6 :
               menuPage == 10 ? 4 : menuPage == 11 ?
@@ -628,9 +632,9 @@ void loop() {
         } else if ((menuPage==5 && menuSelection==4)) {fmOpen();
         } else if (menuPage == 0) {
             // Menu-only reorder: spectrum entries temporarily keep their legacy page handlers.
-            static const uint8_t targetPages[24] = {
+            static const uint8_t targetPages[25] = {
               255, 1, 19, 8, 16, 9, 12, 22, 25, 7, 11, 255,
-              11, 255, 255, 255, 23, 24, 20, 18, 21, 28, 26, 5
+              11, 255, 255, 255, 23, 24, 20, 18, 21, 28, 26, 5, 29
             };
             const uint8_t selectedMainItem = menuSelection;
             const uint8_t targetPage = targetPages[selectedMainItem];
@@ -641,7 +645,7 @@ void loop() {
                 static_cast<unsigned>(selectedMainItem));
             } else {
               menuPage = targetPage;
-              if (menuPage == 18) wifi.ensureStarted();
+              if (menuPage == 18 || menuPage == 29) wifi.ensureStarted();
               if (menuPage == 19) frequencyKeypad.open(radio.snapshot());
               if (menuPage == 23) vhfSpectrum.open();
               if (menuPage == 24) allBandSpectrum.open();
@@ -658,6 +662,10 @@ void loop() {
               else menuSelection = 0;
               Serial.printf("[MENU] opened selection page %u\n", static_cast<unsigned>(menuPage));
             }
+        } else if (menuPage == 29) {
+          menuPage = 0;
+          menuSelection = 24;
+          Serial.println("[BANDOPEN] monitor closed");
         } else if (menuPage == 18) {
           menuPage = 0;
           menuSelection = 19;
@@ -1064,6 +1072,7 @@ void loop() {
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] stationLogoClient.update done");
   const NewsService::Snapshot currentNews = newsService.snapshot();
   const WeatherService::Snapshot currentWeather = weatherService.snapshot();
+  const BandOpeningService::Snapshot currentBandOpening = bandOpeningService.snapshot();
   static String currentWifiName;
   static String currentWifiIp;
   static uint32_t lastWifiDisplayRefreshMs = 0;
@@ -1078,7 +1087,7 @@ void loop() {
   const MoonCalendar::Snapshot currentMoon = MoonCalendar::calculate(time(nullptr));
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] before display.render");
   RadioSnapshot displaySnapshot = radio.snapshot();
-  display.render(displaySnapshot,radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal(), selectedMemorySlot, memories.count(), memoryEditActive, memoryEditName, memoryEditCursor, &ftxDecoder, wifi.isOff(), systemClock.synchronized());
+  display.render(displaySnapshot,radio.isReady(),wifi.connected(),lastEncoderEvent,encoderEventCount,&stationLogoClient,menuOpen,menuPage,menuSelection,radio.volume(),fmPath,fmEntries,fmCount,fmSelection,fmMode,fmActionSelection,(fmMode==4?fmEditName:fmSelectedName),fmMessage,sliderAdjustmentActive,eibi.stationName(),eibi.statusText(),eibi.available(),eibi.downloading(),&currentNews,static_cast<uint8_t>(wifi.mode()),currentWifiName.c_str(),currentWifiIp.c_str(),BootDiagnostics::enabled(),&currentWeather, menuPage == 19 ? &frequencyKeypad.view() : nullptr, &currentMoon, cwDecoder.wifiBlocked(), cwDecoder.text(), cwDecoder.signal(), selectedMemorySlot, memories.count(), memoryEditActive, memoryEditName, memoryEditCursor, &ftxDecoder, wifi.isOff(), systemClock.synchronized(), &currentBandOpening);
   if (firstLoopDiagnostics) { BootDiagnostics::write("[LOOP][TRACE] display.render done; first loop complete"); firstLoopDiagnostics = false; }
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
