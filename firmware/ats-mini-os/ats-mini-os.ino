@@ -631,7 +631,7 @@ void loop() {
             entered ? "active" : "not started",
             wifi.isOff(), systemClock.synchronized());
         } else if (menuPage == 21) {
-          cwDecoder.exit(); restoreWifiAfterDecoder(); menuPage = 0; menuSelection = 23;
+          cwDecoder.exit(); restoreWifiAfterDecoder(); menuPage = 0; menuSelection = 20;
           Serial.println("[CW] decoder page closed");
         } else if (menuPage == 19) {
           if (!frequencyKeypad.press(radio)) closeMenuToRadio("frequency keypad finished");
@@ -646,10 +646,10 @@ void loop() {
           }
         } else if ((menuPage==5 && menuSelection==4)) {fmOpen();
         } else if (menuPage == 0) {
-            // Main menu without the retired FM Panorama entry.
+            // Menu-only reorder: spectrum entries temporarily keep their legacy page handlers.
             static const uint8_t targetPages[24] = {
-              255, 26, 28, 21, 16, 8, 1, 19, 255, 255, 255, 12, 9,
-              24, 23, 22, 25, 7, 11, 11, 11, 5, 18, 20
+              255, 1, 19, 8, 16, 9, 12, 22, 25, 7, 11, 255,
+              11, 255, 255, 255, 23, 24, 20, 18, 21, 28, 26, 5
             };
             const uint8_t selectedMainItem = menuSelection;
             const uint8_t targetPage = targetPages[selectedMainItem];
@@ -670,20 +670,18 @@ void loop() {
                 else Serial.printf("[CW] decoder %s; Wi-Fi mode=%u\n", entered ? "active" : "blocked (turn Wi-Fi OFF)", static_cast<unsigned>(wifi.mode()));
               }
               else if (menuPage == 8) menuSelection = static_cast<uint8_t>(radio.currentBandIndex() + 1);
-              else if (menuPage == 11 && selectedMainItem == 16) {
-                menuSelection = radio.snapshot().modulation == RadioModulation::FM ? 0 : 10;
-              } else if (menuPage == 11 && selectedMainItem == 17) menuSelection = 6;
-              else if (menuPage == 11 && selectedMainItem == 15) menuSelection = 1;
+              else if (menuPage == 11 && selectedMainItem == 10) menuSelection = 1;
+              else if (menuPage == 11 && selectedMainItem == 12) menuSelection = 6;
               else menuSelection = 0;
               Serial.printf("[MENU] opened selection page %u\n", static_cast<unsigned>(menuPage));
             }
         } else if (menuPage == 18) {
           menuPage = 0;
-          menuSelection = 22;
+          menuSelection = 19;
           Serial.println("[WEATHER] report closed");
         } else if (menuPage == 20) {
           menuPage = 0;
-          menuSelection = 23;
+          menuSelection = 18;
           Serial.println("[MOON] calendar closed");
         } else if (menuPage == 13 && menuSelection == 0) {
           menuPage = 0;
@@ -974,8 +972,8 @@ void loop() {
               memoryEditCursor=0; memoryEditActive=true;
             } else if(memories.save(selectedMemorySlot,radio.snapshot(),radio.currentBandIndex())) Serial.printf("[MEMORY] saved slot %u\n",static_cast<unsigned>(selectedMemorySlot+1));
           }
-          else if (menuPage == 23) { scanner.stop(radio); menuPage=0; menuSelection=11; }
-          else if (menuPage == 24) { seeker.stop(); menuPage=0; menuSelection=10; }
+          else if (menuPage == 23) { scanner.stop(radio); menuPage=0; menuSelection=16; }
+          else if (menuPage == 24) { seeker.stop(); menuPage=0; menuSelection=17; }
           else if (menuPage == 21) { cwDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=23; }
           else if (menuPage == 28) { ftxDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=20; }
           else if (decoderCategoryForPage(menuPage) >= 0) { menuPage=26; menuSelection=0; lastDecoderPreviewSelection=-1; }
