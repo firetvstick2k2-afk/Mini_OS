@@ -45,7 +45,7 @@ bool openLogLocked() {
   File existing = LittleFS.open(LOG_PATH, "r");
   const size_t currentSize = existing ? existing.size() : 0;
   if (existing) existing.close();
-  if (currentSize >= MAX_LOG_BYTES && !rotateLogLocked()) return false;
+  if (currentSize >= MAX_LOG_BYTES) return rotateLogLocked();
   logFile = LittleFS.open(LOG_PATH, "a");
   ready = static_cast<bool>(logFile);
   if (ready) {
