@@ -364,7 +364,7 @@ void drawBandOpeningScreen(Canvas& c, const BandOpeningService::Snapshot* snapsh
   c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
   c.setTextColor(CYAN,DARK);
   c.drawString("HF BANDOEFFNUNGS-MONITOR",10,7);
-  char pageText[16]; snprintf(pageText,sizeof(pageText),"%u/8",static_cast<unsigned>(page+1));
+  char pageText[16]; snprintf(pageText,sizeof(pageText),"%u/%u",static_cast<unsigned>(page+1),static_cast<unsigned>(BandOpeningService::kPageCount));
   c.setFont(&lgfx::fonts::Font2); c.setTextColor(WHITE,DARK); c.drawRightString(pageText,c.width()-10,10);
   c.drawFastHLine(9,27,c.width()-18,BLUE);
   const uint8_t first=static_cast<uint8_t>(page*BandOpeningService::kBandsPerPage);
@@ -372,35 +372,45 @@ void drawBandOpeningScreen(Canvas& c, const BandOpeningService::Snapshot* snapsh
     const uint8_t index=static_cast<uint8_t>(first+slot);
     if(index>=BandOpeningService::kBandCount) break;
     const auto& band=BandOpeningService::band(index);
-    const int y=31+slot*31;
+    const int y=39+slot*53;
     const auto row=snapshot ? snapshot->rows[index] : BandOpeningService::Row{};
     auto overall=row.day;
     if(overall==BandOpeningService::Status::Unknown) overall=row.night;
     else if(row.night!=BandOpeningService::Status::Unknown && static_cast<uint8_t>(row.night)<static_cast<uint8_t>(overall)) overall=row.night;
-    if(snapshot && snapshot->stale) overall=BandOpeningService::Status::Unknown;
+    // Keep the last known good colors during temporary Wi-Fi/source outages.
+    // Unknown remains grey; the footer explicitly marks retained data as old.
     uint16_t dot=GREY;
     if(overall==BandOpeningService::Status::Poor) dot=RED;
     else if(overall==BandOpeningService::Status::Fair) dot=YELLOW;
     else if(overall==BandOpeningService::Status::Good) dot=GREEN;
-    c.fillCircle(22,y+12,10,dot); c.drawCircle(22,y+12,11,WHITE);
+    c.fillCircle(24,y+17,13,dot); c.drawCircle(24,y+17,14,WHITE);
     c.setTextDatum(TL_DATUM); c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
-    c.setTextColor(WHITE,DARK); c.drawString(band.name,42,y);
+    c.setTextColor(WHITE,DARK); c.drawString(band.name,49,y+1);
     c.setFont(&lgfx::fonts::Font2); c.setTextColor(CYAN,DARK);
     char range[40];
     if(band.minimumKHz>=1000)
       snprintf(range,sizeof(range),"%.3f - %.3f MHz",band.minimumKHz/1000.0f,band.maximumKHz/1000.0f);
     else snprintf(range,sizeof(range),"%lu - %lu kHz",static_cast<unsigned long>(band.minimumKHz),static_cast<unsigned long>(band.maximumKHz));
-    c.drawString(range,42,y+15);
+    c.drawString(range,49,y+23);
     c.setTextDatum(TR_DATUM); c.setTextColor(GREY,DARK);
     if(index==BandOpeningService::kBandCount-1 && snapshot && snapshot->fmMufValid && !snapshot->fmMufStale) {
       char mufText[24]; snprintf(mufText,sizeof(mufText),"MUF %.1f MHz",snapshot->fmMufMHz);
-      c.drawString(mufText,c.width()-10,y+15);
-    } else c.drawString(band.type,c.width()-10,y+15);
-    c.drawFastHLine(42,y+30,c.width()-54,0x2104);
+      c.drawString(mufText,c.width()-10,y+23);
+    } else c.drawString(band.type,c.width()-10,y+23);
+    c.drawFastHLine(49,y+48,c.width()-61,0x2104);
   }
+  c.drawFastHLine(9,145,c.width()-18,BLUE);
   c.setTextDatum(TL_DATUM); c.setFont(&lgfx::fonts::Font0); c.setTextColor(GREY,DARK);
-  if(!snapshot || !snapshot->valid) c.drawString(snapshot && snapshot->fetching ? "Lade HF-Daten..." : "Grau = keine verlaesslichen Daten",10,158);
-  else c.drawString(snapshot->stale ? "Daten veraltet - Ampel grau" : "mapforham.com | Tag/Nacht, konservativ",10,158);
+  if(!snapshot || !snapshot->valid) {
+    c.drawString(snapshot && snapshot->fetching ? "Lade HF-Daten..." : "Grau = keine verlaesslichen Daten",10,150);
+  } else {
+    int year=0,month=0,day=0,hour=0,minute=0;
+    char stamp[32] = "Zeitstempel unbekannt";
+    if(sscanf(snapshot->sourceUpdated,"%4d-%2d-%2dT%2d:%2d",&year,&month,&day,&hour,&minute)==5)
+      snprintf(stamp,sizeof(stamp),"Stand: %02d.%02d.%04d %02d:%02d UTC",day,month,year,hour,minute);
+    c.drawString(stamp,10,150);
+    if(snapshot->stale) c.drawRightString("ALT",c.width()-10,150);
+  }
 }
 
 template <typename Canvas>
