@@ -126,6 +126,10 @@ void BandOpeningService::update(bool wifiConnected) {
     refreshRequested_ = true;
     BootDiagnostics::write("[BANDOPEN] Wi-Fi available; immediate refresh requested");
   }
+  if (wifiConnected != wasConnected) {
+    BootDiagnostics::printf("[BANDOPEN][GATE] monitor_data_access=%s wifi_status=%d snapshot_valid=%u",
+      wifiConnected ? "ON" : "OFF", static_cast<int>(WiFi.status()), snapshot().valid ? 1U : 0U);
+  }
   if (!wifiConnected) {
     Snapshot current = snapshot();
     if (current.valid || current.fmMufValid) {
@@ -154,15 +158,23 @@ void BandOpeningService::taskLoop() {
     if (wifiConnected_ && (!lastMufAttemptMs_ || now - lastMufAttemptMs_ >= 60UL * 1000UL)) {
       lastMufAttemptMs_ = now;
       float muf = 0.0f;
+      BootDiagnostics::printf("[BANDOPEN][FM_MUF] cycle start wifi=%d heap=%u",
+        static_cast<int>(WiFi.status()), static_cast<unsigned>(ESP.getFreeHeap()));
       const bool ok = fetchFmMuf(muf);
+      BootDiagnostics::printf("[BANDOPEN][FM_MUF] cycle result=%s value_mhz=%.1f heap=%u",
+        ok ? "OK" : "FAILED", ok ? muf : 0.0f, static_cast<unsigned>(ESP.getFreeHeap()));
       Snapshot current = snapshot();
       current.fmMufStale = !ok;
       if (ok) { current.fmMufMHz = muf; current.fmMufValid = true; }
       publish(current);
     }
     if (wifiConnected_ && due) {
+      const bool wasRequested = refreshRequested_;
       refreshRequested_ = false;
       lastAttemptMs_ = now;
+      BootDiagnostics::printf("[BANDOPEN][HF] cycle start trigger=%s wifi=%d heap=%u",
+        wasRequested ? "IMMEDIATE" : "SCHEDULED", static_cast<int>(WiFi.status()),
+        static_cast<unsigned>(ESP.getFreeHeap()));
       Snapshot current = snapshot();
       current.fetching = true;
       publish(current);
@@ -179,14 +191,17 @@ void BandOpeningService::taskLoop() {
         fresh.fmMufValid = latest.fmMufValid;
         fresh.fmMufStale = latest.fmMufStale;
         publish(fresh);
-        BootDiagnostics::write("[BANDOPEN] HF conditions updated (Map For HAM)");
+        BootDiagnostics::printf("[BANDOPEN][HF] publish SUCCESS source_updated=%s elapsed_ms=%lu valid=1 stale=0",
+          fresh.sourceUpdated, static_cast<unsigned long>(millis() - now));
       } else {
         current = snapshot();
         current.fetching = false;
         current.stale = true;
         publish(current);
         lastAttemptMs_ = millis() - kRefreshIntervalMs + kRetryIntervalMs;
-        BootDiagnostics::write("[BANDOPEN] fetch failed; retaining last data as stale");
+        BootDiagnostics::printf("[BANDOPEN][HF] publish FAILED; retained_valid=%u retained_source=%s retry_in_ms=%lu",
+          current.valid ? 1U : 0U, current.sourceUpdated,
+          static_cast<unsigned long>(kRetryIntervalMs));
       }
     }
     vTaskDelay(pdMS_TO_TICKS(1000));
@@ -194,82 +209,132 @@ void BandOpeningService::taskLoop() {
 }
 
 bool BandOpeningService::fetchFmMuf(float& value) {
+  const uint32_t startedAt = millis();
+  BootDiagnostics::write("[BANDOPEN][FM_MUF] HTTPS begin");
   WiFiClientSecure client;
   client.setTimeout(8000);
   client.useBuiltinCACertBundle();
   HTTPClient http;
   http.setTimeout(8000);
   http.setReuse(false);
-  if (!http.begin(client, kFmMufUrl)) return false;
+  if (!http.begin(client, kFmMufUrl)) {
+    BootDiagnostics::write("[BANDOPEN][FM_MUF] http.begin FAILED");
+    return false;
+  }
   const int status = http.GET();
-  if (status != HTTP_CODE_OK) { http.end(); return false; }
+  if (status != HTTP_CODE_OK) {
+    BootDiagnostics::printf("[BANDOPEN][FM_MUF] GET failed http=%d error=%s elapsed_ms=%lu",
+      status, http.errorToString(status).c_str(), static_cast<unsigned long>(millis() - startedAt));
+    http.end();
+    return false;
+  }
   const int length = http.getSize();
-  if (length > 8192) { http.end(); return false; }
+  BootDiagnostics::printf("[BANDOPEN][FM_MUF] HTTP 200 content_length=%d", length);
+  if (length > 8192) { http.end(); BootDiagnostics::write("[BANDOPEN][FM_MUF] response rejected: too large"); return false; }
   String body = http.getString();
   http.end();
-  if (body.isEmpty() || body.length() > 8192 || body.startsWith("<")) return false;
+  BootDiagnostics::printf("[BANDOPEN][FM_MUF] body_bytes=%u elapsed_ms=%lu",
+    static_cast<unsigned>(body.length()), static_cast<unsigned long>(millis() - startedAt));
+  if (body.isEmpty() || body.length() > 8192 || body.startsWith("<")) {
+    BootDiagnostics::write("[BANDOPEN][FM_MUF] response body empty/oversize/HTML");
+    return false;
+  }
   JsonDocument doc;
-  if (deserializeJson(doc, body)) return false;
+  const DeserializationError parseError = deserializeJson(doc, body);
+  if (parseError) {
+    BootDiagnostics::printf("[BANDOPEN][FM_MUF] JSON parse FAILED: %s", parseError.c_str());
+    return false;
+  }
   JsonVariantConst field = doc["europe"]["max_frequency"];
   if (!field.is<const char*>() && !field.is<float>() && !field.is<double>() && !field.is<int>()) return false;
   const char* text = field.is<const char*>() ? field.as<const char*>() : nullptr;
   if (field.is<const char*>() && (!text || strcmp(text, "No data") == 0)) return false;
   const float parsed = text ? strtof(text, nullptr) : field.as<float>();
-  if (!isfinite(parsed) || parsed < 30.0f || parsed > 300.0f) return false;
+  if (!isfinite(parsed) || parsed < 30.0f || parsed > 300.0f) {
+    BootDiagnostics::printf("[BANDOPEN][FM_MUF] value rejected parsed=%.2f", parsed);
+    return false;
+  }
   value = parsed;
+  BootDiagnostics::printf("[BANDOPEN][FM_MUF] value accepted %.2f MHz", value);
   return true;
 }
 
 bool BandOpeningService::fetchConditions(Snapshot& result) {
+  const uint32_t startedAt = millis();
+  BootDiagnostics::printf("[BANDOPEN][HF] HTTPS begin url=MapForHAM wifi=%d heap=%u",
+    static_cast<int>(WiFi.status()), static_cast<unsigned>(ESP.getFreeHeap()));
   WiFiClientSecure client;
   client.setTimeout(8000);
   client.useBuiltinCACertBundle();
   HTTPClient http;
   http.setTimeout(8000);
   http.setReuse(false);
-  if (!http.begin(client, kFeedUrl)) return false;
+  if (!http.begin(client, kFeedUrl)) {
+    BootDiagnostics::write("[BANDOPEN][HF] http.begin FAILED (TLS/URL/client setup)");
+    return false;
+  }
+  BootDiagnostics::write("[BANDOPEN][HF] http.begin OK; GET started");
   const int status = http.GET();
   if (status != HTTP_CODE_OK) {
-    BootDiagnostics::printf("[BANDOPEN] HTTP status=%d\n", status);
+    BootDiagnostics::printf("[BANDOPEN][HF] GET failed http=%d error=%s elapsed_ms=%lu",
+      status, http.errorToString(status).c_str(), static_cast<unsigned long>(millis() - startedAt));
     http.end();
     return false;
   }
   const int length = http.getSize();
+  BootDiagnostics::printf("[BANDOPEN][HF] HTTP 200 content_length=%d", length);
   if (length > static_cast<int>(kMaxResponseBytes)) {
     http.end();
-    BootDiagnostics::write("[BANDOPEN] response rejected: too large");
+    BootDiagnostics::printf("[BANDOPEN][HF] response rejected too large length=%d limit=%u",
+      length, static_cast<unsigned>(kMaxResponseBytes));
     return false;
   }
   String body = http.getString();
   http.end();
-  if (body.isEmpty() || body.length() > kMaxResponseBytes) return false;
+  BootDiagnostics::printf("[BANDOPEN][HF] body_bytes=%u elapsed_ms=%lu heap=%u",
+    static_cast<unsigned>(body.length()), static_cast<unsigned long>(millis() - startedAt),
+    static_cast<unsigned>(ESP.getFreeHeap()));
+  if (body.isEmpty() || body.length() > kMaxResponseBytes) {
+    BootDiagnostics::printf("[BANDOPEN][HF] response rejected empty_or_oversize bytes=%u",
+      static_cast<unsigned>(body.length()));
+    return false;
+  }
 
   JsonDocument doc;
   const DeserializationError error = deserializeJson(doc, body);
   if (error) {
-    BootDiagnostics::printf("[BANDOPEN] JSON parse failed: %s\n", error.c_str());
+    BootDiagnostics::printf("[BANDOPEN][HF] JSON parse FAILED: %s", error.c_str());
     return false;
   }
+  BootDiagnostics::printf("[BANDOPEN][HF] JSON parse OK document_bytes=%u",
+    static_cast<unsigned>(body.length()));
   const char* updated = doc["updated"] | "";
   if (!updated[0] || !timestampIsFresh(updated)) {
-    BootDiagnostics::printf("[BANDOPEN] rejected stale/invalid source timestamp: %s\\n", updated);
+    BootDiagnostics::printf("[BANDOPEN][HF] timestamp REJECTED value=%s system_epoch=%lld",
+      updated, static_cast<long long>(time(nullptr)));
     return false;
   }
+  BootDiagnostics::printf("[BANDOPEN][HF] timestamp accepted value=%s system_epoch=%lld",
+    updated, static_cast<long long>(time(nullptr)));
   strncpy(result.sourceUpdated, updated, sizeof(result.sourceUpdated) - 1);
   result.sourceUpdated[sizeof(result.sourceUpdated) - 1] = '\0';
   JsonArrayConst details = doc["bands_detail"].as<JsonArrayConst>();
   if (details.isNull() || details.size() == 0) {
-    BootDiagnostics::write("[BANDOPEN] feed has no bands_detail array");
+    BootDiagnostics::write("[BANDOPEN][HF] JSON has no bands_detail array");
     return false;
   }
+  BootDiagnostics::printf("[BANDOPEN][HF] bands_detail entries=%u",
+    static_cast<unsigned>(details.size()));
 
   uint8_t matchedBands = 0;
   for (uint8_t i = 0; i < kBandCount; ++i) {
     result.rows[i] = {};
     const uint16_t meters = kBands[i].bandMeters;
     if (!meters) continue;
+    bool foundBand = false;
     for (JsonObjectConst item : details) {
       if ((item["band_m"] | 0) == meters) {
+        foundBand = true;
         result.rows[i].day = parseStatus(item["day"]);
         result.rows[i].night = parseStatus(item["night"]);
         if (result.rows[i].day != Status::Unknown || result.rows[i].night != Status::Unknown)
@@ -277,10 +342,14 @@ bool BandOpeningService::fetchConditions(Snapshot& result) {
         break;
       }
     }
+    BootDiagnostics::printf("[BANDOPEN][HF][BAND] %s band_m=%u found=%u day=%s night=%s",
+      kBands[i].name, static_cast<unsigned>(meters), foundBand ? 1U : 0U,
+      statusText(result.rows[i].day), statusText(result.rows[i].night));
   }
   // At least one known amateur band must have a usable assessment.
   const bool any = matchedBands > 0;
-  BootDiagnostics::printf("[BANDOPEN] parsed %u/10 rated HF bands; source updated=%s\\n",
-    static_cast<unsigned>(matchedBands), updated);
+  BootDiagnostics::printf("[BANDOPEN][HF] parsed=%u/10 source_updated=%s total_elapsed_ms=%lu result=%s",
+    static_cast<unsigned>(matchedBands), updated, static_cast<unsigned long>(millis() - startedAt),
+    any ? "VALID" : "NO_RATED_BANDS");
   return any;
 }
