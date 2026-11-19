@@ -29,6 +29,33 @@ void publishBand(RadioSnapshot& snapshot, const RadioBandDefinition& band) {
 }
 }
 
+RadioCore::SavedState RadioCore::captureState() const {
+  SavedState state;
+  state.bandIndex=BandManager::currentIndex();
+  state.frequencyKHz=snapshot_.frequencyKHz;
+  state.modulation=snapshot_.modulation;
+  state.bfoOffsetHz=snapshot_.bfoOffsetHz;
+  state.stepKHz=BandManager::currentStepKHz();
+  state.bandwidthChoice=tuner_.bandwidthChoice();
+  return state;
+}
+bool RadioCore::restoreState(const SavedState& state) {
+  if(!ready_||!selectBand(state.bandIndex))return false;
+  if(snapshot_.modulation!=state.modulation&&!setModulation(state.modulation))return false;
+  if(!tune(state.frequencyKHz))return false;
+  if(!setBfoOffsetHz(state.bfoOffsetHz))return false;
+  if(!setBandwidthChoice(state.bandwidthChoice))return false;
+  if(state.stepKHz&&!setStepKHz(state.stepKHz))return false;
+  return true;
+}
+bool RadioCore::refreshSignalQuality() {
+  if(!ready_)return false;
+  tuner_.refreshSignalQuality();
+  snapshot_.rssi=tuner_.rssi();snapshot_.snr=tuner_.snr();snapshot_.stereo=tuner_.stereo();
+  snapshot_.frequencyKHz=tuner_.frequencyKHz();
+  snapshot_.generation=++generation_;
+  return true;
+}
 bool RadioCore::begin(uint32_t initialFrequencyKHz) {
   BandManager::select(0);
   ready_ = tuner_.begin(initialFrequencyKHz);
@@ -158,6 +185,10 @@ bool RadioCore::setBandwidthChoice(uint8_t choice) {
   return true;
 }
 
+bool RadioCore::setStepKHz(uint16_t stepKHz) {
+  if(!ready_||!tuner_.setStepKHz(stepKHz)||!BandManager::setCurrentStepKHz(stepKHz))return false;
+  snapshot_.tuningStepKHz=stepKHz;snapshot_.generation=++generation_;return true;
+}
 bool RadioCore::setStepChoice(uint8_t choice) {
   static const uint16_t fmSteps[] = {10, 50, 100, 200, 1000};
   static const uint16_t amSteps[] = {1, 5, 9, 10};
