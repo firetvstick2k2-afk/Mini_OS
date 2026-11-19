@@ -10,6 +10,17 @@ constexpr char SETUP_AP_SSID[] = "ATS-Mini-OS-Setup";
 const IPAddress SETUP_IP(10, 1, 1, 1);
 const IPAddress SETUP_GATEWAY(10, 1, 1, 1);
 const IPAddress SETUP_SUBNET(255, 255, 255, 0);
+const char* wifiStatusName(wl_status_t status) {
+  switch (status) {
+    case WL_IDLE_STATUS: return "IDLE";
+    case WL_NO_SSID_AVAIL: return "NO_SSID";
+    case WL_SCAN_COMPLETED: return "SCAN_DONE";
+    case WL_CONNECTED: return "CONNECTED";
+    case WL_CONNECT_FAILED: return "CONNECT_FAILED";
+    case WL_DISCONNECTED: return "DISCONNECTED";
+    default: return "OTHER";
+  }
+}
 }
 
 void WifiClient::setNewsService(NewsService* service) {
@@ -41,6 +52,13 @@ void WifiClient::begin() {
     const uint8_t savedMode = preferences_.getUChar("wmode", static_cast<uint8_t>(Mode::AP_CONNECT));
     mode_ = savedMode <= static_cast<uint8_t>(Mode::SYNC_ONLY)
       ? static_cast<Mode>(savedMode) : Mode::AP_CONNECT;
+    BootDiagnostics::printf("[WIFI][NVS] preferences ready mode=%u", static_cast<unsigned>(mode_));
+    for (uint8_t i = 0; i < NETWORK_COUNT; ++i)
+      BootDiagnostics::printf("[WIFI][NVS] slot=%u configured=%u ssid_len=%u password_present=%u",
+        static_cast<unsigned>(i + 1), ssid_[i][0] ? 1U : 0U,
+        static_cast<unsigned>(strlen(ssid_[i])), password_[i][0] ? 1U : 0U);
+  } else {
+    BootDiagnostics::write("[WIFI][NVS] preferences unavailable; network slots and mode use defaults");
   }
   if (newsService_) newsService_->setConfiguration(newsConfig_);
   // Keep the radio offline at boot. The saved operating mode is applied
@@ -66,11 +84,16 @@ void WifiClient::suspend() {
 }
 
 bool WifiClient::ensureStarted() {
-  if (started_) return true;
+  if (started_) {
+    BootDiagnostics::printf("[WIFI][START] already active mode=%u status=%s slot=%u",
+      static_cast<unsigned>(mode_), wifiStatusName(WiFi.status()), static_cast<unsigned>(activeNetwork_ + 1));
+    return true;
+  }
   // OFF is a runtime state, not a permanent veto: a feature that genuinely
   // requires networking may activate the saved/default network mode.
   if (mode_ == Mode::OFF) mode_ = Mode::AP_CONNECT;
-  BootDiagnostics::write("[WIFI] on-demand activation requested");
+  BootDiagnostics::printf("[WIFI][START] on-demand activation mode=%u heap=%u",
+    static_cast<unsigned>(mode_), static_cast<unsigned>(ESP.getFreeHeap()));
   applyMode();
   started_ = true;
   startWebServer();
@@ -86,6 +109,8 @@ bool WifiClient::ensureStarted() {
 }
 
 void WifiClient::applyMode() {
+  BootDiagnostics::printf("[WIFI][MODE] apply mode=%u started=%u status_before=%s",
+    static_cast<unsigned>(mode_), started_ ? 1U : 0U, wifiStatusName(WiFi.status()));
   WiFi.softAPdisconnect(false);
   WiFi.disconnect(false, false);
   apActive_ = false;
@@ -102,6 +127,8 @@ void WifiClient::applyMode() {
   if (accessPointEnabled()) {
     WiFi.softAPConfig(SETUP_IP, SETUP_GATEWAY, SETUP_SUBNET);
     apActive_ = WiFi.softAP(SETUP_AP_SSID);
+    BootDiagnostics::printf("[WIFI][AP] start result=%s ip=%s", apActive_ ? "OK" : "FAILED",
+      WiFi.softAPIP().toString().c_str());
   }
   if (stationEnabled()) {
     bool found = false;
@@ -109,19 +136,33 @@ void WifiClient::applyMode() {
       if (ssid_[i][0]) { activeNetwork_ = i; found = true; break; }
     }
     if (found) {
-      WiFi.begin(ssid_[activeNetwork_], password_[activeNetwork_]);
+      const wl_status_t beginStatus = WiFi.begin(ssid_[activeNetwork_], password_[activeNetwork_]);
       lastAttemptMs_ = millis();
+      BootDiagnostics::printf("[WIFI][ATTEMPT] source=mode-start slot=%u begin_status=%s(%d) timeout_ms=%lu",
+        static_cast<unsigned>(activeNetwork_ + 1), wifiStatusName(beginStatus), static_cast<int>(beginStatus),
+        static_cast<unsigned long>(RETRY_INTERVAL_MS));
       Serial.printf("[WIFI] connecting to saved network slot %u\\n",
                     static_cast<unsigned>(activeNetwork_ + 1));
-    } else Serial.println("[WIFI] no saved router network");
+    } else {
+      BootDiagnostics::write("[WIFI][ATTEMPT] no configured router SSID in slots 1-3");
+      Serial.println("[WIFI] no saved router network");
+    }
   }
+  BootDiagnostics::printf("[WIFI][MODE] applied mode=%u AP=%s STA=%s status=%s slot=%u",
+    static_cast<unsigned>(mode_), apActive_ ? "ON" : "OFF", stationEnabled() ? "ON" : "OFF",
+    wifiStatusName(WiFi.status()), static_cast<unsigned>(activeNetwork_ + 1));
   Serial.printf("[WIFI] mode=%u AP=%s STA=%s\\n",
     static_cast<unsigned>(mode_), apActive_ ? "ON" : "OFF",
     stationEnabled() ? "ON" : "OFF");
 }
 
 bool WifiClient::setMode(Mode mode) {
-  if (static_cast<uint8_t>(mode) > static_cast<uint8_t>(Mode::SYNC_ONLY)) return false;
+  BootDiagnostics::printf("[WIFI][MODE] request old=%u new=%u started=%u",
+    static_cast<unsigned>(mode_), static_cast<unsigned>(mode), started_ ? 1U : 0U);
+  if (static_cast<uint8_t>(mode) > static_cast<uint8_t>(Mode::SYNC_ONLY)) {
+    BootDiagnostics::write("[WIFI][MODE] rejected invalid mode value");
+    return false;
+  }
   if (preferencesReady_ &&
       preferences_.putUChar("wmode", static_cast<uint8_t>(mode)) != sizeof(uint8_t)) return false;
   mode_ = mode;
@@ -438,16 +479,25 @@ void WifiClient::handleWifiStore() {
   if(!ssid.length()||ssid.length()>32||password.length()>63||!slotArg.length()||slot<1||slot>NETWORK_COUNT){
     server_.send(400,"text/plain; charset=utf-8","Bitte SSID, Passwort und Speicherplatz 1–3 angeben.");return;}
   const uint8_t index=static_cast<uint8_t>(slot-1);ssid.toCharArray(ssid_[index],sizeof(ssid_[index]));password.toCharArray(password_[index],sizeof(password_[index]));
-  if(!saveNetworks()){server_.send(500,"text/plain; charset=utf-8","Speichern fehlgeschlagen: NVS nicht verfügbar.");return;}
-  activeNetwork_=index;server_.send(200,"text/plain; charset=utf-8","WLAN in Platz "+String(slot)+" gespeichert. Verbindungsaufbau läuft.");
-  if(stationEnabled()){WiFi.disconnect(false,false);WiFi.begin(ssid_[index],password_[index]);lastAttemptMs_=millis();}
+  if(!saveNetworks()){BootDiagnostics::printf("[WIFI][STORE] slot=%d save FAILED",slot);server_.send(500,"text/plain; charset=utf-8","Speichern fehlgeschlagen: NVS nicht verfügbar.");return;}
+  activeNetwork_=index;
+  BootDiagnostics::printf("[WIFI][STORE] slot=%d saved ssid_len=%u password_present=%u station_enabled=%u",
+    slot, static_cast<unsigned>(ssid.length()), password.length() ? 1U : 0U, stationEnabled() ? 1U : 0U);
+  server_.send(200,"text/plain; charset=utf-8","WLAN in Platz "+String(slot)+" gespeichert. Verbindungsaufbau läuft.");
+  if(stationEnabled()){
+    WiFi.disconnect(false,false);
+    const wl_status_t beginStatus=WiFi.begin(ssid_[index],password_[index]);
+    lastAttemptMs_=millis();
+    BootDiagnostics::printf("[WIFI][ATTEMPT] source=web-store slot=%d begin_status=%s(%d)",slot,wifiStatusName(beginStatus),static_cast<int>(beginStatus));
+  }
 }
 void WifiClient::handleWifiClear() {
   const String slotArg=server_.arg("slot");const int slot=slotArg.toInt();
   if(!slotArg.length()||slot<1||slot>NETWORK_COUNT){server_.send(400,"text/plain; charset=utf-8","Ungültiger Speicherplatz.");return;}
   const uint8_t index=static_cast<uint8_t>(slot-1);const bool wasActive=index==activeNetwork_;
   ssid_[index][0]='\0';password_[index][0]='\0';
-  if(!saveNetworks()){server_.send(500,"text/plain; charset=utf-8","Löschen fehlgeschlagen: NVS nicht verfügbar.");return;}
+  if(!saveNetworks()){BootDiagnostics::printf("[WIFI][CLEAR] slot=%d save FAILED",slot);server_.send(500,"text/plain; charset=utf-8","Löschen fehlgeschlagen: NVS nicht verfügbar.");return;}
+  BootDiagnostics::printf("[WIFI][CLEAR] slot=%d was_active=%u",slot,wasActive ? 1U : 0U);
   server_.send(200,"text/plain; charset=utf-8","WLAN-Platz "+String(slot)+" wurde gelöscht.");
   if(wasActive&&stationEnabled()){WiFi.disconnect(false,false);connectNextNetwork();}
 }
@@ -532,20 +582,32 @@ void WifiClient::handleStatus() {
 }
 
 void WifiClient::connectNextNetwork() {
-  if(!stationEnabled())return;
+  if(!stationEnabled()) {
+    BootDiagnostics::write("[WIFI][FALLBACK] skipped: station mode disabled");
+    return;
+  }
   const uint8_t previous=activeNetwork_;
+  BootDiagnostics::printf("[WIFI][FALLBACK] begin previous_slot=%u status=%s",
+    static_cast<unsigned>(previous + 1), wifiStatusName(WiFi.status()));
   for(uint8_t offset=1;offset<=NETWORK_COUNT;++offset){
     const uint8_t candidate=static_cast<uint8_t>((previous+offset)%NETWORK_COUNT);
-    if(!ssid_[candidate][0])continue;
+    if(!ssid_[candidate][0]) {
+      BootDiagnostics::printf("[WIFI][FALLBACK] slot=%u skipped empty", static_cast<unsigned>(candidate + 1));
+      continue;
+    }
     activeNetwork_=candidate;
     // Explicitly tear down the previous STA attempt before switching slots.
     // Keep the setup AP running (eraseap=false, wifioff=false).
-    WiFi.disconnect(false, false);
+    const bool disconnected = WiFi.disconnect(false, false);
     delay(50);
-    WiFi.begin(ssid_[activeNetwork_],password_[activeNetwork_]);
+    const wl_status_t beginStatus = WiFi.begin(ssid_[activeNetwork_],password_[activeNetwork_]);
     lastAttemptMs_=millis();
+    BootDiagnostics::printf("[WIFI][FALLBACK] selected slot=%u disconnect_result=%u begin_status=%s(%d) AP=%s",
+      static_cast<unsigned>(activeNetwork_ + 1), disconnected ? 1U : 0U,
+      wifiStatusName(beginStatus), static_cast<int>(beginStatus), apActive_ ? "ON" : "OFF");
     Serial.printf("[WIFI] trying saved network slot %u\\n",static_cast<unsigned>(activeNetwork_+1));return;
   }
+  BootDiagnostics::write("[WIFI][FALLBACK] exhausted all three slots; no configured SSID available");
   Serial.println("[WIFI] no configured SSID found");
 }
 void WifiClient::update() {
@@ -554,12 +616,15 @@ void WifiClient::update() {
   const wl_status_t status = WiFi.status();
   const uint32_t now = millis();
   if (status != lastStatus_) {
+    const wl_status_t previousStatus = lastStatus_;
     lastStatus_ = status;
+    BootDiagnostics::printf("[WIFI][STATE] %s(%d)->%s(%d) slot=%u attempt_age_ms=%lu AP=%s",
+      wifiStatusName(previousStatus), static_cast<int>(previousStatus), wifiStatusName(status), static_cast<int>(status),
+      static_cast<unsigned>(activeNetwork_ + 1), static_cast<unsigned long>(now - lastAttemptMs_), apActive_ ? "ON" : "OFF");
     if (status == WL_CONNECTED) {
-      BootDiagnostics::printf("[WIFI] connected ssid='%s' ip=%s rssi=%d",
-        WiFi.SSID().c_str(), WiFi.localIP().toString().c_str(), WiFi.RSSI());
-    } else {
-      BootDiagnostics::printf("[WIFI] connection state changed status=%d", static_cast<int>(status));
+      BootDiagnostics::printf("[WIFI][CONNECTED] slot=%u ip=%s rssi=%d channel=%u heap=%u",
+        static_cast<unsigned>(activeNetwork_ + 1), WiFi.localIP().toString().c_str(), WiFi.RSSI(),
+        static_cast<unsigned>(WiFi.channel()), static_cast<unsigned>(ESP.getFreeHeap()));
     }
     if (status == WL_CONNECTED) {
       Serial.printf("[WIFI] connected; IP=%s RSSI=%d dBm\n",
@@ -571,12 +636,19 @@ void WifiClient::update() {
     }
   }
   if (stationEnabled() && status != WL_CONNECTED && now - lastAttemptMs_ >= RETRY_INTERVAL_MS) {
+    BootDiagnostics::printf("[WIFI][TIMEOUT] slot=%u status=%s(%d) elapsed_ms=%lu retry_after_ms=%lu",
+      static_cast<unsigned>(activeNetwork_ + 1), wifiStatusName(status), static_cast<int>(status),
+      static_cast<unsigned long>(now - lastAttemptMs_), static_cast<unsigned long>(RETRY_INTERVAL_MS));
     lastAttemptMs_ = now;
     connectNextNetwork();
   }
   if (status != WL_CONNECTED && now - lastLogMs_ >= 15000) {
     lastLogMs_ = now;
-    Serial.printf("[WIFI] waiting for router; setup page http://10.1.1.1/ (status=%d)\n",
+    BootDiagnostics::printf("[WIFI][WAIT] status=%s(%d) active_slot=%u AP=%s ip=%s elapsed_since_attempt_ms=%lu",
+      wifiStatusName(status), static_cast<int>(status), static_cast<unsigned>(activeNetwork_ + 1),
+      apActive_ ? "ON" : "OFF", apActive_ ? WiFi.softAPIP().toString().c_str() : "-",
+      static_cast<unsigned long>(now - lastAttemptMs_));
+    Serial.printf("[WIFI] waiting for router; setup page http://10.1.1.1/ (status=%d)\\n",
                   static_cast<int>(status));
   }
 }
