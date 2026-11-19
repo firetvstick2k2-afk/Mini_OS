@@ -3219,3 +3219,45 @@ Prüfstatus:
 - Ziel ist Funktions- und Darstellungsparität mit ATS Mini Dev, ohne die Modularität des Mini OS aufzugeben. Bestehende Mini-OS-Funktionen, Layouts und Dienste dürfen sich durch die Integration nicht gegenseitig beeinflussen.
 - Vor jeder Portierung beide Seiten live prüfen: vollständige relevante Dev-Dateien und Abhängigkeiten sowie aktuelle Mini-OS-Zieldateien, Aufrufstellen und Modulgrenzen. Fehlende Abhängigkeiten/Hardwareunterschiede transparent dokumentieren; keine Funktion als 1:1 übernommen bezeichnen, wenn sie technisch angepasst oder nur teilweise portiert wurde.
 - Alle Änderungen werden ausschließlich im aktiven Mini-OS-Repository committet. ATS Mini Dev bleibt Referenz/Quelle und wird nicht verändert.
+
+
+## Hauptmenü – schrittweise Neuordnung vor den Spectrum-Portierungen (2026-11-19)
+
+- Nutzer hat ausdrücklich einen schrittweisen Ablauf festgelegt: zuerst ausschließlich das Hauptmenü sortieren und speichern; danach den bisherigen Menüpunkt 17 („Suche“) samt alter Funktion entfernen und VHF Spectrum integrieren; erst anschließend Menüpunkt 18 („Scannen“) samt alter Funktion entfernen und All Band Spectrum integrieren. Die beiden Portierungen bleiben getrennte Schritte, damit keine Vermischung entsteht.
+- Der Namensvorschlag **„Speicherplätze“** für den bisherigen Menüpunkt „Speicher“ wurde vom Nutzer angenommen.
+- Hauptmenü in `firmware/ats-mini-os/src/display/DisplayDriver.cpp` neu sortiert:
+  1. Zurück
+  2. Lautstärke
+  3. Keypad
+  4. Bänder
+  5. Modulation
+  6. Step
+  7. BFO
+  8. Speicherplätze
+  9. Rauschsperre
+  10. Bandbreite
+  11. AGC / Dämpfung
+  12. Auto-Lautstärke
+  13. Soft Mute
+  14. VFO A/B*
+  15. Dual RX*
+  16. Frequenz*
+  17. VHF Spectrum
+  18. All Band Spectrum
+  19. Mondkalender
+  20. Wetterbericht
+  21. CW Dekoder
+  22. FT8/4
+  23. Dekoder-Frequenzen
+  24. Einstellungen
+- Navigation in `firmware/ats-mini-os/ats-mini-os.ino` passend zur neuen Reihenfolge umgestellt. Bestehende Scanner-Verhaltensseiten sind in diesem Zwischenstand absichtlich noch die bisherigen Handler: Menüpunkt 17 zeigt vorübergehend noch den alten ScanService (Seite 23), Menüpunkt 18 vorübergehend noch den alten SeekService (Seite 24). Diese Alt-Funktionen werden im jeweils nächsten separaten Portierungsschritt ersetzt, nicht in diesem Menü-Commit.
+- Menü-Rücksprungpositionen für Wetter, Mondkalender, CW/FT8 sowie Bänder, Modulation, Step, Bandbreite, AGC/Dämpfung, Rauschsperre und beide vorläufigen Scannerseiten an die neue Reihenfolge angepasst.
+- Die mit Stern markierten Einträge VFO A/B, Dual RX und Frequenz bleiben sichtbare, noch nicht implementierte Platzhalter. Auto-Lautstärke bleibt ebenfalls ohne erfundene Funktion.
+- Commits im aktiven Repository/Branch:
+  - `faf218ea0d7f514b73e284c94aa3e049eae66e2b` – Display-Menüreihenfolge.
+  - `118fba70b72bd0012a0caf312204c8363d2e6415` – Hauptmenü-Navigationsmapping.
+  - `63310270855aad42cd9d25c83aaba409b27598c2` – Rücksprungpositionen.
+  - `b942079ed24e82027fd19b69fc6243a76f92f7af` – Korrektur der Rücksprungpositionen für Band- und Bandbreitenmenü.
+- Alle Änderungen ausschließlich in `firetvstick2k2-afk/Mini_OS`, Branch `dev/first-build-preparation`. ATS Mini Dev wurde nicht verändert.
+- Verifikation: geänderte Menülabels, 24er-Zielseitenmapping und zentrale Rücksprungpositionen nach den Commits erneut vom Branch abgerufen. Build wurde nicht gestartet; Nutzer startet Builds selbst. Hardwaretest ausstehend.
+- Nächster Schritt nach Nutzerprüfung: ausschließlich alten Menüpunkt-17-Handler entfernen und VHF Spectrum als eigenständiges Mini-OS-Modul portieren. Erst nach Abschluss/Verifikation dieses Schritts den alten Menüpunkt-18-Handler entfernen und All Band Spectrum portieren.
