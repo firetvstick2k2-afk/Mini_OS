@@ -11,6 +11,7 @@
 #include "../menus/MenuSSB.h"
 #include "../weather/WeatherService.h"
 #include "../system/MoonCalendar.h"
+#include "../system/BootDiagnostics.h"
 #include "../cw/CwDecoderService.h"
 #include <LittleFS.h>
 #include <math.h>
@@ -1104,9 +1105,14 @@ void DisplayDriver::setTheme(uint8_t index) {
 }
 
 void DisplayDriver::setFmLayout(uint8_t mode) {
+  const uint8_t previousLayout = fmLayout_;
   fmLayout_ = mode <= 5 ? mode : 0;
   lastGeneration_ = UINT32_MAX;
   Serial.printf("[DISPLAY] FM layout: %s\\n", fmLayout_ == 5 ? "Live FFT Waterfall" : (fmLayout_ == 4 ? "Decoder" : (fmLayout_ == 1 ? "HJB" : (fmLayout_ == 3 ? "TEF6686 - Newsfeed" : (fmLayout_ == 2 ? "TEF6686 -FM Version" : "DAB Style")))));
+  if (previousLayout != fmLayout_) {
+    BootDiagnostics::printf("[DISPLAY][FM_LAYOUT] old=%u new=%u", static_cast<unsigned>(previousLayout), static_cast<unsigned>(fmLayout_));
+    BootDiagnostics::memorySnapshot(fmLayout_ == 5 ? "FM_FFT_LAYOUT_SELECTED" : "FM_LAYOUT_CHANGED");
+  }
 }
 
 void DisplayDriver::setAmLayout(uint8_t mode) {
