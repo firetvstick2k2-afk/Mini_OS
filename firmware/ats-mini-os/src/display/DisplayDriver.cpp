@@ -367,18 +367,49 @@ void drawBandOpeningScreen(Canvas& c, const BandOpeningService::Snapshot* snapsh
   char pageText[16]; snprintf(pageText,sizeof(pageText),"%u/%u",static_cast<unsigned>(page+1),static_cast<unsigned>(BandOpeningService::kPageCount));
   c.setFont(&lgfx::fonts::Font2); c.setTextColor(WHITE,DARK); c.drawRightString(pageText,c.width()-10,10);
   c.drawFastHLine(9,27,c.width()-18,BLUE);
+
+  // Show a dedicated connection/data wait screen instead of 29 misleading grey rows.
+  if (!snapshot || snapshot->waitingForWifi || !snapshot->valid) {
+    c.setTextDatum(MC_DATUM);
+    c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+    if (!snapshot || snapshot->waitingForWifi) {
+      c.setTextColor(YELLOW,DARK);
+      c.drawCenterString("WARTE AUF WLAN",c.width()/2,67);
+      c.setFont(&lgfx::fonts::Font2); c.setTextColor(WHITE,DARK);
+      c.drawCenterString("Verbinde mit gespeichertem Netzwerk",c.width()/2,94);
+      c.drawCenterString("Die Abfrage startet automatisch",c.width()/2,114);
+    } else if (snapshot->fetching) {
+      c.setTextColor(GREEN,DARK);
+      c.drawCenterString("WLAN VERBUNDEN",c.width()/2,67);
+      c.setFont(&lgfx::fonts::Font2); c.setTextColor(WHITE,DARK);
+      c.drawCenterString("Lade HF-Banddaten ...",c.width()/2,96);
+    } else if (snapshot->fetchFailed) {
+      c.setTextColor(RED,DARK);
+      c.drawCenterString("HF-DATEN NICHT ERHALTEN",c.width()/2,67);
+      c.setFont(&lgfx::fonts::Font2); c.setTextColor(WHITE,DARK);
+      c.drawCenterString("Neuer Versuch in 5 Minuten",c.width()/2,96);
+    } else {
+      c.setTextColor(YELLOW,DARK);
+      c.drawCenterString("WLAN VERBUNDEN",c.width()/2,67);
+      c.setFont(&lgfx::fonts::Font2); c.setTextColor(WHITE,DARK);
+      c.drawCenterString("Bereite HF-Abfrage vor ...",c.width()/2,96);
+    }
+    c.drawFastHLine(9,145,c.width()-18,BLUE);
+    c.setFont(&lgfx::fonts::Font0); c.setTextColor(GREY,DARK);
+    c.drawCenterString("Bitte warten",c.width()/2,153);
+    return;
+  }
+
   const uint8_t first=static_cast<uint8_t>(page*BandOpeningService::kBandsPerPage);
   for(uint8_t slot=0;slot<BandOpeningService::kBandsPerPage;++slot) {
     const uint8_t index=static_cast<uint8_t>(first+slot);
     if(index>=BandOpeningService::kBandCount) break;
     const auto& band=BandOpeningService::band(index);
     const int y=39+slot*53;
-    const auto row=snapshot ? snapshot->rows[index] : BandOpeningService::Row{};
+    const auto row=snapshot->rows[index];
     auto overall=row.day;
     if(overall==BandOpeningService::Status::Unknown) overall=row.night;
     else if(row.night!=BandOpeningService::Status::Unknown && static_cast<uint8_t>(row.night)<static_cast<uint8_t>(overall)) overall=row.night;
-    // Keep the last known good colors during temporary Wi-Fi/source outages.
-    // Unknown remains grey; the footer explicitly marks retained data as old.
     uint16_t dot=GREY;
     if(overall==BandOpeningService::Status::Poor) dot=RED;
     else if(overall==BandOpeningService::Status::Fair) dot=YELLOW;
@@ -393,7 +424,7 @@ void drawBandOpeningScreen(Canvas& c, const BandOpeningService::Snapshot* snapsh
     else snprintf(range,sizeof(range),"%lu - %lu kHz",static_cast<unsigned long>(band.minimumKHz),static_cast<unsigned long>(band.maximumKHz));
     c.drawString(range,49,y+23);
     c.setTextDatum(TR_DATUM); c.setTextColor(GREY,DARK);
-    if(index==BandOpeningService::kBandCount-1 && snapshot && snapshot->fmMufValid && !snapshot->fmMufStale) {
+    if(index==BandOpeningService::kBandCount-1 && snapshot->fmMufValid && !snapshot->fmMufStale) {
       char mufText[24]; snprintf(mufText,sizeof(mufText),"MUF %.1f MHz",snapshot->fmMufMHz);
       c.drawString(mufText,c.width()-10,y+23);
     } else c.drawString(band.type,c.width()-10,y+23);
@@ -401,16 +432,12 @@ void drawBandOpeningScreen(Canvas& c, const BandOpeningService::Snapshot* snapsh
   }
   c.drawFastHLine(9,145,c.width()-18,BLUE);
   c.setTextDatum(TL_DATUM); c.setFont(&lgfx::fonts::Font0); c.setTextColor(GREY,DARK);
-  if(!snapshot || !snapshot->valid) {
-    c.drawString(snapshot && snapshot->fetching ? "Lade HF-Daten..." : "Grau = keine verlaesslichen Daten",10,150);
-  } else {
-    int year=0,month=0,day=0,hour=0,minute=0;
-    char stamp[32] = "Zeitstempel unbekannt";
-    if(sscanf(snapshot->sourceUpdated,"%4d-%2d-%2dT%2d:%2d",&year,&month,&day,&hour,&minute)==5)
-      snprintf(stamp,sizeof(stamp),"Stand: %02d.%02d.%04d %02d:%02d UTC",day,month,year,hour,minute);
-    c.drawString(stamp,10,150);
-    if(snapshot->stale) c.drawRightString("ALT",c.width()-10,150);
-  }
+  int year=0,month=0,day=0,hour=0,minute=0;
+  char stamp[32] = "Zeitstempel unbekannt";
+  if(sscanf(snapshot->sourceUpdated,"%4d-%2d-%2dT%2d:%2d",&year,&month,&day,&hour,&minute)==5)
+    snprintf(stamp,sizeof(stamp),"Stand: %02d.%02d.%04d %02d:%02d UTC",day,month,year,hour,minute);
+  c.drawString(stamp,10,150);
+  if(snapshot->stale) c.drawRightString("ALT",c.width()-10,150);
 }
 
 template <typename Canvas>
