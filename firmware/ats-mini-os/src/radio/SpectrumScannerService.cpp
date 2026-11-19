@@ -70,6 +70,12 @@ bool SpectrumScannerService::clickInput(bool shortPress,RadioCore& radio) {
   return true;
 }
 bool SpectrumScannerService::beginSweep(RadioCore& radio) {
+  if(kind_==Kind::VhfFm){
+    const uint8_t region=radio.fmRegion();
+    const uint32_t fmMin=region==2?76000UL:(region==1?87900UL:87500UL);
+    const uint32_t fmMax=region==2?95000UL:(region==1?107900UL:108000UL);
+    if(startKHz_<fmMin||endKHz_>fmMax){inputError_=true;return false;}
+  }
   saved_=radio.captureState();savedValid_=true;
   const uint8_t targetBand=kind_==Kind::VhfFm?0:1;
   if(!radio.selectBand(targetBand)){state_=State::Error;restore(radio);return false;}
