@@ -3390,3 +3390,15 @@ Prüfstatus:
   - `5085b439c4ffe6ade6c21da78660764b1566d5e7` – Panorama-Service-Header
 - Keine Änderungen an FM Audio FFT, Decoder-Wasserfall, TEF6686-Layout, Spectrum-Scanner oder anderen Layouts.
 - Build/Actions/Flash wurden nicht gestartet. Der Nutzer startet den nächsten Build selbst. Nach dem Löschen ist ein erneuter Compile-only-Build erforderlich, um zu bestätigen, dass der gemeldete Include-Fehler behoben ist.
+
+
+## VHF- und All-Band-Spectrum: Tune-Complete-Polling statt fixer Wartezeit (2026-11-19)
+
+- Auf `dev/first-build-preparation` wurde die Scan-Timing-Logik an das Verhalten aus ATS Mini Dev angeglichen. VHF Spectrum und All Band Spectrum verwenden denselben `SpectrumScannerService`; die Optimierung gilt deshalb für beide Scanner.
+- Bisher wartete jeder Messpunkt pauschal 360 ms. Jetzt fragt der kooperative Scan nach mindestens 10 ms in 10-ms-Abständen den SI4735-Tune-Status ab und misst, sobald `STCINT` (Tune Complete) gesetzt ist. Die Sicherheitsobergrenze bleibt 350 ms; bei ausbleibendem STC wird nach dem Timeout wie in der Referenz fortgefahren.
+- Die SI4735-Bibliothek bietet `getStatus(INTACK, CANCEL)`, `getTuneCompleteTriggered()` und `setMaxDelaySetFrequency()`. Die Scan-Schnittstelle kapselt diese Aufrufe im TunerDriver; normale Radio-Tuning-Aufrufe bleiben unverändert.
+- Wie in ATS Mini Dev wird vor jedem Scan-Tune der vorherige STC-Status mit `getStatus(1, 0)` quittiert. Während des Scans wird die Bibliothekswartezeit nach `setFrequency` auf 60 ms gesetzt und danach wieder auf den normalen Wert 30 ms zurückgesetzt.
+- Während eines aktiven Spektrum-Scans pausiert `RadioCore::update()` seine regulären 500-ms-RSSI- und 250-ms-RDS-Polls, damit diese Hintergrundabfragen die Scan-Tune-Statusfolge nicht stören. Die Messung fragt RSSI/SNR weiterhin gezielt nach abgeschlossenem Tune ab.
+- Live-Scan-Anzeige, Frequenzraster, Messpunktpuffer, Peak-Auswahl und Layouts wurden nicht umgestaltet. Keine Änderungen an Decoder-Wasserfall, FM-Audio-FFT oder TEF6686-Layout.
+- Geänderte Dateien: `SpectrumScannerService.cpp/.h`, `RadioCore.cpp/.h`, `TunerDriver.cpp/.h`.
+- Statische Prüfung: Quelltextanker und Schnittstellen wurden geprüft; anschließend werden die geänderten Dateien und dieses Handover erneut aus dem Branch abgerufen. Kein Build, keine GitHub Action und kein Flash wurden gestartet. Der Nutzer testet VHF und All Band selbst.
