@@ -200,6 +200,9 @@ void WifiClient::startWebServer() {
   server_.on("/", HTTP_GET, [this]() { handleRoot(); });
 
   server_.on("/wifi/save", HTTP_POST, [this]() { handleSave(); });
+  server_.on("/wifi/scan", HTTP_GET, [this]() { handleWifiScan(); });
+  server_.on("/wifi/store", HTTP_POST, [this]() { handleWifiStore(); });
+  server_.on("/wifi/clear", HTTP_POST, [this]() { handleWifiClear(); });
   server_.on("/splash.png", HTTP_GET, [this]() {
     if (!SplashService::exists()) return server_.send(404, "text/plain; charset=utf-8", "Kein Bootbild gespeichert.");
     File image = LittleFS.open(SplashService::IMAGE_PATH, "r");
@@ -241,29 +244,24 @@ String WifiClient::htmlEscape(const String& value) {
 
 void WifiClient::handleRoot() {
   String page;
-  page.reserve(6500);
+  page.reserve(7600);
   page += F("<!doctype html><html lang='de'><head><meta name='viewport' content='width=device-width,initial-scale=1'>"
             "<meta charset='utf-8'><title>ATS Mini OS - WLAN</title><style>"
             "body{font:16px Arial,sans-serif;background:#080d18;color:#eef4ff;margin:0;padding:18px}"
             "main{max-width:560px;margin:auto}h1{color:#65e6c4}section{background:#101d32;border:1px solid #176b83;"
             "padding:14px;margin:14px 0;border-radius:8px}label{display:block;margin:10px 0 4px;color:#a8c9d8}"
-            "input{box-sizing:border-box;width:100%;padding:11px;border:1px solid #426276;border-radius:4px;"
-            "background:#07111d;color:white}button{padding:12px 18px;background:#087e91;color:white;border:0;"
-            "border-radius:4px;font-weight:bold}small{color:#9bb2c2}</style></head><body><main>"
+            "input,select{box-sizing:border-box;width:100%;padding:11px;border:1px solid #426276;border-radius:4px;background:#07111d;color:white}"
+            "button{padding:12px 18px;background:#087e91;color:white;border:0;border-radius:4px;font-weight:bold;margin:4px}"
+            "small{color:#9bb2c2}.net{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #29445a}"
+            ".net button{padding:8px 10px}.muted{color:#9bb2c2}</style></head><body><main>"
             "<h1>ATS Mini OS</h1><h2>WLAN-Einrichtung</h2>"
-            "<p>Bis zu drei Netzwerke speichern. Das erste verfügbare Netzwerk wird verwendet.</p>");
-  for (uint8_t i = 0; i < NETWORK_COUNT; ++i) {
-    page += F("<section><h3>WLAN Netzwerk ");
-    page += String(i + 1);
-    page += F("</h3><label>SSID</label><input name='ssid");
-    page += String(i + 1);
-    page += F("' form='wifi' maxlength='32' value='");
-    page += htmlEscape(String(ssid_[i]));
-    page += F("'><label>Passwort</label><input type='password' name='pass");
-    page += String(i + 1);
-    page += F("' form='wifi' maxlength='63' placeholder='Leer lassen, um das gespeicherte Passwort zu behalten'>");
-    page += F("</section>");
-  }
+            "<section><h3>Gespeicherte Netzwerke</h3><div id='slots'>Wird geladen ...</div></section>"
+            "<section><h3>Netzwerk hinzufügen</h3><p>Netzwerke in Reichweite suchen und auswählen.</p>"
+            "<button type='button' id='scan'>WLAN-Netze suchen</button><div id='scanlist' class='muted'></div>"
+            "<form id='wifiForm'><label>Ausgewählte SSID</label><input id='ssid' name='ssid' maxlength='32' required>"
+            "<label>WLAN-Passwort</label><input id='password' name='password' type='password' maxlength='63' autocomplete='new-password'>"
+            "<label>Speicherplatz</label><select id='slot' name='slot'></select>"
+            "<button type='submit'>Speichern und verbinden</button></form><p id='message' class='muted'></p></section>");
   page += F("<section><h2>News-Ticker</h2><p>Eigene RSS- oder Atom-Feeds eintragen. Aktualisierung nur bei aktiver WLAN-Internetverbindung.</p>");
   page += F("<form id='news' method='post' action='/news/save'><label><input style='width:auto' type='checkbox' name='newson' value='1'");
   if (newsConfig_.enabled) page += F(" checked");
@@ -292,13 +290,19 @@ void WifiClient::handleRoot() {
     page += F("<p><small>Aktuell ist kein Bootbild gespeichert.</small></p>");
   }
   page += F("<form method='post' action='/splash/upload' enctype='multipart/form-data'><label>PNG-Datei auswählen</label><input type='file' name='splash' accept='image/png,.png' required><button type='submit'>Bootbild hochladen</button></form></section>");
-  page += F("<form id='wifi' method='post' action='/wifi/save'><button type='submit'>Speichern und verbinden</button></form>"
-            "<section><h3>Verbindungsstatus</h3><p id='status'>Wird geladen ...</p>"
-            "<small>Einrichtungs-WLAN: ATS-Mini-OS-Setup · Adresse: 10.1.1.1</small></section>"
-            "<script>async function status(){try{let r=await fetch('/wifi/status');let j=await r.json();"
-            "document.getElementById('status').textContent=j.connected?'Verbunden: '+j.ssid+' · '+j.ip:"
-            "'Nicht mit Router verbunden · Setup-Seite bleibt erreichbar';}catch(e){}}status();setInterval(status,3000);</script>"
-            "</main></body></html>");
+  page += F("<section><h3>Verbindungsstatus</h3><p id='status'>Wird geladen ...</p><small>Einrichtungs-WLAN: ATS-Mini-OS-Setup · Adresse: 10.1.1.1</small></section>"
+            "<script>const $=id=>document.getElementById(id);"
+            "async function loadSlots(){try{let r=await fetch('/wifi/status');let j=await r.json();$('slots').textContent='';$('slot').textContent='';"
+            "j.slots.forEach((s,i)=>{let o=document.createElement('option');o.value=i+1;o.textContent='Platz '+(i+1)+(s?' – '+s:' – Frei');$('slot').appendChild(o);"
+            "let row=document.createElement('div');row.className='net';let label=document.createElement('span');label.textContent='Platz '+(i+1)+': '+(s||'Nicht belegt');row.appendChild(label);"
+            "if(s){let b=document.createElement('button');b.type='button';b.textContent='Löschen';b.onclick=()=>clearSlot(i+1);row.appendChild(b);}$('slots').appendChild(row);});"
+            "}catch(e){$('slots').textContent='Speicherplätze konnten nicht geladen werden.';}}"
+            "async function clearSlot(slot){if(!confirm('WLAN-Platz '+slot+' wirklich löschen?'))return;let r=await fetch('/wifi/clear',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'slot='+slot});$('message').textContent=await r.text();loadSlots();}"
+            "$('scan').onclick=async()=>{$('scanlist').textContent='Suche läuft ...';try{let r=await fetch('/wifi/scan');let j=await r.json();$('scanlist').textContent='';if(!j.networks.length){$('scanlist').textContent='Keine WLAN-Netze gefunden.';return;}"
+            "j.networks.forEach(n=>{let b=document.createElement('button');b.type='button';b.textContent=n.ssid+' ('+n.rssi+' dBm)'+(n.open?' · offen':'');b.onclick=()=>{$('ssid').value=n.ssid;$('password').focus();};$('scanlist').appendChild(b);});}catch(e){$('scanlist').textContent='WLAN-Suche fehlgeschlagen.';}};"
+            "$('wifiForm').onsubmit=async e=>{e.preventDefault();let r=await fetch('/wifi/store',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:new URLSearchParams(new FormData(e.target))});$('message').textContent=await r.text();$('password').value='';loadSlots();};"
+            "async function status(){try{let r=await fetch('/wifi/status');let j=await r.json();$('status').textContent=j.connected?'Verbunden: '+j.ssid+' · '+j.ip:'Nicht mit Router verbunden · Setup-Seite bleibt erreichbar';}catch(e){}}"
+            "loadSlots();status();setInterval(status,3000);</script></main></body></html>");
   server_.send(200, "text/html; charset=utf-8", page);
 }
 
@@ -406,6 +410,47 @@ void WifiClient::handleSave() {
 }
 
 
+String WifiClient::jsonEscape(const String& value) {
+  String out;
+  out.reserve(value.length() + 8);
+  for (size_t i=0;i<value.length();++i) {
+    const uint8_t ch=static_cast<uint8_t>(value[i]);
+    if(ch=='"'||ch=='\\'){out+='\\';out+=static_cast<char>(ch);}
+    else if(ch=='\n')out+=F("\\n"); else if(ch=='\r')out+=F("\\r"); else if(ch=='\t')out+=F("\\t");
+    else if(ch<0x20)out+=' '; else out+=static_cast<char>(ch);
+  }
+  return out;
+}
+void WifiClient::handleWifiScan() {
+  if(!started_||mode_==Mode::OFF){server_.send(503,"application/json","{\"error\":\"WLAN aus\",\"networks\":[]}");return;}
+  const int16_t count=WiFi.scanNetworks(false,false,false,120);
+  if(count<0){WiFi.scanDelete();server_.send(503,"application/json","{\"error\":\"Scan fehlgeschlagen\",\"networks\":[]}");return;}
+  String json="{\"networks\":["; bool first=true;
+  for(int16_t i=0;i<count;++i){String name=WiFi.SSID(static_cast<uint8_t>(i));if(!name.length())continue;
+    if(!first)json+=',';first=false;json+="{\"ssid\":\"";json+=jsonEscape(name);json+="\",\"rssi\":";
+    json+=String(WiFi.RSSI(static_cast<uint8_t>(i)));json+=",\"open\":";
+    json+=WiFi.encryptionType(static_cast<uint8_t>(i))==WIFI_AUTH_OPEN?"true":"false";json+='}';}
+  json+="]}";WiFi.scanDelete();server_.send(200,"application/json",json);
+}
+void WifiClient::handleWifiStore() {
+  const String ssid=server_.arg("ssid"), password=server_.arg("password"), slotArg=server_.arg("slot");
+  const int slot=slotArg.toInt();
+  if(!ssid.length()||ssid.length()>32||password.length()>63||!slotArg.length()||slot<1||slot>NETWORK_COUNT){
+    server_.send(400,"text/plain; charset=utf-8","Bitte SSID, Passwort und Speicherplatz 1–3 angeben.");return;}
+  const uint8_t index=static_cast<uint8_t>(slot-1);ssid.toCharArray(ssid_[index],sizeof(ssid_[index]));password.toCharArray(password_[index],sizeof(password_[index]));
+  if(!saveNetworks()){server_.send(500,"text/plain; charset=utf-8","Speichern fehlgeschlagen: NVS nicht verfügbar.");return;}
+  activeNetwork_=index;server_.send(200,"text/plain; charset=utf-8","WLAN in Platz "+String(slot)+" gespeichert. Verbindungsaufbau läuft.");
+  if(stationEnabled()){WiFi.disconnect(false,false);WiFi.begin(ssid_[index],password_[index]);lastAttemptMs_=millis();}
+}
+void WifiClient::handleWifiClear() {
+  const String slotArg=server_.arg("slot");const int slot=slotArg.toInt();
+  if(!slotArg.length()||slot<1||slot>NETWORK_COUNT){server_.send(400,"text/plain; charset=utf-8","Ungültiger Speicherplatz.");return;}
+  const uint8_t index=static_cast<uint8_t>(slot-1);const bool wasActive=index==activeNetwork_;
+  ssid_[index][0]='\0';password_[index][0]='\0';
+  if(!saveNetworks()){server_.send(500,"text/plain; charset=utf-8","Löschen fehlgeschlagen: NVS nicht verfügbar.");return;}
+  server_.send(200,"text/plain; charset=utf-8","WLAN-Platz "+String(slot)+" wurde gelöscht.");
+  if(wasActive&&stationEnabled()){WiFi.disconnect(false,false);connectNextNetwork();}
+}
 void WifiClient::handleNewsSave() {
   if (!preferencesReady_) {
     server_.send(500, "text/plain; charset=utf-8", "Speichern fehlgeschlagen: NVS nicht verfügbar");
@@ -477,30 +522,26 @@ void WifiClient::handleWeatherSave() {
 }
 
 void WifiClient::handleStatus() {
-  const bool isConnected = connected();
-  String json = "{\"connected\":";
-  json += isConnected ? "true" : "false";
-  json += ",\"ssid\":\"";
-  if (isConnected) json += WiFi.SSID();
-  json += "\",\"ip\":\"";
-  json += isConnected ? WiFi.localIP().toString() : String("10.1.1.1");
-  json += "\"}";
-  server_.send(200, "application/json", json);
+  const bool isConnected=connected();
+  String json="{\"connected\":";json+=isConnected?"true":"false";
+  json+=",\"ssid\":\"";if(isConnected)json+=jsonEscape(WiFi.SSID());
+  json+="\",\"ip\":\"";json+=isConnected?WiFi.localIP().toString():String("10.1.1.1");
+  json+="\",\"slots\":[";
+  for(uint8_t i=0;i<NETWORK_COUNT;++i){if(i)json+=',';json+='"';json+=jsonEscape(String(ssid_[i]));json+='"';}
+  json+="]}";server_.send(200,"application/json",json);
 }
 
 void WifiClient::connectNextNetwork() {
-  if (!stationEnabled()) return;
-  for (uint8_t n = 0; n < NETWORK_COUNT; ++n) {
-    activeNetwork_ = static_cast<uint8_t>((activeNetwork_ + n) % NETWORK_COUNT);
-    if (!ssid_[activeNetwork_][0]) continue;
-    WiFi.begin(ssid_[activeNetwork_], password_[activeNetwork_]);
-    lastAttemptMs_ = millis();
-    Serial.printf("[WIFI] trying saved network slot %u\n", static_cast<unsigned>(activeNetwork_ + 1));
-    return;
+  if(!stationEnabled())return;
+  const uint8_t previous=activeNetwork_;
+  for(uint8_t offset=1;offset<=NETWORK_COUNT;++offset){
+    const uint8_t candidate=static_cast<uint8_t>((previous+offset)%NETWORK_COUNT);
+    if(!ssid_[candidate][0])continue;
+    activeNetwork_=candidate;WiFi.begin(ssid_[activeNetwork_],password_[activeNetwork_]);lastAttemptMs_=millis();
+    Serial.printf("[WIFI] trying saved network slot %u\\n",static_cast<unsigned>(activeNetwork_+1));return;
   }
   Serial.println("[WIFI] no configured SSID found");
 }
-
 void WifiClient::update() {
   if (!started_) return;
   if (serverStarted_ && mode_ != Mode::SYNC_ONLY) server_.handleClient();
