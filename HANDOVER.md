@@ -3475,3 +3475,31 @@ Prüfstatus:
 - Code-Commit: `bf3af14bfc3f59000ae94099f1f334e918602b3d`.
 - Quelle: Map For HAM Feed-Dokumentation, Update etwa alle 5 Minuten und Auslieferung letzter gültiger Werte bei Upstream-Ausfall: https://www.mapforham.com/hf-propagation/data-feeds/.
 - Noch offen: erneuter Compile-only-Build und Gerätetest durch den Nutzer. Kein Build, keine Action und kein Flash durch ChatGPT gestartet.
+
+
+## HF-Bandöffnungs-Monitor – Zeitstempel und Seitenlayout (2026-11-19)
+
+Auf `dev/first-build-preparation` wurde die Monitoranzeige überarbeitet:
+
+- Die 29 Bänder werden jetzt mit **2 großen Einträgen pro Seite** angezeigt. Daraus ergeben sich 15 tatsächlich benötigte Seiten; die Seitenzahl wird aus Bandanzahl und Einträgen pro Seite berechnet, nicht mehr fest auf 8 begrenzt.
+- Die Ampelpunkte sind größer und behalten die bisherige Farbgebung (Rot/Gelb/Grün/Grau) sowie den dunkelblauen Rahmen und cyan/weiße Beschriftungen.
+- Der echte `updated`-Zeitstempel aus dem Map-For-HAM-JSON wird im Snapshot gespeichert und am unteren Rand als Datum/Uhrzeit in UTC angezeigt.
+- Bei WLAN-Ausfall oder fehlgeschlagenem Abruf bleiben die zuletzt gültigen HF-Bewertungen und Ampelfarben sichtbar. Der Zeitstempel bleibt unverändert und ein deutliches **ALT** kennzeichnet den Stand als nicht aktuell. Nicht vorhandene Bewertungen bleiben grau.
+- Die Empfangs-/Radio-Layouts, insbesondere TEF6686 und Decoder-Wasserfall, wurden nicht geändert.
+
+Geänderte Dateien:
+- `BandOpeningService.h`
+- `BandOpeningService.cpp`
+- `DisplayDriver.cpp`
+- `ats-mini-os.ino`
+
+Commits:
+- `d7170da` – 2 Bänder pro Seite und dynamische Seitenzahl
+- `587f854` – Zeitstempel aus Datenquelle übernehmen
+- `76d38bc` – größere Monitorzeilen, Zeitstempel und ALT-Hinweis
+- `f8d3fd3` – Encoder-Navigation an dynamische Seitenzahl anpassen
+
+Prüfstatus:
+- Änderungen wurden auf dem aktiven Branch vorgenommen.
+- Quelltext-/Schnittstellenprüfung und erneutes Abrufen der Dateien stehen im Anschluss an die Commits.
+- Noch kein Build, keine GitHub Actions und kein Flashvorgang; Compile-only-Build und Gerätetest erfolgen durch den Nutzer.
