@@ -537,7 +537,13 @@ void WifiClient::connectNextNetwork() {
   for(uint8_t offset=1;offset<=NETWORK_COUNT;++offset){
     const uint8_t candidate=static_cast<uint8_t>((previous+offset)%NETWORK_COUNT);
     if(!ssid_[candidate][0])continue;
-    activeNetwork_=candidate;WiFi.begin(ssid_[activeNetwork_],password_[activeNetwork_]);lastAttemptMs_=millis();
+    activeNetwork_=candidate;
+    // Explicitly tear down the previous STA attempt before switching slots.
+    // Keep the setup AP running (eraseap=false, wifioff=false).
+    WiFi.disconnect(false, false);
+    delay(50);
+    WiFi.begin(ssid_[activeNetwork_],password_[activeNetwork_]);
+    lastAttemptMs_=millis();
     Serial.printf("[WIFI] trying saved network slot %u\\n",static_cast<unsigned>(activeNetwork_+1));return;
   }
   Serial.println("[WIFI] no configured SSID found");
