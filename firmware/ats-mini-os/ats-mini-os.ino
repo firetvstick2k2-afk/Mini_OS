@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <esp_system.h>
-#include <esp_heap_caps.h>
 #include <LovyanGFX.hpp>
 #include <LittleFS.h>
 #include <time.h>
@@ -390,16 +389,34 @@ void setup() {
   }
   // Display the existing LittleFS splash after display/radio initialization.
   // The image is optional; a missing or invalid file leaves normal startup unchanged.
-  if (storageReady) display.showBootSplash(2500);
   wifi.setNewsService(&newsService);
   wifi.setWeatherService(&weatherService);
-  // HF monitor worker is created only when the monitor is opened and Wi-Fi is ready.
+  // Preserve the original startup allocation: the HF monitor worker is created during boot.
+  bandOpeningService.begin();
   BootDiagnostics::printf("[BOOT][STAGE] before wifi.begin free_heap=%u max_block=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
   wifi.begin();
   BootDiagnostics::printf("[BOOT][STAGE] after wifi.begin (deferred) free_heap=%u max_block=%u min_free=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
   // Layout-dependent networking is requested at the start of loop(), not during setup.
   BootDiagnostics::printf("[BOOT][STAGE] setup complete free_heap=%u max_block=%u min_free=%u loop_stack_high_water=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()), static_cast<unsigned>(uxTaskGetStackHighWaterMark(nullptr)));
   Serial.printf("CPU profile: %s\n",performance.profileName());
+
+  // Show the splash only after all startup services and their RAM allocations are ready.
+  const uint32_t freePsramBytes = ESP.getPsramSize() ? ESP.getFreePsram() : 0;
+  const uint32_t freeSramBytes = ESP.getFreeHeap();
+  if (display.showBootSplashMemory(freePsramBytes, freeSramBytes)) {
+    BootDiagnostics::printf("[BOOT][PAUSE] waiting for encoder click; free_psram=%u free_sram=%u",
+      static_cast<unsigned>(freePsramBytes), static_cast<unsigned>(freeSramBytes));
+    bool bootContinue = false;
+    while (!bootContinue) {
+      encoder.update();
+      EncoderEvent bootEvent;
+      while (encoder.poll(bootEvent)) {
+        if (bootEvent.type == EncoderEventType::ShortPress) bootContinue = true;
+      }
+      if (!bootContinue) delay(5);
+    }
+    BootDiagnostics::write("[BOOT][PAUSE] user confirmed startup; entering radio layout");
+  }
 }
 void loop() {
   static bool firstLoopDiagnostics = true;
@@ -1111,7 +1128,7 @@ void loop() {
   const uint32_t now=millis();
   if(now-lastStatusMs>=2000) {
     lastStatusMs=now; const RadioSnapshot& s=radio.snapshot();
-    BootDiagnostics::printf("[BOOT][HEARTBEAT] uptime_ms=%lu free_heap=%u max_block=%u min_free=%u int_free=%u int_largest=%u psram_total=%u psram_free=%u psram_largest=%u loop_stack_high_water=%u wifi=%d", static_cast<unsigned long>(now), static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()), static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)), static_cast<unsigned>(heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT)), static_cast<unsigned>(heap_caps_get_total_size(MALLOC_CAP_SPIRAM)), static_cast<unsigned>(heap_caps_get_free_size(MALLOC_CAP_SPIRAM)), static_cast<unsigned>(heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM)), static_cast<unsigned>(uxTaskGetStackHighWaterMark(nullptr)), static_cast<int>(WiFi.status()));
+    BootDiagnostics::printf("[BOOT][HEARTBEAT] uptime_ms=%lu free_heap=%u max_block=%u min_free=%u loop_stack_high_water=%u wifi=%d", static_cast<unsigned long>(now), static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()), static_cast<unsigned>(uxTaskGetStackHighWaterMark(nullptr)), static_cast<int>(WiFi.status()));
     Serial.printf("[RADIO] ready=%s freq=%.1f MHz RSSI=%d SNR=%d stereo=%s cpu=%u MHz\n",
       radio.isReady()?"yes":"no",s.frequencyKHz/1000.0f,s.rssi,s.snr,
       s.stereo?"yes":"no",static_cast<unsigned>(getCpuFrequencyMhz()));
