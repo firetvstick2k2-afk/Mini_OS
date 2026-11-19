@@ -118,7 +118,14 @@ bool BandOpeningService::begin() {
   return created == pdPASS;
 }
 void BandOpeningService::update(bool wifiConnected) {
+  const bool wasConnected = wifiConnected_;
   wifiConnected_ = wifiConnected;
+  // Opening the monitor (or regaining router access) must trigger a fetch
+  // immediately instead of waiting for the previous five-minute cadence.
+  if (wifiConnected && !wasConnected) {
+    refreshRequested_ = true;
+    BootDiagnostics::write("[BANDOPEN] Wi-Fi available; immediate refresh requested");
+  }
   if (!wifiConnected) {
     Snapshot current = snapshot();
     if (current.valid || current.fmMufValid) {
@@ -251,8 +258,12 @@ bool BandOpeningService::fetchConditions(Snapshot& result) {
   strncpy(result.sourceUpdated, updated, sizeof(result.sourceUpdated) - 1);
   result.sourceUpdated[sizeof(result.sourceUpdated) - 1] = '\0';
   JsonArrayConst details = doc["bands_detail"].as<JsonArrayConst>();
-  if (details.isNull() || details.size() == 0) return false;
+  if (details.isNull() || details.size() == 0) {
+    BootDiagnostics::write("[BANDOPEN] feed has no bands_detail array");
+    return false;
+  }
 
+  uint8_t matchedBands = 0;
   for (uint8_t i = 0; i < kBandCount; ++i) {
     result.rows[i] = {};
     const uint16_t meters = kBands[i].bandMeters;
@@ -261,13 +272,15 @@ bool BandOpeningService::fetchConditions(Snapshot& result) {
       if ((item["band_m"] | 0) == meters) {
         result.rows[i].day = parseStatus(item["day"]);
         result.rows[i].night = parseStatus(item["night"]);
+        if (result.rows[i].day != Status::Unknown || result.rows[i].night != Status::Unknown)
+          ++matchedBands;
         break;
       }
     }
   }
   // At least one known amateur band must have a usable assessment.
-  bool any = false;
-  for (uint8_t i = 0; i < kBandCount; ++i)
-    any = any || result.rows[i].day != Status::Unknown || result.rows[i].night != Status::Unknown;
+  const bool any = matchedBands > 0;
+  BootDiagnostics::printf("[BANDOPEN] parsed %u/10 rated HF bands; source updated=%s\\n",
+    static_cast<unsigned>(matchedBands), updated);
   return any;
 }
