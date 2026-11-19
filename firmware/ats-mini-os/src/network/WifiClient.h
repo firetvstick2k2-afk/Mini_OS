@@ -62,6 +62,9 @@ private:
   void startWebServer();
   void handleRoot();
   void handleSave();
+  void handleWifiScan();
+  void handleWifiStore();
+  void handleWifiClear();
   void handleStatus();
   void handleNewsSave();
   void handleWeatherSave();
@@ -69,4 +72,5 @@ private:
   void handleSplashUploadComplete();
   void loadNewsConfig();
   static String htmlEscape(const String& value);
+  static String jsonEscape(const String& value);
 };
