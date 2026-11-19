@@ -80,24 +80,34 @@ bool SpectrumScannerService::beginSweep(RadioCore& radio) {
   const uint8_t targetBand=kind_==Kind::VhfFm?0:1;
   if(!radio.selectBand(targetBand)){state_=State::Error;restore(radio);return false;}
   const RadioModulation mode=kind_==Kind::VhfFm?RadioModulation::FM:kAllModes[modeIndex_];
-  if(!radio.setModulation(mode)||!radio.setBfoOffsetHz(0)||!radio.setVolume(0)||!radio.tune(startKHz_)){state_=State::Error;restore(radio);return false;}
+  if(!radio.setModulation(mode)||!radio.setBfoOffsetHz(0)||!radio.setVolume(0)||
+     !radio.beginSpectrumScan()){state_=State::Error;restore(radio);return false;}
+  spectrumScanActive_=true;
+  if(!radio.tuneSpectrumScan(startKHz_)){state_=State::Error;restore(radio);return false;}
   planned_=static_cast<uint16_t>((endKHz_-startKHz_)/(kind_==Kind::VhfFm?100:stepKHz_)+1);
-  count_=scanIndex_=selected_=0;state_=State::Running;tuneStartedMs_=millis();
+  count_=scanIndex_=selected_=0;state_=State::Running;tuneStartedMs_=lastTunePollMs_=millis();
   return true;
 }
-void SpectrumScannerService::restore(RadioCore& radio){if(savedValid_){radio.restoreState(saved_);savedValid_=false;}}
+void SpectrumScannerService::restore(RadioCore& radio){
+  if(spectrumScanActive_){radio.endSpectrumScan();spectrumScanActive_=false;}
+  if(savedValid_){radio.restoreState(saved_);savedValid_=false;}
+}
 void SpectrumScannerService::cancel(RadioCore& radio){if(state_==State::Running||state_==State::Done||state_==State::Error)restore(radio);state_=State::Aborted;}
 void SpectrumScannerService::tick(RadioCore& radio) {
   if(state_!=State::Running||!radio.isReady())return;
-  if(millis()-tuneStartedMs_<360)return;
+  const uint32_t now=millis();
+  if(now-lastTunePollMs_<10)return;
+  lastTunePollMs_=now;
+  const bool tuneComplete=radio.spectrumTuneComplete();
+  if(!tuneComplete&&now-tuneStartedMs_<350)return;
   radio.refreshSignalQuality();
   const RadioSnapshot& s=radio.snapshot();
   Point& p=points_[scanIndex_];p.frequencyKHz=startKHz_+static_cast<uint32_t>(scanIndex_)*(kind_==Kind::VhfFm?100:stepKHz_);
   p.rssi=static_cast<uint8_t>(constrain(s.rssi,0,255));p.snr=static_cast<uint8_t>(constrain(s.snr,0,255));
   ++scanIndex_;count_=scanIndex_;
-  if(scanIndex_>=planned_){state_=State::Done;selected_=count_/2;radio.restoreState(saved_);return;}
-  if(!radio.tune(startKHz_+static_cast<uint32_t>(scanIndex_)*(kind_==Kind::VhfFm?100:stepKHz_))){state_=State::Error;restore(radio);return;}
-  tuneStartedMs_=millis();
+  if(scanIndex_>=planned_){state_=State::Done;selected_=count_/2;restore(radio);return;}
+  if(!radio.tuneSpectrumScan(startKHz_+static_cast<uint32_t>(scanIndex_)*(kind_==Kind::VhfFm?100:stepKHz_))){state_=State::Error;restore(radio);return;}
+  tuneStartedMs_=lastTunePollMs_=millis();
 }
 void SpectrumScannerService::rotatePeak(int16_t delta,RadioCore& radio) {
   if(state_!=State::Done||count_<2||!delta)return;
