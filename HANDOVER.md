@@ -3419,3 +3419,5 @@ Prüfstatus:
 - Ergänzung: LW und die drei vorhandenen MW-Band-Presets (MW1/MW2/MW3) werden ebenfalls als SWL-Zeilen angezeigt. Die Monitorliste enthält die ausgewählten LW/MW/KW- und VHF/FM-Presets sowie zusätzliche 2m-/70cm-Informationszeilen; das Sammel-Preset ALL und das breite CB-Preset 25–28 MHz werden nicht doppelt neben dem dedizierten 11m-Fenster angezeigt.
 
 - Aktualitätsprüfung ergänzt: Der Feed-Zeitstempel wird validiert; bei synchronisierter Systemuhr werden Daten älter als 20 Minuten oder deutlich aus der Zukunft verworfen. Bei fehlgeschlagenem Abruf wird der letzte Stand als veraltet markiert und die Ampel grau.
+
+- FM-DX.org ist nun zusätzlich als reine UKW-MUF-Information eingebunden: `/includes/tools/get_muf.php`, Region `europe.max_frequency` (MHz laut Community-Plugin-Referenz), Abruf höchstens einmal pro 60 Sekunden. Die Zahl wird neben der UKW/FM-Zeile angezeigt; der Ampelpunkt bleibt bewusst grau, da keine belastbaren Ampel-Schwellen/Methodik für diesen Endpunkt verifiziert wurden. Fehler/No data zeigen keine Zahl. Nutzung bleibt privat; keine Weiterverteilung.
