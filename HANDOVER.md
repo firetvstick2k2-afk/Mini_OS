@@ -3402,3 +3402,16 @@ Prüfstatus:
 - Live-Scan-Anzeige, Frequenzraster, Messpunktpuffer, Peak-Auswahl und Layouts wurden nicht umgestaltet. Keine Änderungen an Decoder-Wasserfall, FM-Audio-FFT oder TEF6686-Layout.
 - Geänderte Dateien: `SpectrumScannerService.cpp/.h`, `RadioCore.cpp/.h`, `TunerDriver.cpp/.h`.
 - Statische Prüfung: Quelltextanker und Schnittstellen wurden geprüft; anschließend werden die geänderten Dateien und dieses Handover erneut aus dem Branch abgerufen. Kein Build, keine GitHub Action und kein Flash wurden gestartet. Der Nutzer testet VHF und All Band selbst.
+
+
+## Privater HF-Bandöffnungs-Monitor (2026-11-19)
+
+- Ausschließlich im privaten Entwicklungsbranch `dev/first-build-preparation` des Repositories `firetvstick2k2-afk/Mini_OS`; keine Änderung an `main`, kein Merge und keine allgemeine Veröffentlichung.
+- Neues isoliertes Modul `src/radio/BandOpeningService.h/.cpp`. Der Dienst fragt Map For HAM unter `https://www.mapforham.com/hf-propagation/data/solar.json` ab. Die Quelle erlaubt persönliche/nichtkommerzielle Nutzung und verlangt einen Rückverweis; sie aktualisiert ungefähr alle fünf Minuten. Der Dienst pollt daher höchstens alle fünf Minuten, nutzt HTTPS mit ESP32-Cert-Bundle, begrenzt die Antwortgröße und verwendet einen separaten FreeRTOS-Worker.
+- Direkt übertragene HF-Einstufungen (Poor/Fair/Good) werden als Rot/Gelb/Grün angezeigt. Für die Ampel wird konservativ der schlechtere von Tag- und Nachtwert verwendet. Veraltete Daten, fehlende Einträge und nicht unterstützte Bänder werden grau angezeigt; es werden keine Werte erfunden.
+- Die Detaildaten der Quelle decken nur 160m, 80m, 60m, 40m, 30m, 20m, 17m, 15m, 12m, 10m und 6m ab. In der ATS Mini BandManager-Liste vorhandene Rundfunk-/SWL-Bänder, 11m-CB, 2m, 70cm und UKW/FM bleiben daher zunächst grau. 6m wird nicht angezeigt, da es nicht als Band im aktuellen BandManager geführt wird. 2m wird für die europäische 144–146-MHz-Zuteilung dargestellt; 70cm 430–440 MHz. Die beiden VHF/UHF-Bänder sind hier reine Informationszeilen, keine Aussage über Empfangsfähigkeit des ATS Mini.
+- 2m/70cm-Tropo, UKW-FM-DX/MUF und CB sind nicht mit unbestätigten HTML-Abfragen oder unbelegten Schwellenwerten verknüpft. FM-DX.orgs `europe.max_frequency` und Tropocast werden erst nach geklärter Datendefinition/Nutzungsfreigabe und belastbarer Einstufung integriert. Bis dahin bleiben diese Punkte grau.
+- Hauptmenüpunkt `HF Bandöffnungs-Monitor`, Seite 29, sieben Encoder-Seiten mit höchstens vier Zeilen je Seite. Darstellung in dunklem Blau mit gut sichtbaren Ampelkreisen. Kurzer Encoder-Klick schließt den Monitor; Drehen wechselt die Seiten. WLAN wird erst beim Öffnen angefordert.
+- Geänderte Integrationsdateien: `ats-mini-os.ino`, `DisplayDriver.cpp/.h`; neue Service-Dateien oben. Keine Änderungen an TEF6686-Radioansicht, Decoder-Wasserfall, FM-FFT oder Spectrum-Scanner.
+- Quellenhinweis: Map For HAM, Solar Data Feeds und Methodology: https://www.mapforham.com/hf-propagation/data-feeds/ und https://www.mapforham.com/hf-propagation/about/. Die Prognose ist ein unverbindlicher Indikator, keine Empfangsgarantie.
+- Kein Build, keine GitHub Action und kein Flash gestartet. Nutzer führt den Build/Test selbst durch.
