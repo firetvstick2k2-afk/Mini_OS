@@ -826,7 +826,7 @@ void loop() {
           menuSelection = 0;
         } else if (menuPage == 25 && menuSelection == 0) {
           menuPage = 0;
-          menuSelection = 13;
+          menuSelection = 8;
         } else if (menuPage == 25 && menuSelection >= 1 && menuSelection <= 7) {
           const uint8_t threshold = menuSelection == 1 ? 0 :
             (menuSelection <= 4 ? static_cast<uint8_t>(menuSelection * 10) :
@@ -862,7 +862,7 @@ void loop() {
           }
         } else if (menuPage == 11 && menuSelection == 0) {
           menuPage = 0;
-          menuSelection = 5;
+          menuSelection = 10;
         } else if (menuPage == 11 && menuSelection == 1) {
           if (radio.setAgcAutomatic(true)) {
             const bool saved = settingsStore.saveAgcAutomatic(true);
@@ -894,7 +894,7 @@ void loop() {
               static_cast<unsigned>(gain), saved ? "saved" : "save failed");
           }
         } else if (menuPage == 16 && menuSelection == 0) {
-          menuPage = 0; menuSelection = 3;
+          menuPage = 0; menuSelection = 4;
         } else if (menuPage == 16 && menuSelection > 0) {
           const bool fmBand = radio.snapshot().bandMinimumKHz >= 64000;
           const RadioModulation requested = fmBand ? RadioModulation::FM :
@@ -909,7 +909,7 @@ void loop() {
           menuSelection = static_cast<uint8_t>(radio.currentBandIndex() + 1);
         } else if (menuPage == 8 && menuSelection == 0) {
           menuPage = 0;
-          menuSelection = 2;
+          menuSelection = 9;
         } else if (menuPage == 8 && menuSelection > 0) {
           if (radio.selectBand(static_cast<uint8_t>(menuSelection - 1))) {
             display.notifyTuning();
@@ -922,7 +922,7 @@ void loop() {
           menuSelection = static_cast<uint8_t>(radio.stepChoice() + 1);
         } else if (menuPage == 9 && menuSelection == 0) {
           menuPage = 0;
-          menuSelection = 4;
+          menuSelection = 5;
         } else if (menuPage == 9 && menuSelection > 0) {
           if (radio.setStepChoice(static_cast<uint8_t>(menuSelection - 1))) {
             closeMenuToRadio("step size selected");
@@ -974,8 +974,8 @@ void loop() {
           }
           else if (menuPage == 23) { scanner.stop(radio); menuPage=0; menuSelection=16; }
           else if (menuPage == 24) { seeker.stop(); menuPage=0; menuSelection=17; }
-          else if (menuPage == 21) { cwDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=23; }
-          else if (menuPage == 28) { ftxDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=20; }
+          else if (menuPage == 21) { cwDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=20; }
+          else if (menuPage == 28) { ftxDecoder.exit(); restoreWifiAfterDecoder(); menuPage=0; menuSelection=21; }
           else if (decoderCategoryForPage(menuPage) >= 0) { menuPage=26; menuSelection=0; lastDecoderPreviewSelection=-1; }
           else if (sliderAdjustmentActive) {
             closeMenuToRadio("slider adjustment finished with long press");
