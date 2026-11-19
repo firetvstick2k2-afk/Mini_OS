@@ -112,6 +112,7 @@ const char* BandOpeningService::statusText(Status status) {
 bool BandOpeningService::begin() {
   if (taskHandle_) return true;
   Snapshot initial;
+  initial.waitingForWifi = !wifiConnected_;
   publish(initial);
   const BaseType_t created = xTaskCreatePinnedToCore(taskEntry, "BandOpenWorker", 12288, this, 1, &taskHandle_, 0);
   BootDiagnostics::printf("[BANDOPEN] worker %s\n", created == pdPASS ? "created" : "creation failed");
@@ -132,6 +133,12 @@ void BandOpeningService::update(bool wifiConnected) {
   if (wifiConnected != wasConnected) {
     BootDiagnostics::printf("[BANDOPEN][GATE] monitor_data_access=%s wifi_status=%d snapshot_valid=%u",
       wifiConnected ? "ON" : "OFF", static_cast<int>(WiFi.status()), snapshot().valid ? 1U : 0U);
+  }
+  // The worker owns a 12 KiB stack. Do not reserve it during boot or while
+  // the HF monitor is closed; create it on the first connected monitor visit.
+  if (wifiConnected && !taskHandle_) {
+    const bool started = begin();
+    BootDiagnostics::printf("[BANDOPEN] on-demand worker start=%s", started ? "success" : "failed");
   }
   if (!wifiConnected) {
     Snapshot current = snapshot();
