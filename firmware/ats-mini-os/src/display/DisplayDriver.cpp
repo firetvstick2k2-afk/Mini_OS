@@ -355,6 +355,48 @@ void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8
 }
 
 template <typename Canvas>
+void drawBandOpeningScreen(Canvas& c, const BandOpeningService::Snapshot* snapshot, uint8_t page) {
+  constexpr uint16_t BLUE=0x001F, CYAN=0x07FF, GREEN=0x07E0;
+  constexpr uint16_t YELLOW=0xFFE0, RED=0xF800, GREY=0x8410, WHITE=0xFFFF, DARK=0x0000;
+  c.fillScreen(DARK);
+  c.drawRoundRect(3,3,c.width()-6,c.height()-6,7,BLUE);
+  c.setTextDatum(TL_DATUM);
+  c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  c.setTextColor(CYAN,DARK);
+  c.drawString("HF BANDOEFFNUNGS-MONITOR",10,7);
+  char pageText[16]; snprintf(pageText,sizeof(pageText),"%u/7",static_cast<unsigned>(page+1));
+  c.setFont(&lgfx::fonts::Font2); c.setTextColor(WHITE,DARK); c.drawRightString(pageText,c.width()-10,10);
+  c.drawFastHLine(9,27,c.width()-18,BLUE);
+  const uint8_t first=static_cast<uint8_t>(page*BandOpeningService::kBandsPerPage);
+  for(uint8_t slot=0;slot<BandOpeningService::kBandsPerPage;++slot) {
+    const uint8_t index=static_cast<uint8_t>(first+slot);
+    if(index>=BandOpeningService::kBandCount) break;
+    const auto& band=BandOpeningService::band(index);
+    const int y=31+slot*33;
+    const auto row=snapshot ? snapshot->rows[index] : BandOpeningService::Row{};
+    const auto overall=row.day!=BandOpeningService::Status::Unknown ? row.day : row.night;
+    uint16_t dot=GREY;
+    if(overall==BandOpeningService::Status::Poor) dot=RED;
+    else if(overall==BandOpeningService::Status::Fair) dot=YELLOW;
+    else if(overall==BandOpeningService::Status::Good) dot=GREEN;
+    c.fillCircle(22,y+12,10,dot); c.drawCircle(22,y+12,11,WHITE);
+    c.setTextDatum(TL_DATUM); c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+    c.setTextColor(WHITE,DARK); c.drawString(band.name,42,y);
+    c.setFont(&lgfx::fonts::Font2); c.setTextColor(CYAN,DARK);
+    char range[40];
+    if(band.minimumKHz>=1000)
+      snprintf(range,sizeof(range),"%.3f - %.3f MHz",band.minimumKHz/1000.0f,band.maximumKHz/1000.0f);
+    else snprintf(range,sizeof(range),"%lu - %lu kHz",static_cast<unsigned long>(band.minimumKHz),static_cast<unsigned long>(band.maximumKHz));
+    c.drawString(range,42,y+15);
+    c.setTextDatum(TR_DATUM); c.setTextColor(GREY,DARK); c.drawString(band.type,c.width()-10,y+15);
+    c.drawFastHLine(42,y+30,c.width()-54,0x2104);
+  }
+  c.setTextDatum(TL_DATUM); c.setFont(&lgfx::fonts::Font0); c.setTextColor(GREY,DARK);
+  if(!snapshot || !snapshot->valid) c.drawString(snapshot && snapshot->fetching ? "Lade HF-Daten..." : "Grau = keine verlaesslichen Daten",10,158);
+  else c.drawString(snapshot->stale ? "Map For HAM: Daten veraltet" : "Map For HAM: HF-Prognose",10,158);
+}
+
+template <typename Canvas>
 void drawMoonScreen(Canvas& c, const MoonCalendar::Snapshot* moon) {
   const int w=c.width();
   constexpr uint16_t BLUE=0x001F, CYAN=0x07FF, GREEN=0x07E0;
@@ -481,18 +523,19 @@ void drawFrequencyKeypad(Canvas& c, const FrequencyKeypad::View& view) {
 }
 
 template <typename Canvas>
-void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const MoonCalendar::Snapshot* moonSnapshot) {
+void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const MoonCalendar::Snapshot* moonSnapshot, const BandOpeningService::Snapshot* bandOpeningSnapshot) {
   const int w = canvas.width();
   const int h = canvas.height();
   if (page == 18) { drawWeatherScreen(canvas, weatherSnapshot, selection); return; }
   if (page == 20) { drawMoonScreen(canvas, moonSnapshot); return; }
+  if (page == 29) { drawBandOpeningScreen(canvas, bandOpeningSnapshot, selection); return; }
   // Main menu reordered. Spectrum entries retain legacy handlers only for this menu-only step.
   static const char* const mainItems[] = {
     "Zurück", "Lautstärke", "Keypad", "Bänder", "Modulation", "Step", "BFO",
     "Speicherplätze", "Rauschsperre", "Bandbreite", "AGC / Dämpfung",
     "Auto-Lautstärke", "Soft Mute", "VFO A/B*", "Dual RX*", "Frequenz*",
     "VHF Spectrum", "All Band Spectrum", "Mondkalender", "Wetterbericht",
-    "CW Dekoder", "FT8/4 Dekoder", "Dekoder-Frequenzen", "Einstellungen"
+    "CW Dekoder", "FT8/4 Dekoder", "Dekoder-Frequenzen", "Einstellungen", "HF Bandöffnungs-Monitor"
   };
   static const char* const volumeItems[] = {
     "Zurück", "Lautstärke", "Stumm (später)"
@@ -1002,7 +1045,7 @@ void DisplayDriver::setAmLayout(uint8_t mode) {
 void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConnected,
                            const char* lastInputEvent,uint32_t inputEventCount,
                            StationLogoClient* logoClient, bool menuOpen,
-                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading, const NewsService::Snapshot* newsSnapshot, uint8_t wifiMode, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const FrequencyKeypad::View* keypadView, const MoonCalendar::Snapshot* moonSnapshot, bool cwWifiBlocked, const char* cwText, bool cwSignal, uint8_t memorySlot, uint8_t memoryCount, bool memoryEditActive, const char* memoryEditName, uint8_t memoryEditCursor, FtxDecoderService* ftxService, bool ftxWifiOff, bool ftxUtcSynchronized) {
+                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading, const NewsService::Snapshot* newsSnapshot, uint8_t wifiMode, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const FrequencyKeypad::View* keypadView, const MoonCalendar::Snapshot* moonSnapshot, bool cwWifiBlocked, const char* cwText, bool cwSignal, uint8_t memorySlot, uint8_t memoryCount, bool memoryEditActive, const char* memoryEditName, uint8_t memoryEditCursor, FtxDecoderService* ftxService, bool ftxWifiOff, bool ftxUtcSynchronized, const BandOpeningService::Snapshot* bandOpeningSnapshot) {
   if(!ready_)return;
   const uint32_t now=millis();
   const bool returningToRadio = !menuOpen && lastMenuOpen_;
@@ -1029,6 +1072,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   lastMenuTheme_=themeIndex_;
   lastMenuBootLogEnabled_=bootLogEnabled;
   if (menuOpen) {
+    if(menuPage==29){if(useSprite_){sprite_.fillSprite(BLACK);drawBandOpeningScreen(sprite_,bandOpeningSnapshot,menuSelection);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawBandOpeningScreen(device_,bandOpeningSnapshot,menuSelection);}return;}
     if(menuPage>=30 && menuPage<=40){const uint8_t category=static_cast<uint8_t>(menuPage-30);if(useSprite_){sprite_.fillSprite(BLACK);drawDecoderFrequencyPage(sprite_,category,menuSelection);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawDecoderFrequencyPage(device_,category,menuSelection);}return;}
     if(menuPage==23&&vhfSpectrum_){if(useSprite_){drawSpectrumServicePage(sprite_,*vhfSpectrum_,false);sprite_.pushSprite(0,0);}else drawSpectrumServicePage(device_,*vhfSpectrum_,false);return;} if(menuPage==24&&allBandSpectrum_){if(useSprite_){drawSpectrumServicePage(sprite_,*allBandSpectrum_,true);sprite_.pushSprite(0,0);}else drawSpectrumServicePage(device_,*allBandSpectrum_,true);return;} if(menuPage==22){if(useSprite_){sprite_.fillSprite(BLACK);drawRadioUtilityPage(sprite_,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawRadioUtilityPage(device_,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor);}return;}
     if(menuPage==21){if(useSprite_){sprite_.fillSprite(BLACK);drawLegacyCWPage(sprite_,s,cwWifiBlocked,cwText,cwSignal);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawLegacyCWPage(device_,s,cwWifiBlocked,cwText,cwSignal);}return;}
@@ -1037,7 +1081,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
     if(menuPage==6){if(useSprite_){sprite_.fillSprite(BLACK);drawFileMenu(sprite_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFileMenu(device_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);}return;}
     if (useSprite_) {
       sprite_.fillSprite(BLACK);
-      drawMenu(sprite_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled, weatherSnapshot, moonSnapshot);
+      drawMenu(sprite_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled, weatherSnapshot, moonSnapshot, bandOpeningSnapshot);
       sprite_.pushSprite(0,0);
     } else {
       device_.fillScreen(BLACK);
