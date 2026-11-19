@@ -135,12 +135,6 @@ void BandOpeningService::update(bool wifiConnected) {
     BootDiagnostics::printf("[BANDOPEN][GATE] monitor_data_access=%s wifi_status=%d snapshot_valid=%u",
       wifiConnected ? "ON" : "OFF", static_cast<int>(WiFi.status()), snapshot().valid ? 1U : 0U);
   }
-  // The worker owns a 12 KiB stack. Do not reserve it during boot or while
-  // the HF monitor is closed; create it on the first connected monitor visit.
-  if (wifiConnected && !taskHandle_) {
-    const bool started = begin();
-    BootDiagnostics::printf("[BANDOPEN] on-demand worker start=%s", started ? "success" : "failed");
-  }
   if (!wifiConnected) {
     Snapshot current = snapshot();
     if (current.valid || current.fmMufValid) {
