@@ -9,6 +9,10 @@ public:
   SavedState captureState() const;
   bool restoreState(const SavedState& state);
   bool refreshSignalQuality();
+  bool beginSpectrumScan();
+  void endSpectrumScan();
+  bool tuneSpectrumScan(uint32_t frequencyKHz);
+  bool spectrumTuneComplete();
   bool begin(uint32_t initialFrequencyKHz = 95400);
   void update();
   bool tune(uint32_t frequencyKHz);
@@ -59,6 +63,7 @@ private:
   TunerDriver tuner_;
   RadioSnapshot snapshot_{};
   bool ready_ = false;
+  bool spectrumScanActive_ = false;
   uint32_t lastPollMs_ = 0;
   uint32_t lastRdsPollMs_ = 0;
   uint32_t generation_ = 0;
