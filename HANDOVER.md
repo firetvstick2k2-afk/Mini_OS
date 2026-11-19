@@ -15,7 +15,7 @@ Geänderte Dateien:
 - `firmware/ats-mini-os/src/display/DisplayDriver.cpp`
 - `firmware/ats-mini-os/ats-mini-os.ino`
 
-Prüfstatus: Quelltextänderungen vorbereitet; erneutes Abrufen und Verifizieren folgt. Kein Build, kein GitHub-Actions-Lauf und kein Flash durch ChatGPT.
+Prüfstatus: Alle sechs geänderten Quell-/Dokumentationsdateien wurden nach dem Schreiben erneut aus `dev/first-build-preparation` abgerufen; die neuen RAM-Messpunkte, FFT-Frame-Zähler, Reset-Reason-Zuordnung und Aufrufstellen sind im Quelltext vorhanden. Kein Compilerlauf, kein GitHub-Actions-Lauf und kein Flash durch ChatGPT. Compile- und Gerätetest stehen aus.
 
 ---
 
