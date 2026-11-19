@@ -254,7 +254,8 @@ public:
   void setFmLayout(uint8_t mode);
   uint8_t amLayout() const { return amLayout_; }
   void setAmLayout(uint8_t mode);
-  void setFmAudioFft(FmAudioFftService* service) { fmAudioFft_ = service; lastGeneration_ = UINT32_MAX; }\n  void setSpectrumServices(SpectrumScannerService* vhf, SpectrumScannerService* allBand) { vhfSpectrum_ = vhf; allBandSpectrum_ = allBand; lastGeneration_ = UINT32_MAX; }
+  void setFmAudioFft(FmAudioFftService* service) { fmAudioFft_ = service; lastGeneration_ = UINT32_MAX; }
+  void setSpectrumServices(SpectrumScannerService* vhf, SpectrumScannerService* allBand) { vhfSpectrum_ = vhf; allBandSpectrum_ = allBand; lastGeneration_ = UINT32_MAX; }
   uint8_t brightness() const { return brightness_; }
   void setBrightness(uint8_t value);
   uint8_t themeIndex() const { return themeIndex_; }
