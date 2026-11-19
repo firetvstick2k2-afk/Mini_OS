@@ -327,15 +327,15 @@ void setup() {
   Serial.printf("[SETTINGS] dedicated NVS %s\n", settingsReady ? "ready" : "unavailable; using defaults");
   const uint8_t savedBrightness = settingsStore.displayBrightness(180);
   const uint8_t savedTheme = settingsStore.displayTheme(0);
-  const uint8_t savedFmLayout = settingsStore.displayFmLayout(0);
-  const uint8_t savedAmLayout = settingsStore.displayAmLayout(9);
+  // Layout selection is intentionally session-only during waterfall diagnostics.
+  // Always start in DAB Style on FM; LW/MW/KW keeps its current default layout.
   const uint8_t savedCpuProfile = settingsStore.cpuProfile(0);
   const uint8_t savedPatchProfile = settingsStore.patchProfile(0);
   performance.setProfile(static_cast<CpuProfile>(savedCpuProfile));
   if (display.begin(savedBrightness)) {
     display.setTheme(savedTheme);
-    display.setFmLayout(savedFmLayout);
-    display.setAmLayout(savedAmLayout);
+    display.setFmLayout(0); // DAB Style is the fixed startup layout.
+    display.setAmLayout(9); // Keep the existing LW/MW/KW default.
     display.setFmAudioFft(&fmAudioFft);
     display.setSpectrumServices(&vhfSpectrum,&allBandSpectrum);
     Serial.printf("[DISPLAY] first UI initialized; brightness=%u/255\n",
@@ -727,9 +727,8 @@ void loop() {
           const uint8_t layout = menuSelection == 1 ? 0 : (menuSelection == 2 ? 2 : (menuSelection == 3 ? 3 : (menuSelection == 4 ? 4 : 5)));
           display.setFmLayout(layout);
           if (layout == 3) wifi.ensureStarted();
-          const bool saved = settingsStore.saveDisplayFmLayout(layout);
-          Serial.printf("[SETTINGS] FM layout=%s %s\n",
-            layout == 5 ? "Live FFT Waterfall" : (layout == 4 ? "Decoder" : (layout == 3 ? "TEF6686 - Newsfeed" : (layout == 2 ? "TEF6686 -FM Version" : "DAB Style"))), saved ? "saved" : "save failed");
+          Serial.printf("[DISPLAY] FM layout changed for this session: %s (not saved)\n",
+            layout == 5 ? "Live FFT Waterfall" : (layout == 4 ? "Decoder" : (layout == 3 ? "TEF6686 - Newsfeed" : (layout == 2 ? "TEF6686 -FM Version" : "DAB Style"))));
           closeMenuToRadio("FM layout selected");
         } else if (menuPage == 15 && menuSelection > 0) {
           // Preserve the legacy layout IDs and include the independent TEF6686 SW renderer.
@@ -741,9 +740,8 @@ void loop() {
           if (index < sizeof(layoutIds) / sizeof(layoutIds[0])) {
             const uint8_t layout = layoutIds[index];
             display.setAmLayout(layout);
-            const bool saved = settingsStore.saveDisplayAmLayout(layout);
-            Serial.printf("[SETTINGS] LW/MW/KW layout=%s %s\n",
-              layoutNames[index], saved ? "saved" : "save failed");
+            Serial.printf("[DISPLAY] LW/MW/KW layout changed for this session: %s (not saved)\n",
+              layoutNames[index]);
             closeMenuToRadio("LW/MW/KW layout selected");
           }
         } else if (menuPage == 5 && menuSelection == 10) {
