@@ -909,7 +909,7 @@ void loop() {
           menuSelection = static_cast<uint8_t>(radio.currentBandIndex() + 1);
         } else if (menuPage == 8 && menuSelection == 0) {
           menuPage = 0;
-          menuSelection = 9;
+          menuSelection = 3;
         } else if (menuPage == 8 && menuSelection > 0) {
           if (radio.selectBand(static_cast<uint8_t>(menuSelection - 1))) {
             display.notifyTuning();
@@ -932,7 +932,7 @@ void loop() {
           menuSelection = static_cast<uint8_t>(radio.bandwidthChoice() + 1);
         } else if (menuPage == 7 && menuSelection == 0) {
           menuPage = 0;
-          menuSelection = 3;
+          menuSelection = 9;
         } else if (menuPage == 7 && menuSelection > 0) {
           if (radio.setBandwidthChoice(static_cast<uint8_t>(menuSelection - 1))) {
             if (radio.snapshot().modulation == RadioModulation::LSB || radio.snapshot().modulation == RadioModulation::USB) {
