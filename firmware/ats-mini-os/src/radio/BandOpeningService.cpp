@@ -125,7 +125,7 @@ void BandOpeningService::update(bool wifiConnected) {
     }
   }
 }
-Snapshot BandOpeningService::snapshot() const {
+BandOpeningService::Snapshot BandOpeningService::snapshot() const {
   Snapshot copy;
   portENTER_CRITICAL(&snapshotMux_); copy = snapshot_; portEXIT_CRITICAL(&snapshotMux_);
   return copy;
