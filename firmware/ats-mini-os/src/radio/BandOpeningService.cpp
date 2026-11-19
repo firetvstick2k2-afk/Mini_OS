@@ -16,6 +16,10 @@ constexpr uint16_t kBlue = 0x001F;
 // These are the exact receive windows in BandManager.cpp, represented in kHz.
 // Rows without a matching Map For HAM band_detail entry intentionally remain grey.
 const BandOpeningService::Band kBands[BandOpeningService::kBandCount] = {
+  {"LW Band", "SWL", 100, 495, 0},
+  {"MW1 Band", "SWL", 100, 1800, 0},
+  {"MW2 Band", "SWL", 495, 1701, 0},
+  {"MW3 Band", "SWL", 1700, 3500, 0},
   {"160m Band", "AFU", 1800, 2000, 160},
   {"90m Band", "SWL", 3200, 3400, 0},
   {"80m Band", "AFU", 3500, 4000, 80},
