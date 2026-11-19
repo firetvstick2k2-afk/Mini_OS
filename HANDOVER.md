@@ -3315,3 +3315,6 @@ Prüfstatus:
 - Verifikation: Menü-Mapping 17→Seite 23 und 18→Seite 24, beide Service-Instanzen, getrennte Tick-Aufrufe, beide Display-Routen und die alten ScanService-/SeekService-Referenzen wurden erneut vom aktiven Branch abgerufen. Keine aktiven Alt-Service-Referenzen in ats-mini-os.ino oder DisplayDriver.
 - Build-/Gerätestatus: kein Build gestartet, keine GitHub Actions gestartet, kein Gerät geflasht. Nutzer startet den Build selbst. Hardwaretest ausstehend; insbesondere beide Keypads, Scanabbruch, Peaknavigation, Frequenzübernahme und Wiederherstellung des vorherigen Radiozustands testen.
 - Nächster Schritt: Nutzer kann den Build starten. Bei Compilerfehlern den konkreten CI-/Buildlog prüfen und gezielt korrigieren; keine Layoutänderungen an TEF6686 oder Decoder-Wasserfall vornehmen.
+
+
+- Nach dem ersten Portierungsdurchlauf zusätzlich ergänzt: Die Messung setzt die Lautstärke temporär auf 0, damit der Sweep nicht hörbar durchläuft. RadioCore::SavedState speichert jetzt auch die ursprüngliche Lautstärke; bei Abbruch und nach der Messung wird sie wiederhergestellt. Commit RadioCore: e6d96554556ff762c189b654dc0e3b2985c08e7d; Sweep-Mute: 9749fdac227e7a5bea17760548503f88795bf708. DisplayDriver.h-Deklarationskorrektur: 2d11dcfc764fd98279f52881ae1f33f527aebadb.
