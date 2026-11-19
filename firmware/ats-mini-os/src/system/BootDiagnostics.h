@@ -7,4 +7,5 @@ void setEnabled(bool enabled);
 bool enabled();
 void write(const char* message);
 void printf(const char* format, ...);
+void memorySnapshot(const char* stage);
 }
