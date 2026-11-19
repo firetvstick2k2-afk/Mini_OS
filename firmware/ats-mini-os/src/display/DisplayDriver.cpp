@@ -717,6 +717,47 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
 }
 
 template <typename Canvas>
+void drawSpectrumServicePage(Canvas& c,const SpectrumScannerService& scanner,bool allBand) {
+  constexpr uint16_t bg=0x0000,panel=0x0008,blue=0x001F,cyan=0x07FF,green=0x07E0,yellow=0xFFE0,red=0xF800,dark=0x0841,white=0xFFFF;
+  static const char* const vhfKeys[]={"1","2","3","BS","4","5","6","0","7","8","9",".","OK","MHz","","CLOSE"};
+  static const char* const allKeys[]={"1","2","3","BS","4","5","6","0","7","8","9",".","OK","STEP","","CLOSE"};
+  c.fillScreen(bg);
+  if(scanner.isInput()) {
+    c.fillRoundRect(6,2,308,166,4,bg);c.drawRoundRect(6,2,308,166,4,blue);c.drawRoundRect(7,3,306,164,3,blue);
+    c.setTextDatum(TC_DATUM);c.setTextColor(cyan,bg);c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+    c.drawString(allBand?(scanner.inputStage()==0?"ALL BAND: START (kHz)":"ALL BAND: END (kHz)"):(scanner.inputStage()==0?"ENTER START FREQUENCY (MHz)":"ENTER END FREQUENCY (MHz)"),160,5);
+    char value[28];snprintf(value,sizeof(value),"%s %s",scanner.inputValue()[0]?scanner.inputValue():"---",allBand?"kHz":"MHz");
+    c.setTextDatum(MC_DATUM);c.setTextColor(scanner.inputError()?red:cyan,bg);c.drawRoundRect(14,28,210,23,2,scanner.inputError()?red:blue);c.drawString(value,119,39);
+    c.fillRoundRect(230,28,76,23,2,scanner.keyIndex()==16?cyan:dark);c.drawRoundRect(230,28,76,23,2,scanner.keyIndex()==16?white:blue);c.setTextColor(scanner.keyIndex()==16?bg:cyan,bg);c.drawString(scanner.modeName(),268,39);
+    const int sx=14,sy=53,bw=68,bh=21,gx=5,gy=2;
+    const char* const* keys=allBand?allKeys:vhfKeys;
+    for(int i=0;i<16;++i){if(i==14)continue;const int x=sx+(i%4)*(bw+gx),y=sy+(i/4)*(bh+gy);const bool selected=scanner.keyIndex()==i;c.fillRoundRect(x,y,bw,bh,3,selected?cyan:dark);c.drawRoundRect(x,y,bw,bh,3,selected?white:blue);c.setTextDatum(MC_DATUM);c.setTextColor(selected?bg:cyan,bg);c.setFont(&lgfx::fonts::FreeSansBold9pt7b);c.drawString(keys[i],x+bw/2,y+bh/2);}
+    if(allBand){c.fillRoundRect(230,28,76,23,2,scanner.keyIndex()==16?cyan:dark);c.drawRoundRect(230,28,76,23,2,scanner.keyIndex()==16?white:blue);c.setTextColor(scanner.keyIndex()==16?bg:cyan,bg);c.setTextDatum(MC_DATUM);c.drawString(scanner.modeName(),268,39);}
+    c.setTextDatum(TC_DATUM);c.setFont(&lgfx::fonts::FreeSansBold9pt7b);c.setTextColor(scanner.inputError()?red:cyan,bg);
+    if(allBand){char hint[40];snprintf(hint,sizeof(hint),"STEP: %u kHz",scanner.stepKHz());c.drawString(hint,160,151);}
+    else c.drawString("FM   |   100 kHz STEP",160,151);
+    return;
+  }
+  c.fillRoundRect(3,3,314,164,5,panel);c.drawRoundRect(3,3,314,164,5,blue);
+  c.setTextDatum(TC_DATUM);c.setTextColor(cyan,panel);c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  c.drawString(allBand?"ALL BAND SPECTRUM":"VHF SPECTRUM",160,7);
+  char label[48];
+  if(allBand)snprintf(label,sizeof(label),"%lu kHz  %s  STEP %u",static_cast<unsigned long>(scanner.point(scanner.selected()).frequencyKHz),scanner.modeName(),scanner.stepKHz());
+  else snprintf(label,sizeof(label),"%.2f MHz",scanner.point(scanner.selected()).frequencyKHz/1000.0f);
+  c.setTextColor(green,panel);c.drawString(scanner.count()?label:"WAITING FOR SCAN",160,25);
+  const int x0=12,y0=43,w=296,h=86;c.drawRect(x0,y0,w,h,blue);
+  for(int i=1;i<5;++i)c.drawFastHLine(x0+1,y0+(h*i)/5,w-2,0x000F);
+  for(int i=1;i<10;++i)c.drawFastVLine(x0+(w*i)/10,y0+1,h-2,0x000F);
+  if(scanner.count()>1){uint8_t mn=255,mx=0;for(uint16_t i=0;i<scanner.count();++i){mn=min(mn,scanner.point(i).rssi);mx=max(mx,scanner.point(i).rssi);}if(mx<=mn)mx=mn+1;
+    int px=x0+1,py=y0+h-2;
+    for(uint16_t i=0;i<scanner.count();++i){const int x=x0+1+static_cast<int>((uint32_t)i*(w-3)/(scanner.count()-1));const int y=y0+h-2-static_cast<int>((uint16_t)(scanner.point(i).rssi-mn)*(h-4)/(mx-mn));if(i)c.drawLine(px,py,x,y,cyan);if(i==scanner.selected())c.fillCircle(x,y,3,red);px=x;py=y;}
+    const int sx=x0+1+static_cast<int>((uint32_t)scanner.selected()*(w-3)/(scanner.count()-1));c.drawCircle(sx,py,4,yellow);
+  }
+  c.setTextDatum(TL_DATUM);c.setFont(&lgfx::fonts::Font0);c.setTextColor(cyan,panel);
+  c.drawString(scanner.state()==SpectrumScannerService::State::Running?"SCAN LAEUFT":scanner.state()==SpectrumScannerService::State::Done?"SCAN FERTIG":scanner.state()==SpectrumScannerService::State::Error?"SCAN FEHLER":"ABGEBROCHEN",12,136);
+  c.setTextColor(yellow,panel);c.drawString(scanner.count()?"DREHEN: PEAK   KLICK: UEBERNEHMEN":"LANG: ABBRUCH",12,151);
+}
+template <typename Canvas>
 void drawRadioUtilityPage(Canvas& c,uint8_t page,uint8_t selection,const RadioSnapshot& s,
                           uint8_t memorySlot,uint8_t memoryCount,bool memoryEditActive,const char* memoryEditName,uint8_t memoryEditCursor,uint16_t scanCount,
                           uint16_t scanCapacity,uint8_t scanState,uint8_t seekState,const ScanService::Point* scanPoints) {
@@ -1055,7 +1096,7 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   lastMenuBootLogEnabled_=bootLogEnabled;
   if (menuOpen) {
     if(menuPage>=30 && menuPage<=40){const uint8_t category=static_cast<uint8_t>(menuPage-30);if(useSprite_){sprite_.fillSprite(BLACK);drawDecoderFrequencyPage(sprite_,category,menuSelection);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawDecoderFrequencyPage(device_,category,menuSelection);}return;}
-    if(menuPage==22 || menuPage==23 || menuPage==24 || menuPage==29){if(useSprite_){sprite_.fillSprite(BLACK);drawRadioUtilityPage(sprite_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawRadioUtilityPage(device_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);}return;}
+    if(menuPage==23&&vhfSpectrum_){if(useSprite_){drawSpectrumServicePage(sprite_,*vhfSpectrum_,false);sprite_.pushSprite(0,0);}else drawSpectrumServicePage(device_,*vhfSpectrum_,false);return;} if(menuPage==24&&allBandSpectrum_){if(useSprite_){drawSpectrumServicePage(sprite_,*allBandSpectrum_,true);sprite_.pushSprite(0,0);}else drawSpectrumServicePage(device_,*allBandSpectrum_,true);return;} if(menuPage==22 || menuPage==29){if(useSprite_){sprite_.fillSprite(BLACK);drawRadioUtilityPage(sprite_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawRadioUtilityPage(device_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);}return;}
     if(menuPage==21){if(useSprite_){sprite_.fillSprite(BLACK);drawLegacyCWPage(sprite_,s,cwWifiBlocked,cwText,cwSignal);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawLegacyCWPage(device_,s,cwWifiBlocked,cwText,cwSignal);}return;}
     if(menuPage==28){if(useSprite_){sprite_.fillSprite(BLACK);drawFtxDecoderPage(sprite_,s,menuSelection,ftxService,ftxWifiOff,ftxUtcSynchronized);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFtxDecoderPage(device_,s,menuSelection,ftxService,ftxWifiOff,ftxUtcSynchronized);}return;}
     if(menuPage==19 && keypadView){if(useSprite_){sprite_.fillSprite(BLACK);drawFrequencyKeypad(sprite_,*keypadView);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFrequencyKeypad(device_,*keypadView);}return;}
