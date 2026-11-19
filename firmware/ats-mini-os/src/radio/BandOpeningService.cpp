@@ -10,6 +10,7 @@
 
 namespace {
 constexpr char kFeedUrl[] = "https://www.mapforham.com/hf-propagation/data/solar.json";
+constexpr char kFmMufUrl[] = "https://fmdx.org/includes/tools/get_muf.php";
 constexpr uint32_t kRefreshIntervalMs = 5UL * 60UL * 1000UL;
 constexpr uint32_t kRetryIntervalMs = 60UL * 1000UL;
 constexpr size_t kMaxResponseBytes = 16384;
@@ -130,6 +131,15 @@ void BandOpeningService::taskLoop() {
   for (;;) {
     const uint32_t now = millis();
     const bool due = refreshRequested_ || !lastAttemptMs_ || now - lastAttemptMs_ >= kRefreshIntervalMs;
+    if (wifiConnected_ && (!lastMufAttemptMs_ || now - lastMufAttemptMs_ >= 60UL * 1000UL)) {
+      lastMufAttemptMs_ = now;
+      float muf = 0.0f;
+      const bool ok = fetchFmMuf(muf);
+      Snapshot current = snapshot();
+      current.fmMufStale = !ok;
+      if (ok) { current.fmMufMHz = muf; current.fmMufValid = true; }
+      publish(current);
+    }
     if (wifiConnected_ && due) {
       refreshRequested_ = false;
       lastAttemptMs_ = now;
@@ -156,6 +166,33 @@ void BandOpeningService::taskLoop() {
     vTaskDelay(pdMS_TO_TICKS(1000));
   }
 }
+
+bool BandOpeningService::fetchFmMuf(float& value) {
+  WiFiClientSecure client;
+  client.setTimeout(8000);
+  client.useBuiltinCACertBundle();
+  HTTPClient http;
+  http.setTimeout(8000);
+  http.setReuse(false);
+  if (!http.begin(client, kFmMufUrl)) return false;
+  const int status = http.GET();
+  if (status != HTTP_CODE_OK) { http.end(); return false; }
+  const int length = http.getSize();
+  if (length > 8192) { http.end(); return false; }
+  String body = http.getString();
+  http.end();
+  if (body.isEmpty() || body.length() > 8192 || body.startsWith("<")) return false;
+  JsonDocument doc;
+  if (deserializeJson(doc, body)) return false;
+  JsonVariantConst field = doc["europe"]["max_frequency"];
+  if (!field.is<const char*>() && !field.is<float>() && !field.is<double>() && !field.is<int>()) return false;
+  if (field.is<const char*>() && strcmp(field.as<const char*>(), "No data") == 0) return false;
+  const float parsed = field.as<float>();
+  if (!isfinite(parsed) || parsed < 30.0f || parsed > 300.0f) return false;
+  value = parsed;
+  return true;
+}
+
 bool BandOpeningService::fetchConditions(Snapshot& result) {
   WiFiClientSecure client;
   client.setTimeout(8000);
