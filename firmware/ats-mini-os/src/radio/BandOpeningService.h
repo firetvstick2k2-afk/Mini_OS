@@ -21,7 +21,7 @@ public:
   struct Snapshot {
     Row rows[kBandCount]{};
     uint32_t updatedAtMs = 0;
-    char sourceUpdated[25] = {};
+    char sourceUpdated[32] = {};
     bool valid = false;
     bool stale = true;
     bool fetching = false;
