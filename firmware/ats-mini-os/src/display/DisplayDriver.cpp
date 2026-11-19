@@ -400,7 +400,7 @@ void drawBandOpeningScreen(Canvas& c, const BandOpeningService::Snapshot* snapsh
   }
   c.setTextDatum(TL_DATUM); c.setFont(&lgfx::fonts::Font0); c.setTextColor(GREY,DARK);
   if(!snapshot || !snapshot->valid) c.drawString(snapshot && snapshot->fetching ? "Lade HF-Daten..." : "Grau = keine verlaesslichen Daten",10,158);
-  else c.drawString(snapshot->stale ? "Daten veraltet - Ampel grau" : "Map For HAM: Tag/Nacht, schlechterer Wert",10,158);
+  else c.drawString(snapshot->stale ? "Daten veraltet - Ampel grau" : "mapforham.com | Tag/Nacht, konservativ",10,158);
 }
 
 template <typename Canvas>
