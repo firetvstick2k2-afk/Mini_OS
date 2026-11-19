@@ -492,7 +492,7 @@ void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, u
     "Speicherplätze", "Rauschsperre", "Bandbreite", "AGC / Dämpfung",
     "Auto-Lautstärke", "Soft Mute", "VFO A/B*", "Dual RX*", "Frequenz*",
     "VHF Spectrum", "All Band Spectrum", "Mondkalender", "Wetterbericht",
-    "CW Dekoder", "FT8/4", "Dekoder-Frequenzen", "Einstellungen"
+    "CW Dekoder", "FT8/4 Dekoder", "Dekoder-Frequenzen", "Einstellungen"
   };
   static const char* const volumeItems[] = {
     "Zurück", "Lautstärke", "Stumm (später)"
