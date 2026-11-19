@@ -36,7 +36,8 @@ RadioCore::SavedState RadioCore::captureState() const {
   state.modulation=snapshot_.modulation;
   state.bfoOffsetHz=snapshot_.bfoOffsetHz;
   state.stepKHz=tuner_.stepKHz();
-  state.bandwidthChoice=tuner_.bandwidthChoice();\n  state.volume=tuner_.volume();
+  state.bandwidthChoice=tuner_.bandwidthChoice();
+  state.volume=tuner_.volume();
   return state;
 }
 bool RadioCore::restoreState(const SavedState& state) {
@@ -45,7 +46,8 @@ bool RadioCore::restoreState(const SavedState& state) {
   if(!tune(state.frequencyKHz))return false;
   if(!setBfoOffsetHz(state.bfoOffsetHz))return false;
   if(!setBandwidthChoice(state.bandwidthChoice))return false;
-  if(state.stepKHz&&!setStepKHz(state.stepKHz))return false;\n  if(!setVolume(state.volume))return false;
+  if(state.stepKHz&&!setStepKHz(state.stepKHz))return false;
+  if(!setVolume(state.volume))return false;
   return true;
 }
 bool RadioCore::refreshSignalQuality() {
