@@ -497,8 +497,7 @@ Dies ist nur ein Compile-/Bring-up-Scaffold. Es implementiert noch keinen nutzba
 
 
 ## 25. Dauerhafte Regel des Nutzers: strikt modulare Entwicklung
-Der Nutzer hat ausdrücklich festgelegt, dass diese Regel **immer** gelten muss und in Übergaben bei vollen Chats festgehalten werden soll:- Jede fachlich eigenständige Funktion erhält eigene `.h`- und `.cpp`-Dateien.- `.ino` bleibt möglichst klein und enthält nur Einstiegspunkt sowie Setup-/Loop-Verdrahtung.- Eine Änderung an einer Funktion darf unabhängige Funktionen nicht kaputtmachen. Keine Sammeldateien, keine direkten Eingriffe in fremde Modul-Interna und keine versteckten Seiteneffekte.
-- Module interagieren über klar definierte Schnittstellen; gemeinsame Ressourcen haben genau einen Besitzer.
+Der Nutzer hat ausdrücklich festgelegt, dass diese Regel **immer** gelten muss und in Übergaben bei vollen Chats festgehalten werden soll:- Jede fachlich eigenständige Funktion erhält eigene `.h`- und `.cpp`-Dateien.- `.ino` bleibt möglichst klein und enthält nur Einstiegspunkt sowie Setup-/Loop-Verdrahtung.- Eine Änderung an einer Funktion darf unabhängige Funktionen nicht kaputtmachen. Keine Sammeldateien, keine direkten Eingriffe in fremde Modul-Interna und keine versteckten Seiteneffekte.- Module interagieren über klar definierte Schnittstellen; gemeinsame Ressourcen haben genau einen Besitzer.
 - Vor Änderungen Abhängigkeiten/Aufrufer prüfen, betroffene Module gezielt anpassen und Prüfungen dokumentieren.
 - Bei jeder Übergabe Branch, Commits, Fortschritt, offene Punkte und Build-/Flash-Status ergänzen.
 
@@ -997,8 +996,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 |---|---:|---|| Radio-LDO | 15 | HIGH = ein |
 | SI4735 Reset | 16 | Reset || I²C SDA / SCL | 18 / 17 | Daten / Takt |
 | Audio-Mute | 3 | HIGH = stumm || Audioverstärker Enable | 10 | HIGH = ein |
-| Display-Backlight | 38 | PWM, Referenz nutzt 16 kHz / 8 Bit |
-| Encoder A / B | 2 / 1 | Drehgeber |
+| Display-Backlight | 38 | PWM, Referenz nutzt 16 kHz / 8 Bit || Encoder A / B | 2 / 1 | Drehgeber |
 | Encoder-Taste | 21 | Eingang |
 - Referenzlautstärke: 35/63. Nicht ändern.
 
@@ -1497,8 +1495,7 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
   - Änderungsmarker für die Menü-Neuzeichnung ergänzt.
 - `DisplayDriver.cpp`:  - Menüpunkt von „Helligkeit (spaeter)“ auf „Display-Helligkeit“ geändert.
   - Helligkeitswert und Balkenanzeige im Display-Untermenü ergänzt.
-  - Helligkeit wird über LovyanGFX und die ATS-Mini-V4-Backlight-Ansteuerung (GPIO 38) gesetzt.
-  - Untergrenze 10; der Wert wird im Menü in 5er-Schritten verändert.
+  - Helligkeit wird über LovyanGFX und die ATS-Mini-V4-Backlight-Ansteuerung (GPIO 38) gesetzt.  - Untergrenze 10; der Wert wird im Menü in 5er-Schritten verändert.
   - Fußzeile zeigt „Drehen: Helligkeit“.
 - `ats-mini-os.ino`:
   - Encoder-Drehung im Display-Menü steuert die Helligkeit; Menüauswahl und Anzeige wurden dafür angepasst.
@@ -1997,8 +1994,7 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - `6f4076f1b7d531fb2127c01f0561cec1010a2e27` – EiBi-Service-Schnittstelle- `b3bb8b46543248336573c9f3596455b2acd8440a`, `16066527d7671d3bca60682daeb713b575dcde19`, `95ba0e009a8f62cbacf9d440fa28b6c3c1e183d0`, `029b273a2208469200568739dfecf60a52b13ae1`, `875cbe15c48fff517c5303ad9a38d3d7e2c9eb44`, `1e4d64225772b3a8c3b015b5d3064f5abc62c73b`, `c9f60e26f2607d77f61b95bdd0733d74c85865f9` – Download/Parser, UTC-Lookup, sichere Dateiaustauschlogik und C++11-Kompatibilität
 - `5f5b4cbb3f8dbe275ba15eeeec0660a688c12db7`, `f9bb301734f02c2019b57d1fe1610124eb1c5bb6` – EiBi-PS/RT im LW/MW/KW-TEF-Renderer
 - `0e1846d006aa56df872b916e2ba667ecca7d60d3`, `367c7d5633ef01f5bcb8598c36168025023249e3`, `0fbee25189a890fece7d2a06f3691271ad48a119` – Display-Schnittstelle und Renderer-Anbindung
-- `1b84e1701c7815f03d388466cdf38ac84a562fca`, `13a23c963e45300a1e4783e0fa5b83d688ff8a6e` – Laufzeit-/Menüintegration
-- `2685d494d54dff14ce3a5fab53c4f6666c278057` – C++11-sichere Definition der Feed-/Dateipfade
+- `1b84e1701c7815f03d388466cdf38ac84a562fca`, `13a23c963e45300a1e4783e0fa5b83d688ff8a6e` – Laufzeit-/Menüintegration- `2685d494d54dff14ce3a5fab53c4f6666c278057` – C++11-sichere Definition der Feed-/Dateipfade
 
 ### Prüfung / Übergabe
 - Geänderte Dateien wurden nach dem Schreiben erneut von GitHub abgerufen. Statische Schnittstellenprüfungen bestätigen: EiBi-Service vorhanden, StorageDiscovery-Gating aktiv, alter Schedule bleibt bei fehlgeschlagenem Austausch erhalten, UTC-Lookup und `2400`-Zeitende vorhanden, Menüpunkt und Menüanzahl stimmen, Display-Signaturen stimmen überein und FM-RDS wird nicht als EiBi-Datenquelle verwendet.
@@ -2497,7 +2493,6 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 
 
 ## 2026-11-10 – Boot-/HTTPS-Diagnostik nach Weather-Worker-Isolation
-
 - Commit `6ab8d11`: WeatherService bleibt angebunden, sein automatischer Hintergrundtask wird vorübergehend nicht gestartet, um die Weboberfläche wieder erreichbar zu machen. Gespeicherte Wetter-PLZ/Einstellungen bleiben erhalten.
 - Commit `a8bb1ee`: News-Worker protokolliert Heap, größten freien Block, Minimum-Free-Heap und Stack-High-Water-Mark vor/nach TLS-Setup, vor/nach HTTP-GET und vor/nach Body-Download.
 - Commit `34298a6`: WLAN-Bootdiagnostik ergänzt: Mode-Setup, AP/STA-Zustand, Registrierung der Web-Routen sowie Eintritt/Austritt von `WebServer.begin()` mit Heap-Werten.
@@ -2997,7 +2992,6 @@ Prüfstatus:
 
 
 ## FM Live FFT Waterfall – Weißbereich früher beginnen lassen (2026-11-18)
-
 - Nutzerbeobachtung beim starken FM-Sender: Anzeige mit RSSI etwa 40 und SNR etwa 21–25 zeigte zu viel Hellblau/Cyan und zu wenig Weiß; der Empfang wurde als sehr stark und klar beschrieben.
 - Nutzerwunsch: Hellblau soll in Weiß übergehen bzw. Weiß soll deutlich früher einsetzen.
 - In `firmware/ats-mini-os/src/display/DisplayLayoutFmAudioFft.h` wurde die separate PALE_BLUE-Stufe entfernt. Werte ab 160 werden jetzt weiß dargestellt; zuvor begann Weiß erst oberhalb von 210. Unterhalb 160 bleiben die bisherigen dunklen Blau-/Cyan-Stufen unverändert.
@@ -3198,3 +3192,66 @@ Auf `dev/first-build-preparation` wurden im aktiven Repository `firetvstick2k2-a
 - Bereits begonnene WLAN-Grundlage bleibt Teil dieser Priorität: asynchroner Scan, stärkstes gespeichertes Netzwerk zuerst, feste 5-s Versuchszeit, 30-s Gesamtfenster, Setup-AP bleibt erreichbar. Optionale Stock-Funktionen wie Hidden-SSID-Probing, vollständige WLAN-Modi, NTP-Sync-Only-Verhalten, mDNS und Webserver-Verhalten werden im Zuge der Grundfunktionsprüfung eingeordnet.
 - Nach der Grundfunktions-Parität folgen Netzwerk-Speicheroptimierung und Webserver-Ausbau; StationLogo-Streaming ist ausdrücklich zuletzt vorgesehen.
 - Keine Builds, GitHub Actions oder Hardware-Flashs durch den Assistenten. Der Nutzer führt Builds/Tests selbst aus.
+
+## Übergabeprotokoll: WLAN und Memorymanagement abschließen (2026-11-20)
+
+### Aktueller Auftrag / Ziel
+Der Nutzer hat die Priorität ausdrücklich konkretisiert: **WLAN einschließlich Memorymanagement soll jetzt nach dem Verhalten der Referenz-Firmware ATS-Mini-Dev fertiggestellt werden.** Mit „wie Mini-Dwv“ ist im Gespräch die zuvor verwendete ATS-Mini-Dev-Referenz (Max-Arnold-/Stock-Code) gemeint. Die Umsetzung muss weiterhin modular in Mini_OS erfolgen. Die vorhandene Mini_OS-Oberfläche und Dienste bleiben erhalten; keine unnötigen Rückbauten.
+
+### Warum diese Arbeit gemacht wird
+- Ziel ist nicht nur, dass WLAN gelegentlich eine Verbindung aufbaut, sondern dass Initialisierung, Modi, Scan-/Verbindungsablauf, Reconnect, Abschaltung und Netzwerkdienste nachvollziehbar und robust sind.
+- Die Speicherverwaltung muss zur tatsächlichen WLAN-/Webserver-Last passen: internen SRAM und PSRAM getrennt beobachten, große und langlebige Puffer gezielt im PSRAM halten, temporäre Daten begrenzen und alle Fehlerpfade sauber freigeben.
+- Die Referenz dient als Verhaltens- und Ressourcenvergleich. Sie darf nicht blind monolithisch kopiert werden; Mini_OS soll die Funktion modular abbilden.
+- Der Nutzer führt Builds, GitHub Actions und Flash-Tests selbst aus. Der Assistent startet diese niemals.
+
+### Was in der letzten Arbeitssitzung bereits gemacht wurde
+**Quellen geprüft, noch keine Firmware-Codeänderung gespeichert.**
+
+Referenz ATS-Mini-Dev (13HN2709/ats-mini-dev, Branch main):
+- ats-mini/Network.cpp geprüft, Blob SHA 4862b4f032f18e6d8799497a7dfd5d72922b4754.
+- ats-mini/TcpMode.cpp geprüft, Blob SHA c98211a7211714cb9dc46b4dc73d6463b5bfad33.
+- ats-mini/TcpMode.h geprüft, Blob SHA 208f358c1d78a0e50d183f78e449ff94c6aecdc4.
+- ats-mini/PageTemplate.h geprüft: Template-Rendering reserviert Puffer in 1024-Byte-Blöcken; Werte werden HTML-escaped; Fragment-Callbacks sind nur während des synchronen Render-Aufrufs gültig.
+- Network.cpp zeigt unter anderem: WiFiMulti, fünf Netzwerkmodi, AP mit Kanal 10/maximal 3 Clients/10.1.1.1, optionale Hidden-SSID-Suche (wifiscanhidden, Standard false), 30-s Gesamt-Timeout, NTPClient, mDNS atsmini.local, AsyncWebServer und TCP-Remote-Control auf Port 60000.
+- Die Referenz verwendet bei größeren Speicherblöcken gezielt PSRAM, z. B. ps_calloc() für den temporären vollständigen Memory-Slot-Satz, und gibt ihn auf Fehler-/Erfolgspfaden frei. Die Web-Seiten-Erzeugung reserviert Puffer vorab und zeigt internen Heap sowie PSRAM getrennt an.
+- Die Referenz-Network.cpp ist kein durchgehend asynchrones Muster: wifiConnect() wartet synchron in einer Schleife mit wifiMulti.run(5000, wifiScanHidden) und kurzen Delays bis zum 30-s Timeout. Mini_OS sollte diesen blockierenden Ablauf nicht unkritisch übernehmen.
+
+Mini_OS (firetvstick2k2-afk/Mini_OS, Branch dev/first-build-preparation):
+- WifiClient.cpp geprüft, SHA aeceb949345db88824f5b9a8cb5e051c1bd71bf0.
+- WifiClient.h geprüft, SHA 4bdc5ca0500cc407d894103a58c4cb0145eb5493.
+- WifiScanner.cpp geprüft, SHA dceee3401acbe77e554d07c52f0b4aeb895b0ed6.
+- WifiScanner.h geprüft, SHA 9648a7e97475840ab4d6e620690aabca66bfa711.
+- MemoryManager.cpp geprüft, SHA 83022df064a783609d4898f0a77c2792309294cf.
+- MemoryManager.h geprüft, SHA 3b39bb7f639d1dbe92dfdb3f70e02daa26bda54a.
+- Mini_OS hat bereits einen nichtblockierenden Scan-/Verbindungsablauf: bis zu drei gespeicherte SSIDs, stärkster passender AP zuerst, BSSID/Kanal, 5-s Verbindungsversuch, 30-s Gesamtfenster, 1-s erneuter Scan und Setup-AP bleibt bei Routerfehler erreichbar.
+- WLAN-Modi sind als OFF, AP_ONLY, AP_CONNECT, CONNECT, SYNC_ONLY vorhanden. AP ist bewusst MINI-OS-WEB, Kanal 10, maximal 3 Clients, 10.1.1.1, offen und sichtbar. TX-Power-Callbacks sind registriert. Auto-Reconnect wird erst nach erfolgreicher Verbindung eingeschaltet.
+- Der Webserver ist aktuell WebServer (synchron) und nicht der asynchrone Stock-Server. Die eigenen Mini_OS-Routen für WLAN, News und Weather dürfen nicht verloren gehen.
+- WifiScanner nutzt WiFi.scanNetworks(true, includeHidden), matcht SSIDs und sortiert Kandidaten nach RSSI. Scan-Ergebnisse werden nach dem Abgleich mit WiFi.scanDelete() freigegeben. Hidden-SSID-Suche/Probe-Phase ist noch nicht implementiert; aktuell wird includeHidden=false übergeben.
+- MemoryManager protokolliert internen SRAM und PSRAM getrennt (total/free/largest/minimum/Fragmentierung), Stack-High-Water-Mark, Reset-Grund und fehlgeschlagene Aufrufe von MemoryManager::allocate(). Er verfolgt aber nicht erfolgreich belegte Bytes, Peak-Nutzung oder Ownership und erfasst nicht automatisch String, new, ArduinoJson, TLS, HTTP- oder Treiber-Allokationen.
+- Der MemoryManager ist eine gute vorhandene Basis, aber noch keine vollständige Allokationsverwaltung. Keine zweite konkurrierende Speicherverwaltung ergänzen.
+
+### Festgestellte Lücken / Entscheidungen
+1. Hidden-SSID-Option und Probe-Phase fehlen in Mini_OS; Stock hat dies optional, standardmäßig ausgeschaltet.
+2. Reconnect- und Zustandsübergänge müssen vollständig gegen Stock geprüft werden; den nichtblockierenden Mini_OS-Ansatz beibehalten, sofern keine konkrete Inkompatibilität nachgewiesen wird.
+3. SYNC_ONLY muss mit dem Referenzverhalten verglichen werden: Stock synchronisiert NTP und schaltet danach WLAN wieder aus; Mini_OS darf nicht unbeabsichtigt Web-/Datenworker starten oder das Funkmodul dauerhaft aktiv lassen.
+4. mDNS (atsmini.local) fehlt in Mini_OS.
+5. Stock TCP Remote Control auf Port 60000 fehlt in Mini_OS. Vor Integration prüfen, ob Mini_OS bereits eine gleichwertige Remote-Control-/Command-Schnittstelle besitzt und welche Protokollteile kompatibel sind.
+6. Webserver-Parität ist offen: Stock verwendet ESPAsyncWebServer/AsyncTCP; Mini_OS nutzt den synchronen WebServer. Eine Umstellung darf erst nach Prüfung der installierten Bibliotheken, Plattformversion, Route-Handler und Worker-Interaktionen erfolgen.
+7. MemoryManager braucht ein konkretes, begrenztes Konzept für PSRAM-Puffer und Messbarkeit. Keine pauschale globale new-/malloc-Überladung, solange Auswirkungen auf ESP32-Core, TLS, Treiber und FreeRTOS nicht vollständig geprüft sind.
+
+### Nächste Schritte – verbindliche Reihenfolge
+1. **WLAN-Lifecycle abschließen:** begin/deferred start, alle Modi, AP/STA-Kombination, suspend, setMode, Disconnect, Timeout, Reconnect und sauberes Stoppen systematisch gegen Referenz und ESP32-Core 3.3.12 prüfen. Zuständigkeiten zwischen WifiClient und WifiScanner eindeutig halten.
+2. **Scan-Verhalten vervollständigen:** Stock-Option wifiscanhidden als gespeicherte Einstellung ergänzen; falls aktiviert, Hidden-AP-Discovery/Probe-Phase modular und nichtblockierend ergänzen. Standard false beibehalten. Scan-Resultate erst freigeben, wenn alle erforderlichen Kandidaten-/Probe-Daten gesichert sind.
+3. **NTP/SYNC_ONLY und mDNS:** NTP-Sync-Only muss nach erfolgreicher Zeitübernahme Funk und temporäre Ressourcen beenden. mDNS atsmini.local nur in passenden Betriebsmodi starten und beim Stop/Suspend zuverlässig beenden.
+4. **MemoryManager gezielt vervollständigen:** vorhandene Telemetrie behalten; zusätzlich begrenzte statische Tracking-Möglichkeiten nur für explizit über MemoryManager laufende Puffer vorsehen (aktuelle Bytes, Peak, Modul, Capability, Freigabe-/Fehlerzählung). Untracked Arduino-/SDK-Allokationen klar als nicht erfasst kennzeichnen. Große Web-/Scan-/Service-Puffer auf PSRAM-Eignung prüfen, Größenlimits und Freigabepfade dokumentieren.
+5. **WLAN-Webkonfiguration integrieren:** Hidden-SSID-Einstellung und aussagekräftiger Status; bestehende Mini_OS-News-/Weather-Routen und UI erhalten. Danach Entscheidung über AsyncWebServer erst nach Dependency- und Kompatibilitätsprüfung.
+6. **TCP Remote Control abgleichen:** Stock-Port 60000 und Remote-Protokoll untersuchen; nur integrieren, wenn Mini_OS keine gleichwertige Funktion besitzt und Protokoll/Bedienung geklärt sind.
+7. Nach jeder abgeschlossenen Teilaufgabe HANDOVER aktualisieren und dem Nutzer einen kleinen, klaren Testumfang geben. Nutzer baut und testet selbst; keine Actions/Builds/Flashs durch den Assistenten.
+8. Erst wenn WLAN und Memorymanagement stabil sind, zu nachgeordneten Webserver-/Zeitdienst-/Zusatzdienst-Aufgaben zurückkehren. StationLogo-Optimierung bleibt ausdrücklich zuletzt.
+
+### Übergabestatus / nächster Assistent
+- **Direkt mit Schritt 1 fortfahren**, nicht erneut nur den Auftrag bestätigen.
+- Vor jeder Codeänderung betroffene vollständige Quellbereiche und Aufrufstellen lesen. Keine automatischen Text-Ersetzungen ohne exakte Kontextprüfung.
+- Änderungen ausschließlich in firetvstick2k2-afk/Mini_OS, Branch dev/first-build-preparation, über Primary-Link link_6af0594eadd081918bb824402ed84c2a. Keine neuen Branches.
+- HANDOVER.md bei jeder substanziellen Änderung mit Datum, Grund, Dateien, Commit, Verifikation, Build-/Hardwarestatus und nächstem Schritt ergänzen.
+- In dieser Sitzung wurden keine Firmware-Dateien geändert, kein Build/GitHub Actions gestartet und kein Gerät geflasht. Diese HANDOVER-Aktualisierung ist der einzige Schreibvorgang dieser Übergabe.
