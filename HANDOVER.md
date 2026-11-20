@@ -3443,3 +3443,50 @@ Commits:
 - Sichtbare WLAN-Modi im Display-Menü: `OFF` → `AUS`, `AP_ONLY` → `WEB`, `AP_CONNECT` → `WEB + WLAN`, `CONNECT` → `WLAN`, `SYNC_ONLY` → `NTP-SYNCHRONISATION`. Interne Enum-Werte und Moduslogik unverändert. Commit: `cfa18076e5150df2a9ac3da6e5215747dc8c5386`.
 - Hauptmenü enthält 24 Einträge (Index 0–23), die Drehgeber-Navigation hatte aber 25 Einträge als Grenze verwendet. Die Navigationsgrenze wurde auf 24 korrigiert; damit kann Auswahlindex 24 nicht mehr auf den leeren Eintrag laufen. Commit: `d64367c6e3881440bc8d5924182236e1148d7d5a`.
 - Nur Quelltextänderungen; kein Build, keine GitHub Action und kein Hardwaretest ausgeführt.
+
+
+## Zusammenfassung der letzten ATS-Mini-Dev-Portierungsarbeiten und nächste Grundfunktionen (2026-11-20)
+
+### Arbeitsumfang seit der letzten Übergabe
+
+Die folgenden Bereiche wurden im Zielprojekt `firetvstick2k2-afk/Mini_OS` auf `dev/first-build-preparation` bearbeitet. Die Einzelheiten und jeweiligen Commit-SHAs stehen in den Abschnitten weiter oben; dieser Eintrag fasst den aktuellen Übergabestand zusammen:
+
+- **MemoryManager:** bestehendes zentrales Speichermanagement erweitert, nicht durch einen zweiten Manager ersetzt. Explizit über den Manager angeforderte Heap-Allokationen werden mit Größe, Modul, Capability und Speicherbereich erfasst. Aktuelle und maximale Belegung werden getrennt für internes SRAM, PSRAM und OTHER ausgewiesen. Live-Allokationen können diagnostisch abgefragt werden; Tracking-Tabellen und Modul-Snapshot benötigen selbst keine dynamischen Heap-Allokationen. ESP-IDF-/Arduino-/FreeRTOS-/TLS-/HTTP-/String-Allokationen bleiben ausdrücklich getrennt und werden über die System-Heap-Telemetrie beobachtet. Es gibt keine globalen malloc/new-Overrides.
+- **WLAN-Grundfunktionen:** asynchroner Scan und Verbindungsaufbau, Auswahl gespeicherter Netzwerke anhand der Scan-Ergebnisse, optionale Hidden-SSID-Probe, sauberes Verhalten bei leeren Profilen und Scanfehlern, AP-/STA-/AP+STA-Lifecycle, Setup-AP-Status und getrennte AP-/STA-IP-Anzeige wurden nachgearbeitet. Die Mini_OS-Webserverarchitektur bleibt synchron; kein unbewerteter Wechsel auf AsyncWebServer.
+- **Netzwerkdienste:** mDNS-Hostname ist `mini-os.local`; Start und Stopp sind an die tatsächliche Netzverfügbarkeit gekoppelt. NTP/SNTP wird bei fehlender WLAN-Verbindung gestoppt und bei neuer Verbindung erneut gestartet; das Intervall wurde auf fünf Minuten gesetzt. `SYNC_ONLY` bleibt ein zeitlich begrenzter, netzwerkdienste-armer Modus ohne Webserver und Datenworker.
+- **TCP Remote Control:** separater, standardmäßig deaktivierter Dienst auf Port 60000 mit Mini_OS-Adapter für unterstützte Radio-/Encoder-/Display-/Memory-Kommandos. FM-Speicherfrequenzen verwenden das Referenz-Drahtformat; Persistenz wird gebündelt. Sleep, Kalibrierung, Screenshot und Theme-Editor sind weiterhin keine unterstützten Mini_OS-Funktionen; vollständige Protokollparität ist ausdrücklich nicht erreicht.
+- **Mini_OS-eigene News-/Weather-Dienste:** Worker werden erst bei echter STA-Verbindung und gültiger Konfiguration gestartet. Diese Dienste sind keine ATS-Mini-Dev-Portierungsfunktionen; WLAN liefert ihnen nur den korrekten Verbindungsstatus. Ihre Task-/Speicherentscheidungen werden eigenständig für Mini_OS bewertet.
+- **WLAN-Menütexte:** sichtbare Modusnamen wurden auf Deutsch angepasst (`AUS`, `WEB`, `WEB + WLAN`, `WLAN`, `NTP-SYNCHRONISATION`); interne Enum-Werte und Verhalten blieben unverändert.
+- **Hauptmenü-Bug:** Die tatsächliche Liste enthält 24 Einträge (Index 0–23), die Navigation erlaubte zuvor fälschlich 25. Die Grenze wurde auf 24 korrigiert, sodass kein leerer 25. Menüpunkt mehr ausgewählt werden kann.
+
+### Aktueller Prüf- und Freigabestatus
+
+- Quelltext- und Aufrufstellenprüfungen wurden für die genannten Änderungen durchgeführt; einzelne strukturelle Prüfungen (Klammer-/Stringzustände) waren unauffällig.
+- Diese Prüfungen sind keine Compilerprüfung. Es wurde kein Build gestartet, keine GitHub Action ausgelöst und keine Firmware geflasht.
+- Es liegt noch keine Bestätigung eines Builds oder Gerätetests durch den Nutzer vor. WLAN-Verhalten, NTP, mDNS, TCP und Speicherverhalten gelten daher als **quelltextseitig bearbeitet, aber nicht auf Hardware verifiziert**.
+- Die zuletzt dokumentierten Einzelcommits sind in den Abschnitten oben aufgeführt. Der Hauptmenü-Fix ist Commit `d64367c6e3881440bc8d5924182236e1148d7d5a`; die WLAN-Menütexte sind Commit `cfa18076e5150df2a9ac3da6e5215747dc8c5386`.
+
+### Nächster Arbeitsabschnitt – ATS-Mini-Dev → Mini_OS: Grundfunktionen vervollständigen
+
+Als Nächstes werden die noch unvollständigen bzw. nur teilweise übernommenen ATS-Mini-Dev-Grundfunktionen systematisch richtiggestellt. Nicht nur neue Funktionen hinzufügen: vorhandene Mini_OS-Übernahmen müssen anhand der Referenz auf Vollständigkeit, korrekte Semantik und saubere Integration geprüft und gegebenenfalls vervollständigt werden.
+
+**Priorität 1 – Speichermanagement vollständig auditieren und korrigieren**
+1. Zuerst den aktuellen Mini_OS-MemoryManager und sämtliche tatsächlichen Aufrufstellen erneut inventarisieren.
+2. In ATS-Mini-Dev die entsprechenden Referenzpfade und Speicherstrategien vollständig nachverfolgen.
+3. Alle relevanten expliziten Allokationen in Mini_OS erfassen: `malloc`/`ps_malloc`/`ps_calloc`, `heap_caps_malloc`, temporäre Puffer, Objekt-Lebenszyklen und Freigaben.
+4. Prüfen, welche Daten zwingend internes SRAM benötigen und welche sicher in PSRAM liegen dürfen. Keine pauschale Verlagerung ohne Capability-/DMA-/Treiberprüfung.
+5. Fehler-, Timeout-, Abbruch- und Wiederanlaufpfade auf vollständige Freigabe prüfen; Doppel-Frees, verwaiste Puffer, Größenfehler und ungetrackte explizite Allokationen korrigieren.
+6. Explizite App-Allokationen sauber dem bestehenden MemoryManager und einem Modul zuordnen. System-/Bibliotheksallokationen weiterhin separat ausweisen; keine globalen Overrides einführen.
+7. Insbesondere Webserver, WLAN/Scanner, TCP, EiBi, StationLogo, temporäre Decoder-/Display-Puffer sowie News/Weather als Mini_OS-eigene Dienste berücksichtigen.
+8. Mess- und Diagnoseausgaben so gestalten, dass interne SRAM-Engpässe, PSRAM-Belegung, größter freier Block, Fragmentierung, Stack-High-Water-Mark und Allokationsfehler getrennt beurteilt werden können.
+
+**Priorität 2 – halbfertige ATS-Mini-Dev-Übernahmen vervollständigen**
+1. Für jede Grundfunktion Referenzdateien, Mini_OS-Dateien, Call-Sites, Abhängigkeiten und sichtbares Verhalten gegenüberstellen.
+2. Status je Funktion eindeutig festhalten: vollständig portiert, teilweise portiert, Mini_OS-spezifische Abweichung, nicht unterstützt oder noch offen.
+3. Bereits vorhandene Teilimplementierungen nicht durch Parallelmodule ersetzen. Bestehende Manager und Services weiterverwenden und ihre Schnittstellen vervollständigen.
+4. Fehlende Referenzkommandos, Zustandsübergänge, Fehlerbehandlung, Persistenz und UI-Rückmeldungen gezielt ergänzen, soweit Mini_OS-Hardware und Architektur dies erlauben.
+5. Abweichungen aus Architektur- oder Bibliotheksgründen konkret begründen und dokumentieren; keine Schein-Parität oder Platzhalter als vollständige Funktion ausgeben.
+6. Nach jedem abgeschlossenen Teilbereich Dateien, Schnittstellen, Call-Sites, Commit-SHAs, statische Prüfungen und verbleibende Lücken hier eintragen.
+
+**Arbeitsreihenfolge:** MemoryManager-/Allokationsaudit zuerst; danach die unvollständigen Grundfunktionen anhand einer Referenz-/Ziel-Matrix priorisieren und einzeln vervollständigen. WLAN bleibt bis zum Nutzer-Build und Hardwaretest als quelltextseitig bearbeitet, aber nicht praktisch abgenommen markiert. Der Nutzer führt Builds und Gerätetests selbst aus.
+
