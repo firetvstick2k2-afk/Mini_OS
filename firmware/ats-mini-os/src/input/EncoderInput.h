@@ -22,6 +22,7 @@ public:
   void begin();
   void update();
   bool poll(EncoderEvent& event);
+  void inject(EncoderEventType type, int16_t delta = 0) { queueEvent(type, delta); }
   void IRAM_ATTR handleEncoderInterrupt();
 
 private:
