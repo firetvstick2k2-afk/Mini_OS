@@ -254,8 +254,6 @@ bool TcpRemoteService::setMemory(char* value) {
     sendError("Memory service unavailable");
     return false;
   }
-  char echoed[LINE_CAPACITY] = {};
-  strncpy(echoed, value, sizeof(echoed) - 1);
   char* slotText = value;
   char* bandText = strchr(slotText, ',');
   if (!bandText) { sendError("Expected slot,band,frequency,mode"); return false; }
@@ -286,7 +284,13 @@ bool TcpRemoteService::setMemory(char* value) {
   }
   // ATS-Mini-Dev's memory protocol uses 10-kHz units for FM, but kHz
   // for AM/SSB. Mini_OS stores every modulation internally in kHz.
-  if (mode == RadioModulation::FM) frequencyKHz *= 10U;
+  if (mode == RadioModulation::FM) {
+    if (frequencyKHz > UINT32_MAX / 10U) {
+      sendError("Invalid FM memory frequency");
+      return false;
+    }
+    frequencyKHz *= 10U;
+  }
   int bandIndex = -1;
   for (uint8_t i = 0; i < BandManager::count(); ++i) {
     const RadioBandDefinition& band = BandManager::at(i);
@@ -424,6 +428,7 @@ void TcpRemoteService::processCommand(char command) {
     sendError("Command is not available for the current band or mode");
     return;
   }
-  persistRadioState();
+  persistPending_ = true;
+  persistDueMs_ = millis();
   if (display_) display_->notifyTuning();
 }
