@@ -310,7 +310,7 @@ void WifiClient::handleRoot() {
             "background:#07111d;color:white}button{padding:12px 18px;background:#087e91;color:white;border:0;"
             "border-radius:4px;font-weight:bold}small{color:#9bb2c2}</style></head><body><main>"
             "<h1>ATS Mini OS</h1><h2>WLAN-Einrichtung</h2>"
-            "<p>Bis zu drei Netzwerke speichern. Das erste verfügbare Netzwerk wird verwendet.</p>");
+            "<p>Bis zu drei Netzwerke speichern. Verbunden wird mit dem stärksten gefundenen gespeicherten Netzwerk.</p>");
   for (uint8_t i = 0; i < NETWORK_COUNT; ++i) {
     page += F("<section><h3>WLAN Netzwerk ");
     page += String(i + 1);
@@ -354,20 +354,20 @@ void WifiClient::handleRoot() {
             "<section><h3>Verbindungsstatus</h3><p id='status'>Wird geladen ...</p>"
             "<small>Einrichtungs-WLAN: MINI-OS-WEB · Adresse: 10.1.1.1</small></section>"
             "<script>async function status(){try{let r=await fetch('/wifi/status');let j=await r.json();"
-            "document.getElementById('status').textContent=j.connected?'Verbunden: '+j.ssid+' · '+j.ip:"
-            "'Nicht mit Router verbunden · Setup-Seite bleibt erreichbar';}catch(e){}}status();setInterval(status,3000);</script>"
+            "let s=j.connected?'Router: '+j.ssid+' · '+j.sta_ip:"
+            (j.ap_active?'Setup-WLAN: '+j.ssid+' · '+j.ap_ip:'Nicht mit Router verbunden');"
+            "if(j.connected&&j.ap_active)s+=' · Setup: '+j.ap_ip;"
+            "document.getElementById('status').textContent=s;}catch(e){}}status();setInterval(status,3000);</script>"
             "</main></body></html>");
   server_.send(200, "text/html; charset=utf-8", page);
 }
 
 void WifiClient::handleSave() {
-  bool any = false;
   for (uint8_t i = 0; i < NETWORK_COUNT; ++i) {
     const String ssidArg = server_.arg(String("ssid") + String(i + 1));
     const String passArg = server_.arg(String("pass") + String(i + 1));
     if (server_.hasArg(String("ssid") + String(i + 1))) {
       ssidArg.toCharArray(ssid_[i], sizeof(ssid_[i]));
-      any |= ssid_[i][0] != '\0';
     }
     // An empty password field deliberately preserves the previously saved secret.
     if (passArg.length()) passArg.toCharArray(password_[i], sizeof(password_[i]));
@@ -485,6 +485,8 @@ void WifiClient::handleStatus() {
   json += ",\"ssid\":\"" + escapedSsid + "\",\"ip\":\"" + ip + "\"";
   json += ",\"mode\":" + String(static_cast<uint8_t>(mode_));
   json += ",\"rssi\":" + String(isConnected ? WiFi.RSSI() : 0);
+  json += ",\"sta_ip\":\"" + (isConnected ? WiFi.localIP().toString() : String("")) + "\"";
+  json += ",\"ap_ip\":\"" + (apActive_ ? WiFi.softAPIP().toString() : String("")) + "\"";
   json += ",\"ap_active\":" + String(apActive_ ? "true" : "false");
   json += ",\"ap_clients\":" + String(apActive_ ? WiFi.softAPgetStationNum() : 0);
   json += ",\"hidden_scan\":" + String(wifiScanHidden_ ? "true" : "false");
@@ -521,6 +523,7 @@ void WifiClient::startNetworkScan() {
   if (!scanner_.begin(saved, NETWORK_COUNT, wifiScanHidden_)) {
     lastAttemptMs_ = millis();
     BootDiagnostics::write("[WIFI] asynchronous scan could not start");
+    if (wifiScanHidden_) tryNextScannedNetwork();
     return;
   }
   attemptInProgress_ = false;
