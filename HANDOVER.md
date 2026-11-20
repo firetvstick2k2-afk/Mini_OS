@@ -3286,3 +3286,11 @@ Commit: c1b617ca17a3547d1932e23e0d05957df28febe5 (API) / f3ac51130ce625f0b822637
 - Statische Prüfung: Änderungen und Call-Sites geprüft; kein Build, kein GitHub-Actions-Lauf und kein Hardwaretest ausgeführt.
 
 Commits: e1ce98c12d758ecc422993d39521cf442c1b3f08 (Schnittstelle) / c7a6805d42951909bfc5c8dc887baccad536f96e (WLAN-Lifecycle) / 2f02e407ea8c2fb565e6355fdac19646b94b3c57 (Loop-Anbindung).
+
+
+## WLAN-Portierung – Korrekturen nach Quellenprüfung (2026-11-20)
+
+- Zeitstempel verwenden einen von null verschiedenen Sentinel, damit SYNC_ONLY-Timeouts auch bei sehr frühem Start zuverlässig laufen.
+- mDNS-Retry-Timestamp ist ebenfalls gegen `millis()==0` abgesichert.
+- Der WLAN-Setup-Name in der Statusseite entspricht jetzt der tatsächlich gestarteten SSID `MINI-OS-WEB`.
+- Commit: ea9061909a69c27644b5ed74a2bf3b69a72d7192.
