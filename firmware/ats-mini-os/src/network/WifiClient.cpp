@@ -354,8 +354,7 @@ void WifiClient::handleRoot() {
             "<section><h3>Verbindungsstatus</h3><p id='status'>Wird geladen ...</p>"
             "<small>Einrichtungs-WLAN: MINI-OS-WEB · Adresse: 10.1.1.1</small></section>"
             "<script>async function status(){try{let r=await fetch('/wifi/status');let j=await r.json();"
-            "let s=j.connected?'Router: '+j.ssid+' · '+j.sta_ip:"
-            (j.ap_active?'Setup-WLAN: '+j.ssid+' · '+j.ap_ip:'Nicht mit Router verbunden');"
+            "let s=j.connected?'Router: '+j.ssid+' · '+j.sta_ip:(j.ap_active?'Setup-WLAN: '+j.ssid+' · '+j.ap_ip:'Nicht mit Router verbunden');"
             "if(j.connected&&j.ap_active)s+=' · Setup: '+j.ap_ip;"
             "document.getElementById('status').textContent=s;}catch(e){}}status();setInterval(status,3000);</script>"
             "</main></body></html>");
