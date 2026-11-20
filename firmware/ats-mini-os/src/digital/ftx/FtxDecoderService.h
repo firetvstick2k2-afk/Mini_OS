@@ -15,6 +15,7 @@ public:
   bool enter(FtxMode mode, bool wifiOff, bool utcSynchronized, AudioCaptureService& capture);
   void exit();
   bool active() const { return active_; }
+  uint16_t audioLevel() const { return audioLevel_; }
   FtxMode mode() const { return mode_; }
   bool copyWaterfall(uint8_t* out, uint16_t maxRows, uint16_t outBins, uint16_t& rows, uint16_t& bins);
   uint32_t droppedBlocks() const { return droppedBlocks_; }
@@ -60,6 +61,7 @@ private:
   FtxDecodedMessage published_[kResultCapacity]{};
   FtxMode mode_ = FtxMode::FT8;
   volatile bool active_ = false;
+  volatile uint16_t audioLevel_ = 0;
   bool initialized_ = false;
   bool collecting_ = false;
   int64_t activeSlotStartUs_ = 0;
