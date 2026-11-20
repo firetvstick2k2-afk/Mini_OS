@@ -4,7 +4,7 @@
 
 namespace {
 constexpr char SETTINGS_NAMESPACE[] = "network";
-constexpr char SETUP_AP_SSID[] = "ATS-Mini-OS-Setup";
+constexpr char SETUP_AP_SSID[] = "MINI-OS-WEB";
 constexpr int SETUP_AP_CHANNEL = 10;
 constexpr int SETUP_AP_MAX_CLIENTS = 3;
 const IPAddress SETUP_IP(10, 1, 1, 1);
