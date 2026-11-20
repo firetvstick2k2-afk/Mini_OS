@@ -3436,3 +3436,10 @@ Commits:
 - Die interne Enum-Reihenfolge, gespeicherten Moduswerte, Zustandsübergänge und Auswahl-/Aktivierungslogik wurden nicht verändert. Es handelt sich ausschließlich um eine Änderung der angezeigten Texte in `DisplayDriver.cpp`.
 - Commit: `cfa18076e5150df2a9ac3da6e5215747dc8c5386`.
 - Kein Build, keine GitHub Action und kein Hardwaretest ausgeführt.
+
+
+## WLAN-Menütexte und Hauptmenü-Zähler (2026-11-20)
+
+- Sichtbare WLAN-Modi im Display-Menü: `OFF` → `AUS`, `AP_ONLY` → `WEB`, `AP_CONNECT` → `WEB + WLAN`, `CONNECT` → `WLAN`, `SYNC_ONLY` → `NTP-SYNCHRONISATION`. Interne Enum-Werte und Moduslogik unverändert. Commit: `cfa18076e5150df2a9ac3da6e5215747dc8c5386`.
+- Hauptmenü enthält 24 Einträge (Index 0–23), die Drehgeber-Navigation hatte aber 25 Einträge als Grenze verwendet. Die Navigationsgrenze wurde auf 24 korrigiert; damit kann Auswahlindex 24 nicht mehr auf den leeren Eintrag laufen. Commit: `d64367c6e3881440bc8d5924182236e1148d7d5a`.
+- Nur Quelltextänderungen; kein Build, keine GitHub Action und kein Hardwaretest ausgeführt.
