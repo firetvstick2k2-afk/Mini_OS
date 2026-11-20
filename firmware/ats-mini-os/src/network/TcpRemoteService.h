@@ -37,6 +37,8 @@ private:
   uint8_t remoteSequence_ = 0;
   uint32_t lastListenAttemptMs_ = 0;
   uint32_t lastStatusMs_ = 0;
+  uint32_t persistDueMs_ = 0;
+  bool persistPending_ = false;
 
   void processCommand(char command);
   void processLineCommand(char command, char* line);
