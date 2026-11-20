@@ -120,9 +120,12 @@ void WifiClient::startDataWorkers() {
       BootDiagnostics::printf("[NEWS] lazy worker start=%s", newsWorkerStarted_ ? "success" : "failed");
     }
   }
-  if (weatherService_ && !weatherWorkerStarted_) {
+  if (weatherService_ && !weatherWorkerStarted_ && !weatherConfigChecked_) {
     weatherWorkerStarted_ = weatherService_->begin();
-    BootDiagnostics::printf("[WEATHER] lazy worker start=%s", weatherWorkerStarted_ ? "success" : "failed");
+    weatherConfigChecked_ = !weatherService_->hasConfiguredLocation();
+    BootDiagnostics::printf("[WEATHER] lazy worker start=%s",
+      weatherWorkerStarted_ ? "success" :
+      weatherConfigChecked_ ? "skipped: no postal code" : "failed; retry scheduled");
   }
 }
 
@@ -465,6 +468,8 @@ void WifiClient::handleWeatherSave() {
     server_.send(400, "text/plain; charset=utf-8", "Bitte eine gültige fünfstellige deutsche Postleitzahl eingeben oder Speichern prüfen.");
     return;
   }
+  weatherConfigChecked_ = false;
+  if (connected() && dataServicesAllowed()) startDataWorkers();
   server_.send(200, "text/html; charset=utf-8",
     "<meta charset='utf-8'><meta http-equiv='refresh' content='2;url=/'><p>Wetter-Standort gespeichert. Die Wetterdaten werden neu geladen.</p>");
 }
@@ -639,7 +644,7 @@ void WifiClient::update(bool timeSynchronized) {
       hasFeed = hasFeed || config.urls[i][0] != '\0';
     newsWorkerNeeded = config.enabled && hasFeed;
   }
-  const bool weatherWorkerNeeded = weatherService_ && !weatherWorkerStarted_;
+  const bool weatherWorkerNeeded = weatherService_ && !weatherWorkerStarted_ && !weatherConfigChecked_;
   if (status == WL_CONNECTED && dataServicesAllowed() &&
       (newsWorkerNeeded || weatherWorkerNeeded) &&
       (!lastWorkerStartAttemptMs_ || now - lastWorkerStartAttemptMs_ >= 5000)) {
