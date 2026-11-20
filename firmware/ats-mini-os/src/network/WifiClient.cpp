@@ -31,7 +31,7 @@ bool WifiClient::accessPointEnabled() const {
 void WifiClient::begin() {
   BootDiagnostics::printf("[WIFI][BOOT] begin enter free_heap=%u max_block=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
   WiFi.persistent(false);
-  WiFi.setAutoReconnect(true);
+  WiFi.setAutoReconnect(false);
   preferencesReady_ = preferences_.begin(SETTINGS_NAMESPACE, false, "settings");
   if (preferencesReady_) {
     loadNetworks();
@@ -102,16 +102,7 @@ void WifiClient::applyMode() {
     apActive_ = WiFi.softAP(SETUP_AP_SSID);
   }
   if (stationEnabled()) {
-    bool found = false;
-    for (uint8_t i = 0; i < NETWORK_COUNT; ++i) {
-      if (ssid_[i][0]) { activeNetwork_ = i; found = true; break; }
-    }
-    if (found) {
-      WiFi.begin(ssid_[activeNetwork_], password_[activeNetwork_]);
-      lastAttemptMs_ = millis();
-      Serial.printf("[WIFI] connecting to saved network slot %u\\n",
-                    static_cast<unsigned>(activeNetwork_ + 1));
-    } else Serial.println("[WIFI] no saved router network");
+    connectNextNetwork();
   }
   Serial.printf("[WIFI] mode=%u AP=%s STA=%s\\n",
     static_cast<unsigned>(mode_), apActive_ ? "ON" : "OFF",
@@ -392,46 +383,92 @@ void WifiClient::handleStatus() {
 
 void WifiClient::connectNextNetwork() {
   if (!stationEnabled()) return;
-  for (uint8_t n = 0; n < NETWORK_COUNT; ++n) {
-    activeNetwork_ = static_cast<uint8_t>((activeNetwork_ + n) % NETWORK_COUNT);
-    if (!ssid_[activeNetwork_][0]) continue;
-    WiFi.begin(ssid_[activeNetwork_], password_[activeNetwork_]);
+  scanner_.stop();
+  WiFi.disconnect(false, false);
+  connectCycleStartedMs_ = millis();
+  connectCycleActive_ = true;
+  attemptInProgress_ = false;
+  startNetworkScan();
+}
+
+void WifiClient::startNetworkScan() {
+  const char* saved[NETWORK_COUNT] = { ssid_[0], ssid_[1], ssid_[2] };
+  if (!scanner_.begin(saved, NETWORK_COUNT, false)) {
     lastAttemptMs_ = millis();
-    Serial.printf("[WIFI] trying saved network slot %u\n", static_cast<unsigned>(activeNetwork_ + 1));
+    BootDiagnostics::write("[WIFI] asynchronous scan could not start");
     return;
   }
-  Serial.println("[WIFI] no configured SSID found");
+  attemptInProgress_ = false;
+  lastAttemptMs_ = millis();
+  BootDiagnostics::write("[WIFI] asynchronous network scan started");
+}
+
+void WifiClient::tryNextScannedNetwork() {
+  WifiScanner::Candidate candidate;
+  if (!scanner_.next(candidate)) {
+    attemptInProgress_ = false;
+    lastAttemptMs_ = millis();
+    return;
+  }
+  activeNetwork_ = candidate.networkIndex;
+  const char* password = candidate.open || !password_[activeNetwork_][0]
+    ? nullptr : password_[activeNetwork_];
+  WiFi.begin(ssid_[activeNetwork_], password, candidate.channel, candidate.bssid);
+  lastAttemptMs_ = millis();
+  attemptInProgress_ = true;
+  Serial.printf("[WIFI] trying strongest candidate slot %u RSSI=%d dBm channel=%ld\\n",
+    static_cast<unsigned>(activeNetwork_ + 1),
+    static_cast<int>(candidate.rssi),
+    static_cast<long>(candidate.channel));
 }
 
 void WifiClient::update() {
   if (!started_) return;
   if (serverStarted_ && mode_ != Mode::SYNC_ONLY) server_.handleClient();
-  const wl_status_t status = WiFi.status();
+
   const uint32_t now = millis();
+  const wl_status_t status = WiFi.status();
   if (status != lastStatus_) {
     lastStatus_ = status;
     if (status == WL_CONNECTED) {
+      connectCycleActive_ = false;
+      attemptInProgress_ = false;
+      scanner_.stop();
+      WiFi.setAutoReconnect(true);
       BootDiagnostics::printf("[WIFI] connected ssid='%s' ip=%s rssi=%d",
         WiFi.SSID().c_str(), WiFi.localIP().toString().c_str(), WiFi.RSSI());
+      Serial.printf("[WIFI] connected; IP=%s RSSI=%d dBm\\n",
+                    WiFi.localIP().toString().c_str(), WiFi.RSSI());
     } else {
       BootDiagnostics::printf("[WIFI] connection state changed status=%d", static_cast<int>(status));
-    }
-    if (status == WL_CONNECTED) {
-      Serial.printf("[WIFI] connected; IP=%s RSSI=%d dBm\n",
-                    WiFi.localIP().toString().c_str(), WiFi.RSSI());
-    } else if (status == WL_NO_SSID_AVAIL || status == WL_CONNECT_FAILED) {
-      Serial.printf("[WIFI] network unavailable/connection failed (status=%d)\n", static_cast<int>(status));
-    } else if (status == WL_DISCONNECTED) {
-      Serial.println("[WIFI] disconnected; setup AP remains active");
+      if (status == WL_NO_SSID_AVAIL || status == WL_CONNECT_FAILED)
+        Serial.printf("[WIFI] association failed (status=%d)\\n", static_cast<int>(status));
+      else if (status == WL_DISCONNECTED)
+        Serial.println("[WIFI] disconnected; setup AP remains active");
     }
   }
-  if (stationEnabled() && status != WL_CONNECTED && now - lastAttemptMs_ >= RETRY_INTERVAL_MS) {
-    lastAttemptMs_ = now;
-    connectNextNetwork();
+
+  if (stationEnabled() && status != WL_CONNECTED && connectCycleActive_) {
+    if (now - connectCycleStartedMs_ >= TOTAL_CONNECT_TIMEOUT_MS) {
+      scanner_.stop();
+      WiFi.disconnect(false, false);
+      connectCycleActive_ = false;
+      attemptInProgress_ = false;
+      BootDiagnostics::write("[WIFI] total connection timeout; AP remains available");
+    } else if (scanner_.scanning()) {
+      if (scanner_.update() && scanner_.ready()) tryNextScannedNetwork();
+    } else if (attemptInProgress_ && now - lastAttemptMs_ >= ATTEMPT_TIMEOUT_MS) {
+      WiFi.disconnect(false, false);
+      attemptInProgress_ = false;
+      tryNextScannedNetwork();
+    } else if (!attemptInProgress_ && now - lastAttemptMs_ >= RESCAN_DELAY_MS) {
+      startNetworkScan();
+    }
   }
+
   if (status != WL_CONNECTED && now - lastLogMs_ >= 15000) {
     lastLogMs_ = now;
-    Serial.printf("[WIFI] waiting for router; setup page http://10.1.1.1/ (status=%d)\n",
+    Serial.printf("[WIFI] waiting for router; setup page http://10.1.1.1/ (status=%d)\\n",
                   static_cast<int>(status));
   }
 }
