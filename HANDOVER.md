@@ -3315,3 +3315,13 @@ Commits: e1ce98c12d758ecc422993d39521cf442c1b3f08 (Schnittstelle) / c7a6805d4295
 - Statische Prüfung steht noch aus; kein Build, kein GitHub-Actions-Lauf und kein Hardwaretest ausgeführt.
 
 Commits: 3f80964ef7f7ceae817a221009f9bf094f11b81d (Schnittstelle) / ab1731dd29542439cb172d19b2e8d5a8ccfb08c7 (Implementierung).
+
+
+## WLAN-Arbeit – mDNS-Hostname (2026-11-20)
+
+- Der lokale mDNS-Hostname wurde in `WifiClient::updateMdns()` von `atsmini.local` auf **`mini-os.local`** geändert.
+- Der HTTP-Dienst wird weiterhin auf Port 80 angekündigt; Startbedingungen und Lifecycle bleiben unverändert (AP oder verbundene STA, nicht in `SYNC_ONLY`/OFF).
+- Geänderte Datei: `firmware/ats-mini-os/src/network/WifiClient.cpp`.
+- Commit: `62c197f3fa28afcfa9bc3abb464cb9bd419b423f`.
+- Statische Prüfung: Quelltextänderung gezielt auf Hostname und Diagnosemeldung begrenzt. Kein Build, kein GitHub-Action-Lauf und kein Hardwaretest.
+- WLAN-Baustelle bleibt offen: Referenzvergleich und Prüfung von Reconnect-/SYNC_ONLY-/mDNS-Lifecycle, WLAN-Status/Weboberfläche und TCP-Remote-Anbindung fortsetzen.
