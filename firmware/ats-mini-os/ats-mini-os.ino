@@ -11,6 +11,7 @@
 #include "src/radio/SeekService.h"
 #include "src/system/PerformanceManager.h"
 #include "src/system/BootDiagnostics.h"
+#include "src/system/MemoryManager.h"
 #include "src/system/ClockService.h"
 #include "src/system/MoonCalendar.h"
 #include "src/eibi/EiBiService.h"
@@ -318,6 +319,8 @@ void setup() {
   const bool storageReady = StorageDiscovery::begin();
   const bool settingsReady = settingsStore.begin();
   BootDiagnostics::begin(settingsStore.bootLogEnabled(true));
+  MemoryManager::begin();
+  MemoryManager::logStage("STORAGE_AND_SETTINGS_READY");
 
   // Prepare the News cache folders immediately after LittleFS is mounted,
   // just like the station-logo folders. This is idempotent and never formats
@@ -360,6 +363,7 @@ void setup() {
     Serial.printf("[DISPLAY] first UI initialized; brightness=%u/255\n",
       static_cast<unsigned>(display.brightness()));
   }
+  MemoryManager::logStage("DISPLAY_INIT_DONE");
   const uint32_t startupFmFrequencyKHz =
     settingsStore.lastFmFrequencyKHz(DEFAULT_FM_FREQUENCY_KHZ);
   Serial.printf("[SETTINGS] startup FM frequency %.2f MHz (%s)\n",
@@ -406,10 +410,12 @@ void setup() {
   } else {
     Serial.println("[TUNER] init failed; check I2C, radio power and GPIO configuration.");
   }
+  MemoryManager::logStage("RADIO_INIT_DONE");
   wifi.setNewsService(&newsService);
   wifi.setWeatherService(&weatherService);
   BootDiagnostics::printf("[BOOT][STAGE] before wifi.begin free_heap=%u max_block=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
   wifi.begin();
+  MemoryManager::logStage("WIFI_INIT_DONE");
   BootDiagnostics::printf("[BOOT][STAGE] after wifi.begin (deferred) free_heap=%u max_block=%u min_free=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()));
   // Layout-dependent networking is requested at the start of loop(), not during setup.
   BootDiagnostics::printf("[BOOT][STAGE] setup complete free_heap=%u max_block=%u min_free=%u loop_stack_high_water=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()), static_cast<unsigned>(ESP.getMinFreeHeap()), static_cast<unsigned>(uxTaskGetStackHighWaterMark(nullptr)));
@@ -428,6 +434,7 @@ void loop() {
       BootDiagnostics::write("[LOOP][TRACE] on-demand Wi-Fi startup returned");
     }
   }
+  MemoryManager::update();
   performance.update();
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] performance.update done");
   wifi.update();
