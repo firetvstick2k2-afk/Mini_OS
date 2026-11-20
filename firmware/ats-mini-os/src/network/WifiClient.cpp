@@ -1,6 +1,7 @@
 #include "WifiClient.h"
 #include "../news/NewsService.h"
 #include "../system/BootDiagnostics.h"
+#include <ESPmDNS.h>
 
 namespace {
 constexpr char SETTINGS_NAMESPACE[] = "network";
@@ -51,6 +52,7 @@ void WifiClient::begin() {
   preferencesReady_ = preferences_.begin(SETTINGS_NAMESPACE, false, "settings");
   if (preferencesReady_) {
     loadNetworks();
+    wifiScanHidden_ = preferences_.getBool("wifiscanhidden", false);
     loadNewsConfig();
     const uint8_t savedMode = preferences_.getUChar("wmode", static_cast<uint8_t>(Mode::AP_CONNECT));
     mode_ = savedMode <= static_cast<uint8_t>(Mode::SYNC_ONLY)
@@ -70,7 +72,8 @@ void WifiClient::suspend() {
   scanner_.stop();
   connectCycleActive_ = false;
   attemptInProgress_ = false;
-  BootDiagnostics::write("[WIFI] temporarily suspended for digital decoder");
+  stopMdns();
+  BootDiagnostics::write("[WIFI] temporarily suspended; stopping web server and radio");
   if (serverStarted_) {
     server_.stop();
     serverStarted_ = false;
@@ -80,6 +83,9 @@ void WifiClient::suspend() {
   WiFi.mode(WIFI_OFF);
   apActive_ = false;
   started_ = false;
+  syncOnlyStartedMs_ = 0;
+  syncOnlyConnectedAtMs_ = 0;
+  lastStatus_ = WL_IDLE_STATUS;
 }
 
 bool WifiClient::ensureStarted() {
@@ -87,10 +93,17 @@ bool WifiClient::ensureStarted() {
   // OFF is a runtime state, not a permanent veto: a feature that genuinely
   // requires networking may activate the saved/default network mode.
   if (mode_ == Mode::OFF) mode_ = Mode::AP_CONNECT;
+  syncOnlyStartedMs_ = mode_ == Mode::SYNC_ONLY ? millis() : 0;
+  syncOnlyConnectedAtMs_ = 0;
   BootDiagnostics::write("[WIFI] on-demand activation requested");
   applyMode();
   started_ = true;
-  startWebServer();
+  if (mode_ != Mode::SYNC_ONLY) startWebServer();
+  if (dataServicesAllowed()) startDataWorkers();
+  return true;
+}
+
+void WifiClient::startDataWorkers() {
   if (newsService_) {
     const bool ok = newsService_->begin();
     BootDiagnostics::printf("[NEWS] lazy worker start=%s", ok ? "success" : "failed");
@@ -99,13 +112,42 @@ bool WifiClient::ensureStarted() {
     const bool ok = weatherService_->begin();
     BootDiagnostics::printf("[WEATHER] lazy worker start=%s", ok ? "success" : "failed");
   }
-  return true;
+}
+
+void WifiClient::stopMdns() {
+  if (mdnsStarted_) {
+    MDNS.end();
+    mdnsStarted_ = false;
+  }
+  mdnsRetryMs_ = 0;
+}
+
+void WifiClient::updateMdns() {
+  const bool networkAvailable = started_ && mode_ != Mode::OFF &&
+    mode_ != Mode::SYNC_ONLY && (apActive_ || WiFi.status() == WL_CONNECTED);
+  if (!networkAvailable) {
+    stopMdns();
+    return;
+  }
+  if (mdnsStarted_) return;
+  const uint32_t now = millis();
+  if (mdnsRetryMs_ && now - mdnsRetryMs_ < 5000) return;
+  mdnsRetryMs_ = now;
+  if (MDNS.begin("atsmini")) {
+    MDNS.addService("http", "tcp", 80);
+    mdnsStarted_ = true;
+    BootDiagnostics::write("[WIFI][MDNS] atsmini.local HTTP service started");
+  } else {
+    BootDiagnostics::write("[WIFI][MDNS] start failed; retry scheduled");
+  }
 }
 
 void WifiClient::applyMode() {
   scanner_.stop();
+  stopMdns();
   connectCycleActive_ = false;
   attemptInProgress_ = false;
+  syncOnlyConnectedAtMs_ = 0;
   WiFi.setAutoReconnect(false);
   WiFi.softAPdisconnect(false);
   WiFi.disconnect(false, false);
@@ -121,15 +163,12 @@ void WifiClient::applyMode() {
   else WiFi.mode(WIFI_STA);
 
   if (accessPointEnabled()) {
-    // Match Stock's deterministic setup-AP radio settings while retaining
-    // Mini_OS's own setup SSID and address.
+    // Keep Mini_OS's setup SSID while matching the reference AP network settings.
     apActive_ = WiFi.softAP(SETUP_AP_SSID, nullptr,
                             SETUP_AP_CHANNEL, false, SETUP_AP_MAX_CLIENTS);
     WiFi.softAPConfig(SETUP_IP, SETUP_GATEWAY, SETUP_SUBNET);
   }
-  if (stationEnabled()) {
-    connectNextNetwork();
-  }
+  if (stationEnabled()) connectNextNetwork();
   Serial.printf("[WIFI] mode=%u AP=%s STA=%s\\n",
     static_cast<unsigned>(mode_), apActive_ ? "ON" : "OFF",
     stationEnabled() ? "ON" : "OFF");
@@ -140,6 +179,8 @@ bool WifiClient::setMode(Mode mode) {
   if (preferencesReady_ &&
       preferences_.putUChar("wmode", static_cast<uint8_t>(mode)) != sizeof(uint8_t)) return false;
   mode_ = mode;
+  syncOnlyStartedMs_ = mode_ == Mode::SYNC_ONLY ? millis() : 0;
+  syncOnlyConnectedAtMs_ = 0;
   if (mode_ == Mode::OFF) {
     if (serverStarted_) {
       server_.stop();
@@ -149,8 +190,17 @@ bool WifiClient::setMode(Mode mode) {
     started_ = false;
     return true;
   }
-  if (started_) applyMode();
-  else return ensureStarted();
+  if (!started_) return ensureStarted();
+  applyMode();
+  if (mode_ == Mode::SYNC_ONLY) {
+    if (serverStarted_) {
+      server_.stop();
+      serverStarted_ = false;
+    }
+  } else {
+    startWebServer();
+    if (dataServicesAllowed()) startDataWorkers();
+  }
   return true;
 }
 
@@ -210,20 +260,16 @@ void WifiClient::loadNewsConfig() {
 }
 
 void WifiClient::startWebServer() {
-  BootDiagnostics::printf("[WIFI][WEB] registering routes free_heap=%u", static_cast<unsigned>(ESP.getFreeHeap()));
-
-  server_.on("/", HTTP_GET, [this]() { handleRoot(); });
-
-  server_.on("/wifi/save", HTTP_POST, [this]() { handleSave(); });
-
-  server_.on("/wifi/status", HTTP_GET, [this]() { handleStatus(); });
-
-  server_.on("/news/save", HTTP_POST, [this]() { handleNewsSave(); });
-
-  server_.on("/weather/save", HTTP_POST, [this]() { handleWeatherSave(); });
-
-  server_.onNotFound([this]() { server_.send(404, "text/plain", "Not found"); });
-
+  BootDiagnostics::printf("[WIFI][WEB] preparing routes free_heap=%u", static_cast<unsigned>(ESP.getFreeHeap()));
+  if (!routesRegistered_) {
+    server_.on("/", HTTP_GET, [this]() { handleRoot(); });
+    server_.on("/wifi/save", HTTP_POST, [this]() { handleSave(); });
+    server_.on("/wifi/status", HTTP_GET, [this]() { handleStatus(); });
+    server_.on("/news/save", HTTP_POST, [this]() { handleNewsSave(); });
+    server_.on("/weather/save", HTTP_POST, [this]() { handleWeatherSave(); });
+    server_.onNotFound([this]() { server_.send(404, "text/plain", "Not found"); });
+    routesRegistered_ = true;
+  }
   BootDiagnostics::write("[WIFI][WEB] calling WebServer.begin");
   server_.begin();
   serverStarted_ = true;
@@ -290,6 +336,9 @@ void WifiClient::handleRoot() {
   page += F("<form method='post' action='/weather/save'><label>Postleitzahl</label><input name='postal' inputmode='numeric' pattern='[0-9]{5}' minlength='5' maxlength='5' required value='");
   page += weatherService_ ? htmlEscape(weatherService_->postalCode()) : String("");
   page += F("'><button type='submit'>Wetter-Standort speichern</button></form></section>");
+  page += F("<section><label><input style='width:auto' type='checkbox' name='wifiscanhidden' value='1' form='wifi'");
+  if (wifiScanHidden_) page += F(" checked");
+  page += F("> Versteckte WLAN-Netzwerke bei der Suche berücksichtigen</label></section>");
   page += F("<form id='wifi' method='post' action='/wifi/save'><button type='submit'>Speichern und verbinden</button></form>"
             "<section><h3>Verbindungsstatus</h3><p id='status'>Wird geladen ...</p>"
             "<small>Einrichtungs-WLAN: ATS-Mini-OS-Setup · Adresse: 10.1.1.1</small></section>"
@@ -315,6 +364,11 @@ void WifiClient::handleSave() {
   }
   if (!saveNetworks()) {
     server_.send(500, "text/plain; charset=utf-8", "Speichern fehlgeschlagen: NVS nicht verfügbar");
+    return;
+  }
+  wifiScanHidden_ = server_.hasArg("wifiscanhidden");
+  if (preferences_.putBool("wifiscanhidden", wifiScanHidden_) != sizeof(bool)) {
+    server_.send(500, "text/plain; charset=utf-8", "Die WLAN-Suchoption konnte nicht gespeichert werden.");
     return;
   }
   server_.send(200, "text/html; charset=utf-8",
@@ -397,13 +451,28 @@ void WifiClient::handleWeatherSave() {
 
 void WifiClient::handleStatus() {
   const bool isConnected = connected();
-  String json = "{\"connected\":";
+  const String ssid = networkName();
+  const String ip = ipAddress();
+  String escapedSsid;
+  escapedSsid.reserve(ssid.length() + 8);
+  for (size_t i = 0; i < ssid.length(); ++i) {
+    const char c = ssid[i];
+    if (c == '"' || c == '\\') { escapedSsid += '\\'; escapedSsid += c; }
+    else if (c == '\n') escapedSsid += F("\\n");
+    else if (c == '\r') escapedSsid += F("\\r");
+    else if (static_cast<uint8_t>(c) >= 0x20) escapedSsid += c;
+  }
+  String json;
+  json.reserve(192);
+  json = "{\"connected\":";
   json += isConnected ? "true" : "false";
-  json += ",\"ssid\":\"";
-  if (isConnected) json += WiFi.SSID();
-  json += "\",\"ip\":\"";
-  json += isConnected ? WiFi.localIP().toString() : String("10.1.1.1");
-  json += "\"}";
+  json += ",\"ssid\":\"" + escapedSsid + "\",\"ip\":\"" + ip + "\"";
+  json += ",\"mode\":" + String(static_cast<uint8_t>(mode_));
+  json += ",\"rssi\":" + String(isConnected ? WiFi.RSSI() : 0);
+  json += ",\"ap_active\":" + String(apActive_ ? "true" : "false");
+  json += ",\"ap_clients\":" + String(apActive_ ? WiFi.softAPgetStationNum() : 0);
+  json += ",\"hidden_scan\":" + String(wifiScanHidden_ ? "true" : "false");
+  json += ",\"mdns\":" + String(mdnsStarted_ ? "true" : "false") + "}";
   server_.send(200, "application/json", json);
 }
 
@@ -415,6 +484,7 @@ void WifiClient::connectNextNetwork() {
   if (!hasSavedNetwork) {
     connectCycleActive_ = false;
     attemptInProgress_ = false;
+    lastAttemptMs_ = millis();
     BootDiagnostics::write("[WIFI] no saved router network");
     return;
   }
@@ -429,7 +499,7 @@ void WifiClient::connectNextNetwork() {
 
 void WifiClient::startNetworkScan() {
   const char* saved[NETWORK_COUNT] = { ssid_[0], ssid_[1], ssid_[2] };
-  if (!scanner_.begin(saved, NETWORK_COUNT, false)) {
+  if (!scanner_.begin(saved, NETWORK_COUNT, wifiScanHidden_)) {
     lastAttemptMs_ = millis();
     BootDiagnostics::write("[WIFI] asynchronous scan could not start");
     return;
@@ -458,25 +528,32 @@ void WifiClient::tryNextScannedNetwork() {
     static_cast<long>(candidate.channel));
 }
 
-void WifiClient::update() {
+void WifiClient::update(bool timeSynchronized) {
   if (!started_) return;
   if (serverStarted_ && mode_ != Mode::SYNC_ONLY) server_.handleClient();
 
   const uint32_t now = millis();
   const wl_status_t status = WiFi.status();
   if (status != lastStatus_) {
+    const wl_status_t previousStatus = lastStatus_;
     lastStatus_ = status;
     if (status == WL_CONNECTED) {
       connectCycleActive_ = false;
       attemptInProgress_ = false;
       scanner_.stop();
       WiFi.setAutoReconnect(true);
+      if (mode_ == Mode::SYNC_ONLY && !syncOnlyConnectedAtMs_)
+        syncOnlyConnectedAtMs_ = now;
       BootDiagnostics::printf("[WIFI] connected ssid='%s' ip=%s rssi=%d",
         WiFi.SSID().c_str(), WiFi.localIP().toString().c_str(), WiFi.RSSI());
       Serial.printf("[WIFI] connected; IP=%s RSSI=%d dBm\\n",
                     WiFi.localIP().toString().c_str(), WiFi.RSSI());
     } else {
       BootDiagnostics::printf("[WIFI] connection state changed status=%d", static_cast<int>(status));
+      if (previousStatus == WL_CONNECTED && stationEnabled() && mode_ != Mode::SYNC_ONLY) {
+        WiFi.setAutoReconnect(false);
+        connectNextNetwork();
+      }
       if (status == WL_NO_SSID_AVAIL || status == WL_CONNECT_FAILED)
         Serial.printf("[WIFI] association failed (status=%d)\\n", static_cast<int>(status));
       else if (status == WL_DISCONNECTED)
@@ -490,7 +567,8 @@ void WifiClient::update() {
       WiFi.disconnect(false, false);
       connectCycleActive_ = false;
       attemptInProgress_ = false;
-      BootDiagnostics::write("[WIFI] total connection timeout; AP remains available");
+      lastAttemptMs_ = now;
+      BootDiagnostics::write("[WIFI] total connection timeout; setup AP remains available where enabled");
     } else if (scanner_.scanning()) {
       if (scanner_.update() && scanner_.ready()) tryNextScannedNetwork();
     } else if (attemptInProgress_ && now - lastAttemptMs_ >= ATTEMPT_TIMEOUT_MS) {
@@ -502,9 +580,37 @@ void WifiClient::update() {
     }
   }
 
+  if (stationEnabled() && status != WL_CONNECTED && !connectCycleActive_ &&
+      mode_ != Mode::SYNC_ONLY && now - lastAttemptMs_ >= RECONNECT_DELAY_MS) {
+    connectNextNetwork();
+  }
+
+  updateMdns();
+
+  if (mode_ == Mode::SYNC_ONLY) {
+    bool finishSync = false;
+    if (status == WL_CONNECTED) {
+      if (!syncOnlyConnectedAtMs_) syncOnlyConnectedAtMs_ = now;
+      if (timeSynchronized) {
+        BootDiagnostics::write("[WIFI][SYNC_ONLY] system clock synchronized; shutting down WLAN");
+        finishSync = true;
+      } else if (now - syncOnlyConnectedAtMs_ >= SYNC_TIME_TIMEOUT_MS) {
+        BootDiagnostics::write("[WIFI][SYNC_ONLY] NTP synchronization timeout; shutting down WLAN");
+        finishSync = true;
+      }
+    } else if (syncOnlyStartedMs_ && now - syncOnlyStartedMs_ >= TOTAL_CONNECT_TIMEOUT_MS) {
+      BootDiagnostics::write("[WIFI][SYNC_ONLY] connection timeout; shutting down WLAN");
+      finishSync = true;
+    }
+    if (finishSync) {
+      suspend();
+      return;
+    }
+  }
+
   if (status != WL_CONNECTED && now - lastLogMs_ >= 15000) {
     lastLogMs_ = now;
-    Serial.printf("[WIFI] waiting for router; setup page http://10.1.1.1/ (status=%d)\\n",
+    Serial.printf("[WIFI] waiting for router; setup page http://10.1.1.1/ when AP mode is active (status=%d)\\n",
                   static_cast<int>(status));
   }
 }
