@@ -2,11 +2,11 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
+#include <WiFiMulti.h>
 #include <WebServer.h>
 #include <Preferences.h>
 #include "../news/NewsService.h"
 #include "../weather/WeatherService.h"
-#include "WifiScanner.h"
 
 class WifiClient {
 public:
@@ -34,7 +34,7 @@ private:
   static constexpr uint32_t RESCAN_DELAY_MS = 1000;
   WebServer server_{80};
   Preferences preferences_;
-  WifiScanner scanner_;
+  WiFiMulti wifiMulti_;
   char ssid_[NETWORK_COUNT][33] = {};
   char password_[NETWORK_COUNT][65] = {};
   NewsService::Configuration newsConfig_;
@@ -47,6 +47,9 @@ private:
   uint32_t connectCycleStartedMs_ = 0;
   bool connectCycleActive_ = false;
   bool attemptInProgress_ = false;
+  bool wifiScanHidden_ = false;
+  uint32_t lastMultiRunMs_ = 0;
+  uint32_t syncOnlyStartedMs_ = 0;
   bool preferencesReady_ = false;
   bool serverStarted_ = false;
   bool apActive_ = false;
