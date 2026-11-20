@@ -497,8 +497,7 @@ Dies ist nur ein Compile-/Bring-up-Scaffold. Es implementiert noch keinen nutzba
 
 
 ## 25. Dauerhafte Regel des Nutzers: strikt modulare Entwicklung
-Der Nutzer hat ausdrücklich festgelegt, dass diese Regel **immer** gelten muss und in Übergaben bei vollen Chats festgehalten werden soll:
-- Jede fachlich eigenständige Funktion erhält eigene `.h`- und `.cpp`-Dateien.
+Der Nutzer hat ausdrücklich festgelegt, dass diese Regel **immer** gelten muss und in Übergaben bei vollen Chats festgehalten werden soll:- Jede fachlich eigenständige Funktion erhält eigene `.h`- und `.cpp`-Dateien.
 - `.ino` bleibt möglichst klein und enthält nur Einstiegspunkt sowie Setup-/Loop-Verdrahtung.
 - Eine Änderung an einer Funktion darf unabhängige Funktionen nicht kaputtmachen. Keine Sammeldateien, keine direkten Eingriffe in fremde Modul-Interna und keine versteckten Seiteneffekte.
 - Module interagieren über klar definierte Schnittstellen; gemeinsame Ressourcen haben genau einen Besitzer.
@@ -997,8 +996,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 - Kein Flashen und keine Änderungen an Bootloader, APP0/APP1, Recovery oder Partitionstabelle. Die 8-MB-Profile sind Compile-Referenz und dürfen nicht auf das 16-MB-Gerät geflasht werden. Das bekannte Backup und der derzeitige Bootloader bleiben unangetastet.
 - GPIO-Referenz hilft bei der Portierung, garantiert aber nicht, dass sämtliche Funktionen ohne Hardwaretest funktionieren.
 ### Geprüfte GPIOs aus `ats-mini-dev/ats-mini/Common.h`| Funktion | GPIO | Referenzverhalten |
-|---|---:|---|
-| Radio-LDO | 15 | HIGH = ein |
+|---|---:|---|| Radio-LDO | 15 | HIGH = ein |
 | SI4735 Reset | 16 | Reset |
 | I²C SDA / SCL | 18 / 17 | Daten / Takt |
 | Audio-Mute | 3 | HIGH = stumm |
@@ -1498,7 +1496,6 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - Die Schritte zum Kompilieren des ATS Mini OS, zur read-only Prüfung der App-Image-Grenzen und zur Erstellung/Upload der Firmware-, Source-, Compile-Log- und Build-Notes-Artefakte waren erfolgreich.- **Wichtig:** Es war ein Compile-only-Build. Das Gerät wurde nicht geflasht und die neue Helligkeitssteuerung ist noch nicht am ATS Mini V4 hardwareseitig getestet.
 
 ### In Build #114 kompilierte Änderungen
-
 - `DisplayDriver.h`:
   - Helligkeitswert mit Standardwert 180 ergänzt.
   - Getter `brightness()` und Setter `setBrightness(uint8_t)` ergänzt.
@@ -1997,8 +1994,7 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 ### Verhalten
 - Der Menüpunkt startet den Download und schließt das Menü zurück zur Radioanzeige.
 - Der HTTP-Feed wird in begrenzten Datenblöcken verarbeitet; die Anzeige erhält einen eigenen Downloadstatus.
-- Download-Zwischendatei: `/schedules.tmp`; persistente Binärdatei: `/schedules.bin`; Backup bei Austausch: `/schedules.bak`.
-- Die bisherige Schedule-Datei wird erst nach erfolgreichem Parsen gültiger Einträge ersetzt. Bei WLAN-Abbruch, HTTP-Fehlern, leerem/ungültigem Feed oder Installationsfehler bleibt die vorherige Datei erhalten bzw. wird zurückgesichert.
+- Download-Zwischendatei: `/schedules.tmp`; persistente Binärdatei: `/schedules.bin`; Backup bei Austausch: `/schedules.bak`.- Die bisherige Schedule-Datei wird erst nach erfolgreichem Parsen gültiger Einträge ersetzt. Bei WLAN-Abbruch, HTTP-Fehlern, leerem/ungültigem Feed oder Installationsfehler bleibt die vorherige Datei erhalten bzw. wird zurückgesichert.
 - Der Lookup nutzt die synchronisierte UTC-Uhr aus `ClockService`, sucht frequenzgenaue Einträge und berücksichtigt tägliche sowie über Mitternacht reichende Zeitfenster.
 - EiBi-Sendername wird nur in der PS-Zeile des LW/MW/KW-TEF-Layouts angezeigt. Während des Downloads erscheint `Downloading EiBi Schedules ...` in dessen RT-Zeile. Nach erfolgreichem Download bleibt RT leer.
 - FM-RDS-PS/RT und `RadioSnapshot` bleiben vollständig getrennt und unverändert.
@@ -2497,8 +2493,7 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Bright Sky `/current_weather` liefert die aktuellen DWD-basierten Bedingungen; `/weather` liefert stündliche Werte/Prognosen, aus denen die fünf Tageskarten aggregiert werden.
 - TLS-Zertifikatsprüfung bleibt über das eingebaute ESP32-CA-Bundle aktiviert. HTTP-Antwortgrößenlimit auf 48 KB erhöht; Diagnoselogs unterscheiden PLZ-Auflösung, Geocoding, aktuelle Werte und Prognose.
 - Die bestehende Snapshot-Schnittstelle, 15-Minuten-Aktualisierung, 1-Minuten-Fehlerwiederholung, Web-PLZ-Speicherung und Wetteranzeige wurden nicht absichtlich geändert. Kein zusätzliches Eingabefeld und keine Layoutänderung.
-- **Geänderte Datei:** `firmware/ats-mini-os/src/weather/WeatherService.cpp`.
-- **Commits:** `cc39e1a`, `d8ab985`, `26aed16`, `7105d97`, `07801aa`, `b347b0d`, `d09958d`.
+- **Geänderte Datei:** `firmware/ats-mini-os/src/weather/WeatherService.cpp`.- **Commits:** `cc39e1a`, `d8ab985`, `26aed16`, `7105d97`, `07801aa`, `b347b0d`, `d09958d`.
 - **Status:** Änderungen committed und Quelltext erneut aus GitHub abgerufen. Noch nicht kompiliert und nicht am Gerät getestet. Kein GitHub-Actions-Workflow gestartet und kein Flash ausgeführt. Vor einem Build insbesondere OpenPLZ-Antwortschema, Bright-Sky-Feldnamen und ESP32-Datumsfunktionen im Compile-/Laufzeittest validieren.
 
 
@@ -2997,8 +2992,7 @@ Prüfstatus:
 
 - Aktiver Arbeitszweig bleibt `firetvstick2k2-afk/Mini_OS`, Branch `dev/first-build-preparation`.
 - Ausgangslage nach erstem Gerätetest: Die neue FM-Live-FFT-Wasserfallfläche war nahezu vollständig weiß und zeigte nur kleine Blöckchen. Frequenzanzeige und Akkuanzeige wurden vom Nutzer ausdrücklich als passend/gut bestätigt und sollen nicht unnötig verändert werden.
-- Ursache im FFT-Pfad eingegrenzt: `AudioCaptureService` liefert rohe 12-Bit-ADC-Werte (0..4095). Die bisherige FFT-Magnituden-Normierung teilte pauschal durch 256 und erzeugte dadurch eine viel zu hohe Anzeige; fast alle Bins liefen in den hellsten Farbwertbereich.
-- In `firmware/ats-mini-os/src/audio/FmAudioFftService.cpp` wurde die FFT-Magnitude auf ADC-Vollaussteuerung und FFT-/Hann-Fenster-Skalierung normiert. Die Anzeige verwendet nun eine dBFS-Skala von ungefähr -84 bis -18 dBFS statt der bisherigen überhöhten Pegelabbildung.
+- Ursache im FFT-Pfad eingegrenzt: `AudioCaptureService` liefert rohe 12-Bit-ADC-Werte (0..4095). Die bisherige FFT-Magnituden-Normierung teilte pauschal durch 256 und erzeugte dadurch eine viel zu hohe Anzeige; fast alle Bins liefen in den hellsten Farbwertbereich.- In `firmware/ats-mini-os/src/audio/FmAudioFftService.cpp` wurde die FFT-Magnitude auf ADC-Vollaussteuerung und FFT-/Hann-Fenster-Skalierung normiert. Die Anzeige verwendet nun eine dBFS-Skala von ungefähr -84 bis -18 dBFS statt der bisherigen überhöhten Pegelabbildung.
 - Code-Commit: `2ca00b9743dd98bb3238e7b5ee3575e6612d78aa`.
 - Unverändert: `DisplayLayoutFmAudioFft.h` (Layout, Frequenz- und Akkuanzeige), alter dekorativer Decoder-Wasserfall, TEF6686-Layout sowie FFT-Zeilenrate (12 Zeilen/s). Es wurde nur die Pegelberechnung in der FFT-Service-Datei geändert.
 - Status: Nutzer hat den Compile-Build gestartet; Ergebnis steht noch aus. Kein Build-Erfolg behaupten, bis der Nutzer ihn bestätigt. Noch kein neuer Gerätetest der Pegelkorrektur bestätigt.
@@ -3150,3 +3144,17 @@ Auf `dev/first-build-preparation` wurden im aktiven Repository `firetvstick2k2-a
 **Nächster Schritt und Begründung**
 - Zuerst den WLAN-Scan-Lifecycle gegen Stock vervollständigen: Stock behält Scanresultate für optionale Hidden-SSID-Probes, während Mini_OS sie nach dem Kandidatenabgleich löscht. Zu prüfen ist eine modulare Probe-Phase, die gespeicherte Zugangsdaten nur für tatsächlich verborgene Scan-Einträge testet und den bestehenden 30-s-Gesamtzeitrahmen einhält.
 - Parallel wird das Speicher-Inventar der Netzwerkdienste vorbereitet. Besonders StationLogo lädt Bilddaten derzeit zunächst in einen `String` und kopiert sie anschließend in einen separaten PSRAM-/SRAM-Puffer; diese Doppelhaltung ist ein konkreter Kandidat für einen späteren streamenden Ein-Puffer-Pfad. Die bewusste `secure.setInsecure()`-Einstellung bleibt unberührt.
+
+### WLAN-Setup-SSID umbenannt (2026-11-20)
+
+**Änderung**
+- Die SSID des Mini_OS-Setup-Access-Points wurde von `ATS-Mini-OS-Setup` auf `MINI-OS-WEB` geändert.
+- Kanal 10, sichtbare SSID, maximal drei Clients, 17-dBm-Sendeleistung und Setup-IP `10.1.1.1` bleiben unverändert.
+
+**Datei / Commit**
+- Datei: `firmware/ats-mini-os/src/network/WifiClient.cpp`
+- Commit: `04f1bc4132b7ee2a41b7c2a3ceb8c8bf09882354`
+
+**Prüfstatus**
+- Änderung committed; erneute Quelltextprüfung folgt.
+- Nicht kompiliert und nicht am Gerät getestet. Kein Build und kein Flash gestartet.
