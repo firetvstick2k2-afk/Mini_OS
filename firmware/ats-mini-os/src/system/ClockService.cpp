@@ -1,6 +1,7 @@
 #include "ClockService.h"
 
 #include <sys/time.h>
+#include <esp_sntp.h>
 #include <stdlib.h>
 
 namespace {
@@ -24,8 +25,17 @@ void ClockService::update(bool wifiConnected) {
   if (wifiConnected && !sntpStarted_) {
     // SNTP runs asynchronously and disciplines the system UTC clock.
     configTzTime(kTimezone, kNtpServer1, kNtpServer2, kNtpServer3);
+    // Match the reference firmware's five-minute refresh cadence.
+    esp_sntp_set_sync_interval(5UL * 60UL * 1000UL);
+    const bool restarted = esp_sntp_restart();
     sntpStarted_ = true;
-    Serial.println("[CLOCK] SNTP started; waiting for UTC synchronization");
+    Serial.printf("[CLOCK] SNTP started; five-minute sync interval applied=%s; waiting for UTC synchronization\\n",
+      restarted ? "yes" : "no");
+  } else if (!wifiConnected && sntpStarted_) {
+    // Do not leave the SNTP client active after Wi-Fi is suspended or lost.
+    esp_sntp_stop();
+    sntpStarted_ = false;
+    Serial.println("[CLOCK] SNTP stopped while Wi-Fi is unavailable");
   }
 
   const bool synced = synchronized();
