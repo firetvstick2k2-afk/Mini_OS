@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 #include <WiFi.h>
-#include <WiFiMulti.h>
+#include "WifiScanner.h"
 #include <WebServer.h>
 #include <Preferences.h>
 #include "../news/NewsService.h"
@@ -23,7 +23,7 @@ public:
   String ipAddress() const;
   void setNewsService(NewsService* service);
   void setWeatherService(WeatherService* service);
-  void update();
+  void update(bool timeSynchronized = false);
   bool connected() const;
   bool setupAccessPointActive() const { return apActive_; }
 
@@ -32,9 +32,11 @@ private:
   static constexpr uint32_t TOTAL_CONNECT_TIMEOUT_MS = 30000;
   static constexpr uint32_t ATTEMPT_TIMEOUT_MS = 5000;
   static constexpr uint32_t RESCAN_DELAY_MS = 1000;
+  static constexpr uint32_t RECONNECT_DELAY_MS = 10000;
+  static constexpr uint32_t SYNC_TIME_TIMEOUT_MS = 5000;
   WebServer server_{80};
   Preferences preferences_;
-  WiFiMulti wifiMulti_;
+  WifiScanner scanner_;
   char ssid_[NETWORK_COUNT][33] = {};
   char password_[NETWORK_COUNT][65] = {};
   NewsService::Configuration newsConfig_;
@@ -48,10 +50,13 @@ private:
   bool connectCycleActive_ = false;
   bool attemptInProgress_ = false;
   bool wifiScanHidden_ = false;
-  uint32_t lastMultiRunMs_ = 0;
   uint32_t syncOnlyStartedMs_ = 0;
+  uint32_t syncOnlyConnectedAtMs_ = 0;
+  uint32_t mdnsRetryMs_ = 0;
   bool preferencesReady_ = false;
   bool serverStarted_ = false;
+  bool routesRegistered_ = false;
+  bool mdnsStarted_ = false;
   bool apActive_ = false;
   bool started_ = false;
   Mode mode_ = Mode::AP_CONNECT;
@@ -59,6 +64,9 @@ private:
   bool stationEnabled() const;
   bool accessPointEnabled() const;
   void applyMode();
+  void startDataWorkers();
+  void updateMdns();
+  void stopMdns();
 
   void loadNetworks();
   bool saveNetworks();
