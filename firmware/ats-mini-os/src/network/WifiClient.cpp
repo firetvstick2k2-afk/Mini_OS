@@ -93,7 +93,7 @@ bool WifiClient::ensureStarted() {
   // OFF is a runtime state, not a permanent veto: a feature that genuinely
   // requires networking may activate the saved/default network mode.
   if (mode_ == Mode::OFF) mode_ = Mode::AP_CONNECT;
-  syncOnlyStartedMs_ = mode_ == Mode::SYNC_ONLY ? millis() : 0;
+  syncOnlyStartedMs_ = mode_ == Mode::SYNC_ONLY ? (millis() ? millis() : 1) : 0;
   syncOnlyConnectedAtMs_ = 0;
   BootDiagnostics::write("[WIFI] on-demand activation requested");
   applyMode();
@@ -132,7 +132,7 @@ void WifiClient::updateMdns() {
   if (mdnsStarted_) return;
   const uint32_t now = millis();
   if (mdnsRetryMs_ && now - mdnsRetryMs_ < 5000) return;
-  mdnsRetryMs_ = now;
+  mdnsRetryMs_ = now ? now : 1;
   if (MDNS.begin("atsmini")) {
     MDNS.addService("http", "tcp", 80);
     mdnsStarted_ = true;
@@ -341,7 +341,7 @@ void WifiClient::handleRoot() {
   page += F("> Versteckte WLAN-Netzwerke bei der Suche berücksichtigen</label></section>");
   page += F("<form id='wifi' method='post' action='/wifi/save'><button type='submit'>Speichern und verbinden</button></form>"
             "<section><h3>Verbindungsstatus</h3><p id='status'>Wird geladen ...</p>"
-            "<small>Einrichtungs-WLAN: ATS-Mini-OS-Setup · Adresse: 10.1.1.1</small></section>"
+            "<small>Einrichtungs-WLAN: MINI-OS-WEB · Adresse: 10.1.1.1</small></section>"
             "<script>async function status(){try{let r=await fetch('/wifi/status');let j=await r.json();"
             "document.getElementById('status').textContent=j.connected?'Verbunden: '+j.ssid+' · '+j.ip:"
             "'Nicht mit Router verbunden · Setup-Seite bleibt erreichbar';}catch(e){}}status();setInterval(status,3000);</script>"
@@ -543,7 +543,7 @@ void WifiClient::update(bool timeSynchronized) {
       scanner_.stop();
       WiFi.setAutoReconnect(true);
       if (mode_ == Mode::SYNC_ONLY && !syncOnlyConnectedAtMs_)
-        syncOnlyConnectedAtMs_ = now;
+        syncOnlyConnectedAtMs_ = now ? now : 1;
       BootDiagnostics::printf("[WIFI] connected ssid='%s' ip=%s rssi=%d",
         WiFi.SSID().c_str(), WiFi.localIP().toString().c_str(), WiFi.RSSI());
       Serial.printf("[WIFI] connected; IP=%s RSSI=%d dBm\\n",
@@ -590,7 +590,7 @@ void WifiClient::update(bool timeSynchronized) {
   if (mode_ == Mode::SYNC_ONLY) {
     bool finishSync = false;
     if (status == WL_CONNECTED) {
-      if (!syncOnlyConnectedAtMs_) syncOnlyConnectedAtMs_ = now;
+      if (!syncOnlyConnectedAtMs_) syncOnlyConnectedAtMs_ = now ? now : 1;
       if (timeSynchronized) {
         BootDiagnostics::write("[WIFI][SYNC_ONLY] system clock synchronized; shutting down WLAN");
         finishSync = true;
