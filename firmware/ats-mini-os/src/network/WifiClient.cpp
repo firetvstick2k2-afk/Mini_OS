@@ -199,7 +199,7 @@ bool WifiClient::setMode(Mode mode) {
   if (preferencesReady_ &&
       preferences_.putUChar("wmode", static_cast<uint8_t>(mode)) != sizeof(uint8_t)) return false;
   mode_ = mode;
-  syncOnlyStartedMs_ = mode_ == Mode::SYNC_ONLY ? millis() : 0;
+  syncOnlyStartedMs_ = mode_ == Mode::SYNC_ONLY ? (millis() ? millis() : 1) : 0;
   syncOnlyConnectedAtMs_ = 0;
   if (mode_ == Mode::OFF) {
     if (serverStarted_) {
