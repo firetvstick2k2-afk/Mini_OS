@@ -254,6 +254,8 @@ bool TcpRemoteService::setMemory(char* value) {
     sendError("Memory service unavailable");
     return false;
   }
+  char echoed[LINE_CAPACITY] = {};
+  strncpy(echoed, value, sizeof(echoed) - 1);
   char* slotText = value;
   char* bandText = strchr(slotText, ',');
   if (!bandText) { sendError("Expected slot,band,frequency,mode"); return false; }
@@ -313,7 +315,7 @@ bool TcpRemoteService::setMemory(char* value) {
     return false;
   }
   client_.print('#');
-  client_.print(value);
+  client_.print(echoed);
   client_.print("\r\n");
   return true;
 }
