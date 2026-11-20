@@ -46,6 +46,7 @@ private:
   uint32_t lastAttemptMs_ = 0;
   uint32_t connectCycleStartedMs_ = 0;
   bool connectCycleActive_ = false;
+  bool attemptInProgress_ = false;
   bool preferencesReady_ = false;
   bool serverStarted_ = false;
   bool apActive_ = false;
