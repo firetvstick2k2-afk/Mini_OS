@@ -152,11 +152,18 @@ void report(const char* event) {
   const size_t count = getModuleStats(moduleSnapshot, MODULE_SLOTS);
   for (size_t i = 0; i < count; ++i) {
     if (!moduleSnapshot[i].liveAllocations && !moduleSnapshot[i].allocationFailures) continue;
-    BootDiagnostics::printf("[MEM][MODULE] %s live=%lu current=%u peak=%u ok=%lu fail=%lu",
+    BootDiagnostics::printf(
+      "[MEM][MODULE] %s live=%lu current=%u peak=%u SRAM=%u/%u PSRAM=%u/%u OTHER=%u/%u ok=%lu fail=%lu",
       moduleSnapshot[i].name,
       static_cast<unsigned long>(moduleSnapshot[i].liveAllocations),
       static_cast<unsigned>(moduleSnapshot[i].currentBytes),
       static_cast<unsigned>(moduleSnapshot[i].peakBytes),
+      static_cast<unsigned>(moduleSnapshot[i].currentInternalBytes),
+      static_cast<unsigned>(moduleSnapshot[i].peakInternalBytes),
+      static_cast<unsigned>(moduleSnapshot[i].currentPsramBytes),
+      static_cast<unsigned>(moduleSnapshot[i].peakPsramBytes),
+      static_cast<unsigned>(moduleSnapshot[i].currentOtherBytes),
+      static_cast<unsigned>(moduleSnapshot[i].peakOtherBytes),
       static_cast<unsigned long>(moduleSnapshot[i].totalSuccessfulAllocations),
       static_cast<unsigned long>(moduleSnapshot[i].allocationFailures));
   }
