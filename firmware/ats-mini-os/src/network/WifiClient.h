@@ -6,6 +6,7 @@
 #include <Preferences.h>
 #include "../news/NewsService.h"
 #include "../weather/WeatherService.h"
+#include "WifiScanner.h"
 
 class WifiClient {
 public:
@@ -28,9 +29,12 @@ public:
 
 private:
   static constexpr uint8_t NETWORK_COUNT = 3;
-  static constexpr uint32_t RETRY_INTERVAL_MS = 12000;
+  static constexpr uint32_t TOTAL_CONNECT_TIMEOUT_MS = 30000;
+  static constexpr uint32_t ATTEMPT_TIMEOUT_MS = 5000;
+  static constexpr uint32_t RESCAN_DELAY_MS = 1000;
   WebServer server_{80};
   Preferences preferences_;
+  WifiScanner scanner_;
   char ssid_[NETWORK_COUNT][33] = {};
   char password_[NETWORK_COUNT][65] = {};
   NewsService::Configuration newsConfig_;
@@ -40,6 +44,8 @@ private:
   wl_status_t lastStatus_ = WL_IDLE_STATUS;
   uint32_t lastLogMs_ = 0;
   uint32_t lastAttemptMs_ = 0;
+  uint32_t connectCycleStartedMs_ = 0;
+  bool connectCycleActive_ = false;
   bool preferencesReady_ = false;
   bool serverStarted_ = false;
   bool apActive_ = false;
@@ -53,6 +59,8 @@ private:
   void loadNetworks();
   bool saveNetworks();
   void connectNextNetwork();
+  void startNetworkScan();
+  void tryNextScannedNetwork();
   void startWebServer();
   void handleRoot();
   void handleSave();
