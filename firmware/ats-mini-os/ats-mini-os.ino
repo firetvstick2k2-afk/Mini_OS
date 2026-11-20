@@ -19,6 +19,7 @@
 #include "src/input/EncoderInput.h"
 #include "src/input/FrequencyKeypad.h"
 #include "src/network/WifiClient.h"
+#include "src/network/TcpRemoteService.h"
 #include "src/news/NewsService.h"
 #include "src/weather/WeatherService.h"
 #include "src/logo/StationLogoClient.h"
@@ -59,6 +60,7 @@ CwDecoderService cwDecoder;
 FtxDecoderService ftxDecoder;
 FmAudioFftService fmAudioFft;
 WifiClient wifi;
+TcpRemoteService tcpRemote;
 bool wifiPausedForDecoder = false;
 bool eibiDownloadPending = false;
 uint32_t eibiDownloadRequestedAtMs = 0;
@@ -413,6 +415,8 @@ void setup() {
   MemoryManager::logStage("RADIO_INIT_DONE");
   wifi.setNewsService(&newsService);
   wifi.setWeatherService(&weatherService);
+  tcpRemote.begin(&radio, &memories, &display, &settingsStore, &encoder);
+  wifi.setTcpRemoteService(&tcpRemote);
   BootDiagnostics::printf("[BOOT][STAGE] before wifi.begin free_heap=%u max_block=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
   wifi.begin();
   MemoryManager::logStage("WIFI_INIT_DONE");
