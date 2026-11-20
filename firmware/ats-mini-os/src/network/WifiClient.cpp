@@ -51,6 +51,9 @@ void WifiClient::begin() {
 
 void WifiClient::suspend() {
   if (!started_) return;
+  scanner_.stop();
+  connectCycleActive_ = false;
+  attemptInProgress_ = false;
   BootDiagnostics::write("[WIFI] temporarily suspended for digital decoder");
   if (serverStarted_) {
     server_.stop();
@@ -84,6 +87,10 @@ bool WifiClient::ensureStarted() {
 }
 
 void WifiClient::applyMode() {
+  scanner_.stop();
+  connectCycleActive_ = false;
+  attemptInProgress_ = false;
+  WiFi.setAutoReconnect(false);
   WiFi.softAPdisconnect(false);
   WiFi.disconnect(false, false);
   apActive_ = false;
@@ -383,7 +390,17 @@ void WifiClient::handleStatus() {
 
 void WifiClient::connectNextNetwork() {
   if (!stationEnabled()) return;
+  bool hasSavedNetwork = false;
+  for (uint8_t i = 0; i < NETWORK_COUNT; ++i)
+    hasSavedNetwork = hasSavedNetwork || ssid_[i][0] != '\0';
+  if (!hasSavedNetwork) {
+    connectCycleActive_ = false;
+    attemptInProgress_ = false;
+    BootDiagnostics::write("[WIFI] no saved router network");
+    return;
+  }
   scanner_.stop();
+  WiFi.setAutoReconnect(false);
   WiFi.disconnect(false, false);
   connectCycleStartedMs_ = millis();
   connectCycleActive_ = true;
