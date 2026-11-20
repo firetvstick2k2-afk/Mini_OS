@@ -2,6 +2,7 @@
 #include "../news/NewsService.h"
 #include "../system/BootDiagnostics.h"
 #include <ESPmDNS.h>
+#include "TcpRemoteService.h"
 
 namespace {
 constexpr char SETTINGS_NAMESPACE[] = "network";
@@ -36,6 +37,10 @@ void WifiClient::setWeatherService(WeatherService* service) {
   BootDiagnostics::printf("[WEATHER] service attached=%s", weatherService_ ? "yes" : "no");
 }
 
+void WifiClient::setTcpRemoteService(TcpRemoteService* service) {
+  tcpRemoteService_ = service;
+}
+
 bool WifiClient::stationEnabled() const {
   return mode_ == Mode::AP_CONNECT || mode_ == Mode::CONNECT || mode_ == Mode::SYNC_ONLY;
 }
@@ -53,6 +58,7 @@ void WifiClient::begin() {
   if (preferencesReady_) {
     loadNetworks();
     wifiScanHidden_ = preferences_.getBool("wifiscanhidden", false);
+    tcpRemoteEnabled_ = preferences_.getBool("tcpon", false);
     loadNewsConfig();
     const uint8_t savedMode = preferences_.getUChar("wmode", static_cast<uint8_t>(Mode::AP_CONNECT));
     mode_ = savedMode <= static_cast<uint8_t>(Mode::SYNC_ONLY)
@@ -72,6 +78,7 @@ void WifiClient::suspend() {
   scanner_.stop();
   connectCycleActive_ = false;
   attemptInProgress_ = false;
+  if (tcpRemoteService_) tcpRemoteService_->stop();
   stopMdns();
   BootDiagnostics::write("[WIFI] temporarily suspended; stopping web server and radio");
   if (serverStarted_) {
@@ -144,6 +151,7 @@ void WifiClient::updateMdns() {
 
 void WifiClient::applyMode() {
   scanner_.stop();
+  if (tcpRemoteService_) tcpRemoteService_->stop();
   stopMdns();
   connectCycleActive_ = false;
   attemptInProgress_ = false;
@@ -339,6 +347,9 @@ void WifiClient::handleRoot() {
   page += F("<section><label><input style='width:auto' type='checkbox' name='wifiscanhidden' value='1' form='wifi'");
   if (wifiScanHidden_) page += F(" checked");
   page += F("> Versteckte WLAN-Netzwerke bei der Suche berücksichtigen</label></section>");
+  page += F("<section><label><input style='width:auto' type='checkbox' name='tcpon' value='1' form='wifi'");
+  if (tcpRemoteEnabled_) page += F(" checked");
+  page += F("> TCP-Fernsteuerung aktivieren (Port 60000)</label></section>");
   page += F("<form id='wifi' method='post' action='/wifi/save'><button type='submit'>Speichern und verbinden</button></form>"
             "<section><h3>Verbindungsstatus</h3><p id='status'>Wird geladen ...</p>"
             "<small>Einrichtungs-WLAN: MINI-OS-WEB · Adresse: 10.1.1.1</small></section>"
@@ -369,6 +380,11 @@ void WifiClient::handleSave() {
   wifiScanHidden_ = server_.hasArg("wifiscanhidden");
   if (preferences_.putBool("wifiscanhidden", wifiScanHidden_) != sizeof(bool)) {
     server_.send(500, "text/plain; charset=utf-8", "Die WLAN-Suchoption konnte nicht gespeichert werden.");
+    return;
+  }
+  tcpRemoteEnabled_ = server_.hasArg("tcpon");
+  if (preferences_.putBool("tcpon", tcpRemoteEnabled_) != sizeof(bool)) {
+    server_.send(500, "text/plain; charset=utf-8", "Die TCP-Fernsteuerung konnte nicht gespeichert werden.");
     return;
   }
   server_.send(200, "text/html; charset=utf-8",
@@ -586,6 +602,10 @@ void WifiClient::update(bool timeSynchronized) {
   }
 
   updateMdns();
+  if (tcpRemoteService_) {
+    const bool networkAvailable = apActive_ || status == WL_CONNECTED;
+    tcpRemoteService_->update(networkAvailable, tcpRemoteEnabled_ && mode_ != Mode::SYNC_ONLY);
+  }
 
   if (mode_ == Mode::SYNC_ONLY) {
     bool finishSync = false;
