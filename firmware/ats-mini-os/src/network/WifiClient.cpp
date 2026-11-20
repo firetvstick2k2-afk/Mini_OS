@@ -182,7 +182,11 @@ void WifiClient::applyMode() {
     // Keep Mini_OS's setup SSID while matching the reference AP network settings.
     apActive_ = WiFi.softAP(SETUP_AP_SSID, nullptr,
                             SETUP_AP_CHANNEL, false, SETUP_AP_MAX_CLIENTS);
-    WiFi.softAPConfig(SETUP_IP, SETUP_GATEWAY, SETUP_SUBNET);
+    if (!apActive_) {
+      BootDiagnostics::write("[WIFI][AP] softAP start failed");
+    } else if (!WiFi.softAPConfig(SETUP_IP, SETUP_GATEWAY, SETUP_SUBNET)) {
+      BootDiagnostics::write("[WIFI][AP] static IP configuration failed");
+    }
   }
   if (stationEnabled()) connectNextNetwork();
   Serial.printf("[WIFI] mode=%u AP=%s STA=%s\\n",
