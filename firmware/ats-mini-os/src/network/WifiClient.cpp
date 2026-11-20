@@ -140,10 +140,10 @@ void WifiClient::updateMdns() {
   const uint32_t now = millis();
   if (mdnsRetryMs_ && now - mdnsRetryMs_ < 5000) return;
   mdnsRetryMs_ = now ? now : 1;
-  if (MDNS.begin("atsmini")) {
+  if (MDNS.begin("mini-os")) {
     MDNS.addService("http", "tcp", 80);
     mdnsStarted_ = true;
-    BootDiagnostics::write("[WIFI][MDNS] atsmini.local HTTP service started");
+    BootDiagnostics::write("[WIFI][MDNS] mini-os.local HTTP service started");
   } else {
     BootDiagnostics::write("[WIFI][MDNS] start failed; retry scheduled");
   }
