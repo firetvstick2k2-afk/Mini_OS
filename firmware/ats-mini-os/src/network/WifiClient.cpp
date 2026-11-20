@@ -5,9 +5,24 @@
 namespace {
 constexpr char SETTINGS_NAMESPACE[] = "network";
 constexpr char SETUP_AP_SSID[] = "ATS-Mini-OS-Setup";
+constexpr int SETUP_AP_CHANNEL = 10;
+constexpr int SETUP_AP_MAX_CLIENTS = 3;
 const IPAddress SETUP_IP(10, 1, 1, 1);
 const IPAddress SETUP_GATEWAY(10, 1, 1, 1);
 const IPAddress SETUP_SUBNET(255, 255, 255, 0);
+
+void applyWifiTransmitPower(WiFiEvent_t event) {
+  (void)event;
+  WiFi.setTxPower(WIFI_POWER_17dBm);
+}
+
+void registerWifiPowerEvents() {
+  static bool registered = false;
+  if (registered) return;
+  WiFi.onEvent(applyWifiTransmitPower, ARDUINO_EVENT_WIFI_AP_START);
+  WiFi.onEvent(applyWifiTransmitPower, ARDUINO_EVENT_WIFI_STA_START);
+  registered = true;
+}
 }
 
 void WifiClient::setNewsService(NewsService* service) {
@@ -32,6 +47,7 @@ void WifiClient::begin() {
   BootDiagnostics::printf("[WIFI][BOOT] begin enter free_heap=%u max_block=%u", static_cast<unsigned>(ESP.getFreeHeap()), static_cast<unsigned>(ESP.getMaxAllocHeap()));
   WiFi.persistent(false);
   WiFi.setAutoReconnect(false);
+  registerWifiPowerEvents();
   preferencesReady_ = preferences_.begin(SETTINGS_NAMESPACE, false, "settings");
   if (preferencesReady_) {
     loadNetworks();
@@ -105,8 +121,11 @@ void WifiClient::applyMode() {
   else WiFi.mode(WIFI_STA);
 
   if (accessPointEnabled()) {
+    // Match Stock's deterministic setup-AP radio settings while retaining
+    // Mini_OS's own setup SSID and address.
+    apActive_ = WiFi.softAP(SETUP_AP_SSID, nullptr,
+                            SETUP_AP_CHANNEL, false, SETUP_AP_MAX_CLIENTS);
     WiFi.softAPConfig(SETUP_IP, SETUP_GATEWAY, SETUP_SUBNET);
-    apActive_ = WiFi.softAP(SETUP_AP_SSID);
   }
   if (stationEnabled()) {
     connectNextNetwork();
