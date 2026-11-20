@@ -3255,3 +3255,18 @@ Mini_OS (firetvstick2k2-afk/Mini_OS, Branch dev/first-build-preparation):
 - Änderungen ausschließlich in firetvstick2k2-afk/Mini_OS, Branch dev/first-build-preparation, über Primary-Link link_6af0594eadd081918bb824402ed84c2a. Keine neuen Branches.
 - HANDOVER.md bei jeder substanziellen Änderung mit Datum, Grund, Dateien, Commit, Verifikation, Build-/Hardwarestatus und nächstem Schritt ergänzen.
 - In dieser Sitzung wurden keine Firmware-Dateien geändert, kein Build/GitHub Actions gestartet und kein Gerät geflasht. Diese HANDOVER-Aktualisierung ist der einzige Schreibvorgang dieser Übergabe.
+
+
+## Arbeitsfortschritt – MemoryManager: explizite Allokationen nachverfolgen (2026-11-20)
+
+- `MemoryManager` erweitert: feste, statische Tracking-Tabelle mit 64 Einträgen; kein zusätzlicher Heapbedarf für die Verwaltungsdaten.
+- Erfolgreiche Aufrufe über `MemoryManager::allocate()` werden mit Pointer, Größe, angeforderten Heap-Capabilities und Modulzuordnung erfasst.
+- `deallocate()` entfernt bekannte Allokationen aus den Live-Zählern; unbekannte Freigaben werden separat gezählt und weiterhin an `heap_caps_free()` weitergereicht.
+- Erfasst werden aktuelle und maximale Bytes sowie Live-/Gesamtallokationen, getrennt nach explizit angefordertem internem RAM, PSRAM und sonstigen Capabilities. Modulwerte enthalten aktuelle/Peak-Bytes, Live-/Gesamtallokationen und Fehler.
+- Bei voller Tracking-Tabelle wird eine neue Allokation abgelehnt und sofort wieder freigegeben, damit keine erfolgreiche, aber unüberwachte Allokation entsteht.
+- Die bisherigen ESP-IDF-Systemwerte (Heap gesamt/frei/größter Block/Minimum/Fragmentierung) bleiben getrennt von den durch `MemoryManager` verwalteten Werten. Arduino-`String`, Wi-Fi-/HTTP-/TLS-/FreeRTOS-interne Allokationen werden ausdrücklich nicht als MemoryManager-Tracking ausgegeben.
+- Keine globalen `malloc`-/`new`-Overrides.
+- Aktuell sind im WLAN-/News-/Weather-/EiBi-Code keine direkten `malloc`-/`calloc`-/`free`-Aufrufe nachgewiesen; die neue API ist opt-in und muss bei künftigen expliziten Modul-Allokationen paarweise verwendet werden. Die StationLogo-Task-Allokation bleibt gemäß Projektplan ein späterer separater Arbeitspunkt.
+- Statische Prüfung: Quelltext und Schnittstellen gegengeprüft; kein Build und kein Hardwaretest ausgeführt.
+
+Commit: c1b617ca17a3547d1932e23e0d05957df28febe5 (API) / f3ac51130ce625f0b822637924168afdc674d887 (Tracking-Implementierung).
