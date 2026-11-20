@@ -3325,3 +3325,19 @@ Commits: 3f80964ef7f7ceae817a221009f9bf094f11b81d (Schnittstelle) / ab1731dd2954
 - Commit: `62c197f3fa28afcfa9bc3abb464cb9bd419b423f`.
 - Statische Prüfung: Quelltextänderung gezielt auf Hostname und Diagnosemeldung begrenzt. Kein Build, kein GitHub-Action-Lauf und kein Hardwaretest.
 - WLAN-Baustelle bleibt offen: Referenzvergleich und Prüfung von Reconnect-/SYNC_ONLY-/mDNS-Lifecycle, WLAN-Status/Weboberfläche und TCP-Remote-Anbindung fortsetzen.
+
+
+## WLAN-Referenzabgleich – Lifecycle und Datenworker (2026-11-20)
+
+Geprüft wurden die aktuelle Mini_OS-Implementierung (`WifiClient`, `WifiScanner`, `ClockService`, Hauptschleifen-Aufrufe sowie News-/Weather-Worker) und die ATS-Mini-Dev-Referenz (`Network.cpp`, `TcpMode.cpp/.h`, `Remote.cpp/.h`).
+
+Bestätigte Übereinstimmungen bzw. bewusste Architekturabweichungen:
+- Betriebsarten bilden die Referenzzustände OFF, AP_ONLY, AP_CONNECT, CONNECT und SYNC_ONLY ab. Mini_OS führt WLAN-Verbindungsaufbau und Netzwerksuche kooperativ/asynchron statt über die blockierende `WiFiMulti.run()`-Schleife aus.
+- AP-Eigenschaften stimmen mit der Referenz überein: offen, SSID sichtbar, Kanal 10, maximal drei Clients, Netz 10.1.1.1/24. Die bestehende Mini_OS-SSID `MINI-OS-WEB` bleibt erhalten.
+- Hidden-SSID-Option nutzt denselben NVS-Namespace `network` und Schlüssel `wifiscanhidden`, Standard `false`. Die Mini_OS-Speicherfelder für SSID/Passwort bleiben im vorhandenen Mini_OS-Format; keine unbestätigte automatische Migration der Referenzschlüssel `wifissidN/wifipassN` vorgenommen.
+- Die Auswahl des stärksten gespeicherten AP erfolgt über den asynchronen `WifiScanner` anhand RSSI, Kanal und BSSID.
+- SYNC_ONLY startet keinen Webserver und keine News-/Weather-Worker; nach Zeitabgleich oder Timeout wird WLAN abgeschaltet. News-/Weather-Worker erhalten im Hauptloop nur dann `wifiConnected=true`, wenn `connected() && dataServicesAllowed()` gilt.
+- mDNS läuft nur bei aktivem AP oder verbundener Station, nicht in OFF/SYNC_ONLY. Hostname ist jetzt `mini-os.local`.
+- TCP-Referenzport ist 60000 und der Referenzlistener läuft nur bei `TCP_ADHOC` und verfügbarem WLAN. Mini_OS hat dafür eine explizite, standardmäßig deaktivierte Web-Konfigurationsoption (`tcpon`); TCP-Service wird bei WLAN-Stopp/Moduswechsel beendet. Der Befehlssatz des Mini_OS-Adapters ist weiterhin nicht vollständig identisch zur Referenz und bleibt als eigener offener Portierungsumfang dokumentiert.
+
+Noch offen: gezielte Prüfung der Status-/Reconnect-Randfälle (Scanfehler, mehrere Profile, Routerverlust, Wechsel AP/STA/SYNC_ONLY), Prüfung der Webserver-Routen und abschließender Build durch den Nutzer. Keine Builds, Actions oder Hardwaretests ausgeführt.
