@@ -6,6 +6,19 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "esp_heap_caps.h"
+
+// Experimental FT8 test: keep the large monitor/DSP buffers in PSRAM only.
+// No internal-RAM fallback is used so allocation failures remain visible.
+static void* ftx_psram_malloc(size_t bytes)
+{
+    return bytes ? heap_caps_malloc(bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) : NULL;
+}
+
+static void* ftx_psram_calloc(size_t count, size_t bytes)
+{
+    return (count && bytes) ? heap_caps_calloc(count, bytes, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT) : NULL;
+}
 
 static float hann_i(int i, int N)
 {
@@ -44,7 +57,7 @@ static void waterfall_init(ftx_waterfall_t* me, int max_blocks, int num_bins, in
     me->time_osr = time_osr;
     me->freq_osr = freq_osr;
     me->block_stride = (time_osr * freq_osr * num_bins);
-    me->mag = (WF_ELEM_T*)malloc(mag_size);
+    me->mag = (WF_ELEM_T*)ftx_psram_malloc(mag_size);
     LOG(LOG_DEBUG, "Waterfall size = %zu\n", mag_size);
 }
 
@@ -64,7 +77,8 @@ void monitor_init(monitor_t* me, const monitor_config_t* cfg)
     me->fft_norm = 2.0f / me->nfft;
     // const int len_window = 1.8f * me->block_size; // hand-picked and optimized
 
-    me->window = (float*)malloc(me->nfft * sizeof(me->window[0]));
+    me->window = (float*)ftx_psram_malloc(me->nfft * sizeof(me->window[0]));
+    if (!me->window) return;
     for (int i = 0; i < me->nfft; ++i)
     {
         // window[i] = 1;
@@ -73,16 +87,17 @@ void monitor_init(monitor_t* me, const monitor_config_t* cfg)
         // me->window[i] = hamming_i(i, me->nfft);
         // me->window[i] = (i < len_window) ? hann_i(i, len_window) : 0;
     }
-    me->last_frame = (float*)calloc(me->nfft, sizeof(me->last_frame[0]));
-    me->timedata = (kiss_fft_scalar*)malloc(me->nfft * sizeof(me->timedata[0]));
-    me->freqdata = (kiss_fft_cpx*)malloc((me->nfft / 2 + 1) * sizeof(me->freqdata[0]));
+    me->last_frame = (float*)ftx_psram_calloc(me->nfft, sizeof(me->last_frame[0]));
+    me->timedata = (kiss_fft_scalar*)ftx_psram_malloc(me->nfft * sizeof(me->timedata[0]));
+    me->freqdata = (kiss_fft_cpx*)ftx_psram_malloc((me->nfft / 2 + 1) * sizeof(me->freqdata[0]));
+    if (!me->last_frame || !me->timedata || !me->freqdata) return;
 
     LOG(LOG_INFO, "Block size = %d\n", me->block_size);
     LOG(LOG_INFO, "Subblock size = %d\n", me->subblock_size);
 
     size_t fft_work_size = 0;
     kiss_fftr_alloc(me->nfft, 0, 0, &fft_work_size);
-    me->fft_work = malloc(fft_work_size);
+    me->fft_work = ftx_psram_malloc(fft_work_size);
     if (!me->fft_work) return;
     me->fft_cfg = kiss_fftr_alloc(me->nfft, 0, me->fft_work, &fft_work_size);
     if (!me->fft_cfg) return;
