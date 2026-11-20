@@ -157,6 +157,11 @@ void WeatherService::update(bool wifiConnected) {
 void WeatherService::taskEntry(void* context) { static_cast<WeatherService*>(context)->taskLoop(); }
 void WeatherService::taskLoop() {
   BootDiagnostics::write("[WEATHER] worker task entered");
+  BootDiagnostics::printf("[WEATHER][MEM] stage=worker_start free_heap=%u max_block=%u min_free=%u task_stack_high_water=%u",
+    static_cast<unsigned>(ESP.getFreeHeap()),
+    static_cast<unsigned>(ESP.getMaxAllocHeap()),
+    static_cast<unsigned>(ESP.getMinFreeHeap()),
+    static_cast<unsigned>(uxTaskGetStackHighWaterMark(nullptr)));
   bool waitingLogged = false;
   for (;;) {
     const uint32_t now = millis();
