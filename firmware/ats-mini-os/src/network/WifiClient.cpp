@@ -114,7 +114,7 @@ void WifiClient::startDataWorkers() {
     const NewsService::Configuration config = newsService_->configuration();
     bool hasFeed = false;
     for (uint8_t i = 0; i < NewsService::MAX_FEEDS; ++i)
-      hasFeed = hasFeed || config.urls[i][0] != '\\0';
+      hasFeed = hasFeed || config.urls[i][0] != '\0';
     if (config.enabled && hasFeed) {
       newsWorkerStarted_ = newsService_->begin();
       BootDiagnostics::printf("[NEWS] lazy worker start=%s", newsWorkerStarted_ ? "success" : "failed");
@@ -272,6 +272,7 @@ void WifiClient::loadNewsConfig() {
 }
 
 void WifiClient::startWebServer() {
+  if (serverStarted_) return;
   BootDiagnostics::printf("[WIFI][WEB] preparing routes free_heap=%u", static_cast<unsigned>(ESP.getFreeHeap()));
   if (!routesRegistered_) {
     server_.on("/", HTTP_GET, [this]() { handleRoot(); });
