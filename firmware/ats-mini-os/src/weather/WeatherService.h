@@ -38,6 +38,7 @@ public:
   bool setPostalCode(const char* postalCode);
   void requestRefresh();
   String postalCode() const;
+  bool hasConfiguredLocation() const { return postalCode_[0] != '\0'; }
   Snapshot snapshot() const;
 
 private:
@@ -55,4 +56,5 @@ private:
   volatile bool refreshRequested_ = false;
   volatile bool wifiConnected_ = false;
   uint32_t lastAttemptMs_ = 0;
+  bool settingsLoaded_ = false;
 };
