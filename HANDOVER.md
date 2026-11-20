@@ -3428,3 +3428,11 @@ Commits:
 
 - Beim Parsen des `#`-Memory-Kommandos werden die Kommas im Eingabepuffer durch Nullterminatoren ersetzt. Der ursprüngliche Befehl wird deshalb vor dem Parsen separat gesichert und anschließend vollständig zurückgesendet; andernfalls wäre nur die Slotnummer echoed worden.
 - Commit: `3113122099547dd14f42caa1648bed8195d3af97`.
+
+
+## WLAN-Menübezeichnungen (2026-11-20)
+
+- Die sichtbaren WLAN-Modi im Display-Menü wurden wie abgestimmt umbenannt: `OFF` → `AUS`, `AP_ONLY` → `WEB`, `AP_CONNECT` → `WEB + WLAN`, `CONNECT` → `WLAN`, `SYNC_ONLY` → `NTP-SYNCHRONISATION`.
+- Die interne Enum-Reihenfolge, gespeicherten Moduswerte, Zustandsübergänge und Auswahl-/Aktivierungslogik wurden nicht verändert. Es handelt sich ausschließlich um eine Änderung der angezeigten Texte in `DisplayDriver.cpp`.
+- Commit: `cfa18076e5150df2a9ac3da6e5215747dc8c5386`.
+- Kein Build, keine GitHub Action und kein Hardwaretest ausgeführt.
