@@ -43,6 +43,7 @@ enum : uint8_t { REGION_INTERNAL = 0, REGION_PSRAM = 1, REGION_OTHER = 2 };
 
 ModuleRecord modules[MODULE_SLOTS] = {};
 AllocationRecord allocations[ALLOCATION_SLOTS] = {};
+ModuleStats moduleSnapshot[MODULE_SLOTS] = {};
 AllocationStats trackedStats{};
 uint32_t lastReportMs = 0;
 bool started = false;
@@ -148,7 +149,6 @@ void report(const char* event) {
     static_cast<unsigned long>(snapshot.trackingOverflows),
     static_cast<unsigned long>(snapshot.untrackedFrees));
 
-  ModuleStats moduleSnapshot[MODULE_SLOTS] = {};
   const size_t count = getModuleStats(moduleSnapshot, MODULE_SLOTS);
   for (size_t i = 0; i < count; ++i) {
     if (!moduleSnapshot[i].liveAllocations && !moduleSnapshot[i].totalSuccessfulAllocations && !moduleSnapshot[i].allocationFailures) continue;
