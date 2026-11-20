@@ -3341,3 +3341,54 @@ Bestätigte Übereinstimmungen bzw. bewusste Architekturabweichungen:
 - TCP-Referenzport ist 60000 und der Referenzlistener läuft nur bei `TCP_ADHOC` und verfügbarem WLAN. Mini_OS hat dafür eine explizite, standardmäßig deaktivierte Web-Konfigurationsoption (`tcpon`); TCP-Service wird bei WLAN-Stopp/Moduswechsel beendet. Der Befehlssatz des Mini_OS-Adapters ist weiterhin nicht vollständig identisch zur Referenz und bleibt als eigener offener Portierungsumfang dokumentiert.
 
 Noch offen: gezielte Prüfung der Status-/Reconnect-Randfälle (Scanfehler, mehrere Profile, Routerverlust, Wechsel AP/STA/SYNC_ONLY), Prüfung der Webserver-Routen und abschließender Build durch den Nutzer. Keine Builds, Actions oder Hardwaretests ausgeführt.
+
+
+## WLAN- und Speicherprüfung – Fortsetzung (2026-11-20)
+
+### Korrektur zum Umfang
+- News-Ticker und Wetterdienst sind **Mini_OS-eigene Funktionen** und keine ATS-Mini-Dev-Referenzfunktionen. Sie werden nicht als Stock-Portierungs-Parität bewertet.
+- Die WLAN-Schicht darf diese Dienste nur mit dem korrekten Internet-Verbindungsstatus versorgen. Ihre Speicher- und Task-Lifecycle-Entscheidungen werden separat anhand der Mini_OS-Anforderungen getroffen.
+- Frühere Formulierungen im Protokoll, die News/Weather wie Referenzfunktionen erscheinen lassen, sind entsprechend einzuordnen.
+
+### WLAN-Änderungen seit dem letzten Eintrag
+- Hidden-SSID-Verhalten vervollständigt: Die optionale Scan-Einstellung bleibt standardmäßig aus. Wenn sie eingeschaltet ist, wird zusätzlich zu `scanNetworks(..., includeHidden)` nach den sichtbaren Kandidaten jedes gespeicherte Profil einmal pro Verbindungszyklus ohne BSSID-/Kanalbindung direkt versucht. Damit können bekannte, nicht ausgestrahlte SSIDs auch dann verbunden werden, wenn der Scan keinen SSID-Text liefert.
+- Das Löschen aller gespeicherten WLAN-Profile stoppt zuerst einen laufenden Scan/Verbindungsversuch und lässt die Station anschließend sauber im Leerlauf. Es wird kein alter Scan mit veralteten Profilen weitergeführt.
+- Bei einem fehlgeschlagenen Scan wird die Hidden-SSID-Probe ebenfalls als Fallback versucht.
+- Die Setup-Seite zeigt nun bei AP-only die Setup-SSID und AP-IP und bei AP+STA sowohl Router-IP als auch Setup-AP-IP. Status-JSON enthält getrennte Felder `sta_ip` und `ap_ip`.
+- `WebServer.begin()` wird bei einem bereits laufenden Server nicht erneut aufgerufen. Routen bleiben einmalig registriert und werden nach Stop/Suspend wiederverwendet.
+- AP-Start und statische IP-Konfiguration liefern jetzt explizite Diagnosemeldungen, wenn die ESP32-API einen Fehler meldet.
+
+### Mini_OS-eigene News-/Wetter-Worker: Speicherentscheidung
+- Worker werden nicht mehr beim bloßen Einschalten von WLAN bzw. beim Start des Setup-APs erzeugt. Die Erzeugung wird bis zu einer tatsächlich verbundenen STA-/Internetverbindung aufgeschoben; `AP_ONLY` und ein nicht verbundener `AP_CONNECT` reservieren daher keine News-/Wetter-Task-Stacks.
+- News-Worker startet nur, wenn der Dienst aktiviert ist und mindestens eine Feed-URL konfiguriert ist. Wird News später über die Weboberfläche aktiviert, wird der Worker bei bestehender Verbindung nachgestartet.
+- Wetter-Worker startet nur bei bestehender STA-Verbindung und konfigurierter fünfstelliger Postleitzahl. Ohne Postleitzahl wird kein Task-Stack reserviert. Wird die Postleitzahl später gespeichert, wird der Worker bei bestehender Verbindung direkt gestartet oder beim nächsten Verbindungsaufbau nachgestartet.
+- Die Worker bleiben nach ihrer ersten Erzeugung langlebige Dienste und warten bei WLAN-Verlust ohne HTTP-Abrufe. Ein dynamisches Löschen/Neuerzeugen der FreeRTOS-Tasks bei jedem Router-Ausfall wird bewusst vermieden, um Task-Lifecycle-Risiken zu verhindern.
+- News-Task-Stack ist im Quelltext mit 8192 Bytes angegeben; Weather-Task-Stack mit 12288 Bytes. Diese Task-Stacks werden durch FreeRTOS verwaltet und sind **keine** `MemoryManager::allocate()`-Allokationen. Die ESP-IDF-System-Heapwerte zeigen ihre Wirkung auf den freien Heap; News protokolliert seinen eigenen Stack-High-Water-Mark bereits, Weather protokolliert ihn jetzt ebenfalls beim Worker-Start.
+- Der Wetterabruf hält derzeit den JSON-Response als Arduino-String bis maximal 65536 Bytes und parst ihn anschließend mit ArduinoJson. Das ist ein transienter Heap-Peak, aber kein WLAN-Scan-Leak. Noch keine pauschale PSRAM-Verlagerung oder Absenkung des Größenlimits: zuerst echte Heap-/Largest-Block-Messwerte aus dem Nutzer-Build sammeln, damit Forecast-Antworten nicht unbeabsichtigt abgeschnitten werden.
+- News liest den Feed-Stream direkt und begrenzt nur die akzeptierte Content-Length (maximal 98304 Bytes); es wird kein kompletter 98-KB-Response-String angelegt.
+
+### MemoryManager-Diagnose
+- Modul-Logzeilen zeigen jetzt neben Gesamtbelegung auch aktuelle/Peak-Werte getrennt nach internem SRAM, PSRAM und OTHER.
+- Weather-Worker-Start protokolliert freien Heap, größten Block, Minimum-Free und den High-Water-Mark seines eigenen Task-Stacks.
+- Die bestehende Trennung bleibt verbindlich: System-/SDK-/FreeRTOS-/TLS-/HTTP-/String-/ArduinoJson-Allokationen sind in den ESP-IDF-System-Heapwerten enthalten, aber nicht automatisch im expliziten MemoryManager-Allocation-Tracking. Keine globalen malloc/new-Overrides.
+
+### Statische Prüfung und Status
+- Geänderte Dateien: `WifiClient.h/.cpp`, `WeatherService.h/.cpp`, `MemoryManager.cpp`.
+- Statische Strukturprüfung (Klammer-/Stringzustände) für WLAN-, Scanner-, Weather- und MemoryManager-Quellen ohne offene oder unausgeglichene Klammern abgeschlossen.
+- Gezielte Prüfung der geänderten Aufrufstellen: Worker-Start nur nach STA-Verbindung; SYNC_ONLY bleibt davon ausgeschlossen; Setup-Webserver wird nicht doppelt gestartet; Hidden-Probe-Status wird pro Verbindungszyklus zurückgesetzt.
+- Kein Build, kein GitHub-Actions-Lauf und kein Hardwaretest. Die Codeprüfung ersetzt keinen Compilerlauf.
+
+Commits:
+- Hidden-SSID-Probe/Reset Profile: `5911fcca89e262b96d3662ba2a0038b22f8093b5`, `17ed8907fcb97e144baa74c11e321872a9ea5dbc`
+- Status-/Scan-Fallback: `f4e630e1b500ee3d25d67c4ef9affd6d69726355`, `472ac85a19bf480f2e960289e76155861e81b5e0`
+- Worker-Lifecycle: `a609374eb7aa69475cb7f5613f6fdf631c2c7bcb`, `e2e946544c9c38def20dda21e0337193e8f777b4`, `9c42df94ecf65f4c580104c4396499b7cc749519`, `f9959a18fef82e60ef4ce6a9dedb15556b19d466`, `216cf1b44910f77c22d7a1e46dd4e5b93873dd04`
+- Weather worker only with configured location: `265e281d8b548a337a14e5615db140f82c321c8e`, `2f7aec4cfa4cdebd3a95ad8e32a64493be948847`
+- Per-module SRAM/PSRAM reporting and Weather stack HWM: `3d2099d5fde69ec592d6a298db827d3ebe1350ee`, `ae27714e0461ebf20e09e3a659bcdafc737ac152`
+- AP startup diagnostics: `89c05b0b2ffa6662da91ddb9ecbecc7bcd5e77cd`
+
+### Noch offene WLAN-Prüfpunkte
+1. Abschlussreview der WLAN-Zustandsübergänge einschließlich AP-Startfehler, leere Profile, Scanfehler, Routerverlust und Moduswechsel.
+2. NTP/SYNC_ONLY auf Zeitübernahme und WLAN-Abschaltung prüfen; insbesondere Verhalten bei bereits gültiger Systemzeit und wiederholtem SYNC_ONLY-Aufruf.
+3. mDNS-Lifecycle und TCP-Port 60000 bei AP-only, AP+STA, CONNECT, OFF und SYNC_ONLY prüfen.
+4. Webserver-Handler-/Speicherverhalten abschließend gegen die synchronen Mini_OS-Routen prüfen; AsyncWebServer bleibt bis zu einer separaten Kompatibilitätsentscheidung unangetastet.
+5. Danach abschließende Testanweisung für den Nutzer-Build erstellen. Kein Build oder Flash durch den Assistenten.
