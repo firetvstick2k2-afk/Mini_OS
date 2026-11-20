@@ -631,8 +631,17 @@ void WifiClient::update(bool timeSynchronized) {
     connectNextNetwork();
   }
 
+  bool newsWorkerNeeded = false;
+  if (newsService_ && !newsWorkerStarted_) {
+    const NewsService::Configuration config = newsService_->configuration();
+    bool hasFeed = false;
+    for (uint8_t i = 0; i < NewsService::MAX_FEEDS; ++i)
+      hasFeed = hasFeed || config.urls[i][0] != '\0';
+    newsWorkerNeeded = config.enabled && hasFeed;
+  }
+  const bool weatherWorkerNeeded = weatherService_ && !weatherWorkerStarted_;
   if (status == WL_CONNECTED && dataServicesAllowed() &&
-      (!newsWorkerStarted_ || !weatherWorkerStarted_) &&
+      (newsWorkerNeeded || weatherWorkerNeeded) &&
       (!lastWorkerStartAttemptMs_ || now - lastWorkerStartAttemptMs_ >= 5000)) {
     lastWorkerStartAttemptMs_ = now ? now : 1;
     startDataWorkers();
