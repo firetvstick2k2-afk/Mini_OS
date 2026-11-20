@@ -497,8 +497,7 @@ Dies ist nur ein Compile-/Bring-up-Scaffold. Es implementiert noch keinen nutzba
 
 
 ## 25. Dauerhafte Regel des Nutzers: strikt modulare Entwicklung
-Der Nutzer hat ausdrücklich festgelegt, dass diese Regel **immer** gelten muss und in Übergaben bei vollen Chats festgehalten werden soll:- Jede fachlich eigenständige Funktion erhält eigene `.h`- und `.cpp`-Dateien.
-- `.ino` bleibt möglichst klein und enthält nur Einstiegspunkt sowie Setup-/Loop-Verdrahtung.
+Der Nutzer hat ausdrücklich festgelegt, dass diese Regel **immer** gelten muss und in Übergaben bei vollen Chats festgehalten werden soll:- Jede fachlich eigenständige Funktion erhält eigene `.h`- und `.cpp`-Dateien.- `.ino` bleibt möglichst klein und enthält nur Einstiegspunkt sowie Setup-/Loop-Verdrahtung.
 - Eine Änderung an einer Funktion darf unabhängige Funktionen nicht kaputtmachen. Keine Sammeldateien, keine direkten Eingriffe in fremde Modul-Interna und keine versteckten Seiteneffekte.
 - Module interagieren über klar definierte Schnittstellen; gemeinsame Ressourcen haben genau einen Besitzer.
 - Vor Änderungen Abhängigkeiten/Aufrufer prüfen, betroffene Module gezielt anpassen und Prüfungen dokumentieren.
@@ -997,8 +996,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 - GPIO-Referenz hilft bei der Portierung, garantiert aber nicht, dass sämtliche Funktionen ohne Hardwaretest funktionieren.
 ### Geprüfte GPIOs aus `ats-mini-dev/ats-mini/Common.h`| Funktion | GPIO | Referenzverhalten |
 |---|---:|---|| Radio-LDO | 15 | HIGH = ein |
-| SI4735 Reset | 16 | Reset |
-| I²C SDA / SCL | 18 / 17 | Daten / Takt |
+| SI4735 Reset | 16 | Reset || I²C SDA / SCL | 18 / 17 | Daten / Takt |
 | Audio-Mute | 3 | HIGH = stumm |
 | Audioverstärker Enable | 10 | HIGH = ein |
 | Display-Backlight | 38 | PWM, Referenz nutzt 16 kHz / 8 Bit |
@@ -1497,8 +1495,7 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 
 ### In Build #114 kompilierte Änderungen
 - `DisplayDriver.h`:
-  - Helligkeitswert mit Standardwert 180 ergänzt.
-  - Getter `brightness()` und Setter `setBrightness(uint8_t)` ergänzt.
+  - Helligkeitswert mit Standardwert 180 ergänzt.  - Getter `brightness()` und Setter `setBrightness(uint8_t)` ergänzt.
   - Änderungsmarker für die Menü-Neuzeichnung ergänzt.
 - `DisplayDriver.cpp`:
   - Menüpunkt von „Helligkeit (spaeter)“ auf „Display-Helligkeit“ geändert.
@@ -1997,8 +1994,7 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - Download-Zwischendatei: `/schedules.tmp`; persistente Binärdatei: `/schedules.bin`; Backup bei Austausch: `/schedules.bak`.- Die bisherige Schedule-Datei wird erst nach erfolgreichem Parsen gültiger Einträge ersetzt. Bei WLAN-Abbruch, HTTP-Fehlern, leerem/ungültigem Feed oder Installationsfehler bleibt die vorherige Datei erhalten bzw. wird zurückgesichert.
 - Der Lookup nutzt die synchronisierte UTC-Uhr aus `ClockService`, sucht frequenzgenaue Einträge und berücksichtigt tägliche sowie über Mitternacht reichende Zeitfenster.
 - EiBi-Sendername wird nur in der PS-Zeile des LW/MW/KW-TEF-Layouts angezeigt. Während des Downloads erscheint `Downloading EiBi Schedules ...` in dessen RT-Zeile. Nach erfolgreichem Download bleibt RT leer.
-- FM-RDS-PS/RT und `RadioSnapshot` bleiben vollständig getrennt und unverändert.
-- Der Dienst verwendet ausschließlich ein bereits von `StorageDiscovery` sicher erkanntes und gemountetes LittleFS. Wenn kein gültiger Storage-Anker gefunden wurde, wird der Download abgelehnt; es wird niemals formatiert oder ein unbekanntes Flash-Segment beschrieben.
+- FM-RDS-PS/RT und `RadioSnapshot` bleiben vollständig getrennt und unverändert.- Der Dienst verwendet ausschließlich ein bereits von `StorageDiscovery` sicher erkanntes und gemountetes LittleFS. Wenn kein gültiger Storage-Anker gefunden wurde, wird der Download abgelehnt; es wird niemals formatiert oder ein unbekanntes Flash-Segment beschrieben.
 
 ### Relevante Code-Commits
 - `6f4076f1b7d531fb2127c01f0561cec1010a2e27` – EiBi-Service-Schnittstelle
@@ -2497,8 +2493,7 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - **Status:** Änderungen committed und Quelltext erneut aus GitHub abgerufen. Noch nicht kompiliert und nicht am Gerät getestet. Kein GitHub-Actions-Workflow gestartet und kein Flash ausgeführt. Vor einem Build insbesondere OpenPLZ-Antwortschema, Bright-Sky-Feldnamen und ESP32-Datumsfunktionen im Compile-/Laufzeittest validieren.
 
 
-### Build-Fehlerbehebung nach Actions-Lauf 42881580859 — 2026-11-10
-- Der Compile-only-Job erreichte den Sketch-Compile. Dependency-Installation und Header-Prüfungen waren erfolgreich.
+### Build-Fehlerbehebung nach Actions-Lauf 42881580859 — 2026-11-10- Der Compile-only-Job erreichte den Sketch-Compile. Dependency-Installation und Header-Prüfungen waren erfolgreich.
 - Compilerfehler in `WeatherService.cpp`: `timegm()` ist in der verwendeten ESP-IDF/Newlib-Toolchain nicht verfügbar; außerdem war `startDay` wegen seiner Deklaration innerhalb der Record-Schleife außerhalb des Scopes nicht sichtbar.
 - `timegm()` wurde durch eine kleine portable gregorianische Tagesnummer-Funktion ersetzt. Startdatum wird einmal vor der Record-Schleife berechnet; Tagesindex und Wochentagsberechnung nutzen diese Tagesnummer.
 - Entfernt wurde die dadurch nicht mehr benötigte Hilfsfunktion `weekdayFromDate`.
@@ -2997,7 +2992,6 @@ Prüfstatus:
 - Unverändert: `DisplayLayoutFmAudioFft.h` (Layout, Frequenz- und Akkuanzeige), alter dekorativer Decoder-Wasserfall, TEF6686-Layout sowie FFT-Zeilenrate (12 Zeilen/s). Es wurde nur die Pegelberechnung in der FFT-Service-Datei geändert.
 - Status: Nutzer hat den Compile-Build gestartet; Ergebnis steht noch aus. Kein Build-Erfolg behaupten, bis der Nutzer ihn bestätigt. Noch kein neuer Gerätetest der Pegelkorrektur bestätigt.
 - Nächster Schritt: Build-Ergebnis abwarten. Danach Live-FFT auf dem ATS Mini prüfen. Falls weiterhin zu hell/dunkel oder blockig, anhand des tatsächlichen Gerätetests die Pegel-/Farbskala gezielt abstimmen. Frequenz-/Akkuanzeige nicht anfassen.
-
 ## Verbindliche Chat-Übergabe-Regel (ab 2026-11-18)
 
 - Dieses `HANDOVER.md` ist die zentrale, maßgebliche Projektübergabe über Chat-Sitzungen hinweg; Modell-Erinnerungen sind nur Zusatz und ersetzen das Dokument nicht.
@@ -3158,3 +3152,44 @@ Auf `dev/first-build-preparation` wurden im aktiven Repository `firetvstick2k2-a
 **Prüfstatus**
 - Änderung committed; erneute Quelltextprüfung folgt.
 - Nicht kompiliert und nicht am Gerät getestet. Kein Build und kein Flash gestartet.
+
+## Systemweiter Speichervergleich – erster Netzwerk-/HTTPS-Audit (2026-11-20)
+
+### Geprüfte Ausgangsstellen
+- `system/MemoryManager.h/.cpp`
+- `network/WifiScanner.h/.cpp`
+- `network/WifiClient.h/.cpp`
+- `logo/StationLogoClient.cpp`
+- `weather/WeatherService.cpp/.h`
+- `news/NewsService.cpp`
+- Stock `ats-mini/Network.cpp`
+
+### Befunde zum MemoryManager
+- Der vorhandene `MemoryManager` misst Gesamt-/Freispeicher, größten freien Block, Minimum-Free und daraus abgeleitete Fragmentierung für PSRAM und internen 8-Bit-Speicher.
+- Er zählt fehlgeschlagene Aufrufe seines eigenen `allocate()`-Wrappers, führt aber aktuell keine Liste erfolgreicher Wrapper-Allokationen, keine Bytes-in-use/Peak-Werte und keine Zuordnung späterer Freigaben.
+- Bereits bestehende `String`-, `new`-, ArduinoJson-, HTTPClient-, TLS-, FreeRTOS- und Treiberallokationen werden nicht einzeln erfasst. Der Kommentar im Header beschreibt das zutreffend als aggregierte Beobachtung plus optionale Wrapper.
+- Konsequenz: Der aktuelle Monitor ist ein Heap-/Fragmentierungsmonitor, noch kein vollständiger Allocation-Tracker. Keine Änderung am Manager vorgenommen, bevor das Allokationsinventar vollständig genug ist.
+
+### Befunde zu Netzwerkdiensten und großen Puffern
+- **News:** `NewsService.cpp` liest RSS/Atom-Antworten bereits direkt aus dem HTTP-Stream und parst sie in begrenzte Titelpuffer. Es gibt eine Obergrenze von 98.304 Byte für Content-Length, aber der gesamte Feed-Body wird nicht zusätzlich als großer `String` gehalten. Das ist ein gutes Muster für weitere Dienste.
+- **Weather:** `WeatherService.cpp` hält HTTP-Antworten zunächst in `String`-Objekten (bis 65.536 Byte). Danach werden ArduinoJson-Dokumente aufgebaut. Beim Forecast existieren Response-String, Filter-Dokument und Ergebnis-Dokument gleichzeitig. Das ist ein konkreter Kandidat für spätere Stream-/Filteroptimierung; zuerst müssen Providerantwort, Parserverhalten und notwendige Felder erhalten bleiben.
+- **StationLogo:** `httpGet()` liest HTTP-Antworten mit `HTTPClient::getString()` in einen `String`. `storeLogoInRam()` kopiert das Bild danach zusätzlich in eine MemoryManager-Allokation (zuerst PSRAM, dann interner SRAM). Während der Kopie existieren damit mindestens zwei vollständige Bildrepräsentationen gleichzeitig. Das ist der klarste erste Optimierungskandidat.
+- **StationLogo Task:** Pro Lookup wird ein `LookupJob` per `new(std::nothrow)` angelegt und mit `delete` in der Task freigegeben. Der Task-Stack wird mit 8192 angefordert. Die Netzwerk-Operationen nutzen HTTPS mit Timeout; `secure.setInsecure()` ist eine bewusste Nutzerentscheidung und bleibt unverändert.
+- **WiFiScanner:** Kandidaten und Zustandsarrays sind feste Member-Puffer (keine dynamische Heap-Allokation durch den eigenen Code). Scan-Resultate liegen im WiFi-Treiber und werden nach dem Kandidatenabgleich mit `WiFi.scanDelete()` freigegeben. Stock behält Scanresultate länger, wenn die optionale Hidden-SSID-Erkennung eingeschaltet ist.
+- **Stock Hidden-SSID-Verhalten:** `Network.cpp` liest `wifiscanhidden` aus Preferences (Standard `false`). Bei Aktivierung scannt Stock versteckte APs mit und prüft anonyme BSSIDs durch zeitlich begrenzte Association-Probes mit gespeicherten Zugangsdaten. Mini_OS scannt aktuell explizit mit `includeHidden=false` und besitzt diese Option/Probe-Phase noch nicht. Das ist derzeit kein Fehler im Standardmodus, sondern eine noch fehlende optionale Stock-Funktion.
+
+### Warum wir noch keinen MemoryManager-Umbau vorgenommen haben
+- Erfolgreiche Allokationen müssen zuverlässig mit Größe, Modul, Speicher-Capabilities und Freigabe erfasst werden; ein bloßer globaler Zähler würde keine Ownership- oder Leak-Aussage erlauben.
+- Ein Pointer-Tracking-System braucht feste Grenzen und muss Überlauf/Untracked-Allokationen klar melden. Es darf selbst keine dynamischen Allokationen verursachen und nicht in kritischen Pfaden blockieren.
+- Erst das vollständige Inventar entscheidet, ob Wrapper-Tracking oder gezielte Stream-Puffer die größere und risikoärmere Verbesserung liefern.
+
+### Nächste konkrete Schritte
+1. **StationLogo Streaming:** HTTP-Antworten für Bilddateien direkt in einen begrenzten PSRAM-Puffer lesen und Signatur/Größe prüfen, statt erst `String` und dann Kopie zu halten. Für kleine JSON-Suchergebnisse bleibt eine separate begrenzte Textantwort zulässig. Die Ownership des Puffers muss bei jedem HTTP-Fehler, ungültigem Bild, Mutex-Fehler und erfolgreichem Austausch eindeutig sein.
+2. **Hidden-SSID-Option:** Danach Stock-Option `wifiscanhidden` modular in Preferences/Web-UI abbilden und eine eigene Probe-Phase ergänzen. Standard bleibt `false`, passend zu Stock. Probeversuche müssen den Stock-Timeouts folgen und dürfen nicht den AP/Webserver blockieren.
+3. **Weather Streaming:** Forecast-Antwort anschließend auf Stream-Parsing mit ArduinoJson-Filter prüfen, um Response-String plus parallele JSON-Dokumente zu vermeiden.
+4. **MemoryManager Tracking:** Nach dem Inventar eine begrenzte, statische Tracking-Tabelle für ausschließlich über `MemoryManager::allocate()` laufende Puffer erwägen. Freie/Peak-Bytes und nicht erfasste Einträge ausweisen; niemals behaupten, damit alle Arduino-/TLS-/Treiberallokationen zu erfassen.
+
+### Status
+- Quelltexte geprüft und Befunde dokumentiert.
+- In diesem Audit-Schritt keine Codeänderung und keine Verhaltensänderung vorgenommen.
+- Kein Build, keine GitHub Action, kein Flash und kein Hardwaretest ausgeführt.
