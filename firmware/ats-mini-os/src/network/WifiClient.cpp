@@ -391,7 +391,7 @@ void WifiClient::handleSave() {
     "<meta charset='utf-8'><meta http-equiv='refresh' content='5;url=/'><p>WLAN-Daten gespeichert. "
     "Verbindungsaufbau läuft. Diese Seite lädt in fünf Sekunden neu.</p>");
   WiFi.disconnect(false, false);
-  if (any && stationEnabled()) connectNextNetwork();
+  if (stationEnabled()) connectNextNetwork();
 }
 
 
@@ -494,22 +494,25 @@ void WifiClient::handleStatus() {
 
 void WifiClient::connectNextNetwork() {
   if (!stationEnabled()) return;
+  scanner_.stop();
+  connectCycleActive_ = false;
+  attemptInProgress_ = false;
+  hiddenProbeIndex_ = 0;
+  hiddenProbeCompleted_ = false;
+  WiFi.setAutoReconnect(false);
+  WiFi.disconnect(false, false);
+
   bool hasSavedNetwork = false;
   for (uint8_t i = 0; i < NETWORK_COUNT; ++i)
     hasSavedNetwork = hasSavedNetwork || ssid_[i][0] != '\0';
   if (!hasSavedNetwork) {
-    connectCycleActive_ = false;
-    attemptInProgress_ = false;
     lastAttemptMs_ = millis();
-    BootDiagnostics::write("[WIFI] no saved router network");
+    BootDiagnostics::write("[WIFI] no saved router network; station remains idle");
     return;
   }
-  scanner_.stop();
-  WiFi.setAutoReconnect(false);
-  WiFi.disconnect(false, false);
+
   connectCycleStartedMs_ = millis();
   connectCycleActive_ = true;
-  attemptInProgress_ = false;
   startNetworkScan();
 }
 
@@ -527,21 +530,41 @@ void WifiClient::startNetworkScan() {
 
 void WifiClient::tryNextScannedNetwork() {
   WifiScanner::Candidate candidate;
-  if (!scanner_.next(candidate)) {
-    attemptInProgress_ = false;
+  if (scanner_.next(candidate)) {
+    activeNetwork_ = candidate.networkIndex;
+    const char* password = candidate.open || !password_[activeNetwork_][0]
+      ? nullptr : password_[activeNetwork_];
+    WiFi.begin(ssid_[activeNetwork_], password, candidate.channel, candidate.bssid);
     lastAttemptMs_ = millis();
+    attemptInProgress_ = true;
+    Serial.printf("[WIFI] trying strongest candidate slot %u RSSI=%d dBm channel=%ld\\n",
+      static_cast<unsigned>(activeNetwork_ + 1),
+      static_cast<int>(candidate.rssi),
+      static_cast<long>(candidate.channel));
     return;
   }
-  activeNetwork_ = candidate.networkIndex;
-  const char* password = candidate.open || !password_[activeNetwork_][0]
-    ? nullptr : password_[activeNetwork_];
-  WiFi.begin(ssid_[activeNetwork_], password, candidate.channel, candidate.bssid);
+
+  // Hidden APs do not advertise their SSID in scan results. When the user
+  // enables hidden-network search, probe each saved profile once per
+  // connection cycle without a BSSID/channel restriction.
+  if (wifiScanHidden_ && !hiddenProbeCompleted_) {
+    while (hiddenProbeIndex_ < NETWORK_COUNT) {
+      const uint8_t index = hiddenProbeIndex_++;
+      if (!ssid_[index][0]) continue;
+      activeNetwork_ = index;
+      const char* password = password_[index][0] ? password_[index] : nullptr;
+      WiFi.begin(ssid_[index], password);
+      lastAttemptMs_ = millis();
+      attemptInProgress_ = true;
+      Serial.printf("[WIFI] probing hidden saved network slot %u\\n",
+        static_cast<unsigned>(activeNetwork_ + 1));
+      return;
+    }
+    hiddenProbeCompleted_ = true;
+  }
+
+  attemptInProgress_ = false;
   lastAttemptMs_ = millis();
-  attemptInProgress_ = true;
-  Serial.printf("[WIFI] trying strongest candidate slot %u RSSI=%d dBm channel=%ld\\n",
-    static_cast<unsigned>(activeNetwork_ + 1),
-    static_cast<int>(candidate.rssi),
-    static_cast<long>(candidate.channel));
 }
 
 void WifiClient::update(bool timeSynchronized) {
@@ -586,7 +609,7 @@ void WifiClient::update(bool timeSynchronized) {
       lastAttemptMs_ = now;
       BootDiagnostics::write("[WIFI] total connection timeout; setup AP remains available where enabled");
     } else if (scanner_.scanning()) {
-      if (scanner_.update() && scanner_.ready()) tryNextScannedNetwork();
+      if (scanner_.update()) tryNextScannedNetwork();
     } else if (attemptInProgress_ && now - lastAttemptMs_ >= ATTEMPT_TIMEOUT_MS) {
       WiFi.disconnect(false, false);
       attemptInProgress_ = false;
