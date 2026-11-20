@@ -635,8 +635,10 @@ void WifiClient::update(bool timeSynchronized) {
     }
   }
 
-  if (stationEnabled() && status != WL_CONNECTED && !connectCycleActive_ &&
-      mode_ != Mode::SYNC_ONLY && now - lastAttemptMs_ >= RECONNECT_DELAY_MS) {
+  const bool hasSavedNetwork = ssid_[0][0] || ssid_[1][0] || ssid_[2][0];
+  if (stationEnabled() && hasSavedNetwork && status != WL_CONNECTED &&
+      !connectCycleActive_ && mode_ != Mode::SYNC_ONLY &&
+      now - lastAttemptMs_ >= RECONNECT_DELAY_MS) {
     connectNextNetwork();
   }
 
