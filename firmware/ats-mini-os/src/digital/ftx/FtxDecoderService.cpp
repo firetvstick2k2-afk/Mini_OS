@@ -1,5 +1,7 @@
 #include "FtxDecoderService.h"
 
+#include <math.h>
+
 #include <string.h>
 #include "../../system/BootDiagnostics.h"
 
