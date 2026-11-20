@@ -106,18 +106,23 @@ bool WifiClient::ensureStarted() {
   applyMode();
   started_ = true;
   if (mode_ != Mode::SYNC_ONLY) startWebServer();
-  if (dataServicesAllowed()) startDataWorkers();
   return true;
 }
 
 void WifiClient::startDataWorkers() {
-  if (newsService_) {
-    const bool ok = newsService_->begin();
-    BootDiagnostics::printf("[NEWS] lazy worker start=%s", ok ? "success" : "failed");
+  if (newsService_ && !newsWorkerStarted_) {
+    const NewsService::Configuration config = newsService_->configuration();
+    bool hasFeed = false;
+    for (uint8_t i = 0; i < NewsService::MAX_FEEDS; ++i)
+      hasFeed = hasFeed || config.urls[i][0] != '\\0';
+    if (config.enabled && hasFeed) {
+      newsWorkerStarted_ = newsService_->begin();
+      BootDiagnostics::printf("[NEWS] lazy worker start=%s", newsWorkerStarted_ ? "success" : "failed");
+    }
   }
-  if (weatherService_) {
-    const bool ok = weatherService_->begin();
-    BootDiagnostics::printf("[WEATHER] lazy worker start=%s", ok ? "success" : "failed");
+  if (weatherService_ && !weatherWorkerStarted_) {
+    weatherWorkerStarted_ = weatherService_->begin();
+    BootDiagnostics::printf("[WEATHER] lazy worker start=%s", weatherWorkerStarted_ ? "success" : "failed");
   }
 }
 
@@ -207,7 +212,6 @@ bool WifiClient::setMode(Mode mode) {
     }
   } else {
     startWebServer();
-    if (dataServicesAllowed()) startDataWorkers();
   }
   return true;
 }
@@ -624,6 +628,13 @@ void WifiClient::update(bool timeSynchronized) {
   if (stationEnabled() && status != WL_CONNECTED && !connectCycleActive_ &&
       mode_ != Mode::SYNC_ONLY && now - lastAttemptMs_ >= RECONNECT_DELAY_MS) {
     connectNextNetwork();
+  }
+
+  if (status == WL_CONNECTED && dataServicesAllowed() &&
+      (!newsWorkerStarted_ || !weatherWorkerStarted_) &&
+      (!lastWorkerStartAttemptMs_ || now - lastWorkerStartAttemptMs_ >= 5000)) {
+    lastWorkerStartAttemptMs_ = now ? now : 1;
+    startDataWorkers();
   }
 
   updateMdns();
