@@ -8,6 +8,8 @@
 #include "../news/NewsService.h"
 #include "../weather/WeatherService.h"
 
+class TcpRemoteService;
+
 class WifiClient {
 public:
   enum class Mode : uint8_t { OFF = 0, AP_ONLY = 1, AP_CONNECT = 2, CONNECT = 3, SYNC_ONLY = 4 };
@@ -23,6 +25,7 @@ public:
   String ipAddress() const;
   void setNewsService(NewsService* service);
   void setWeatherService(WeatherService* service);
+  void setTcpRemoteService(TcpRemoteService* service);
   void update(bool timeSynchronized = false);
   bool connected() const;
   bool setupAccessPointActive() const { return apActive_; }
@@ -42,6 +45,7 @@ private:
   NewsService::Configuration newsConfig_;
   NewsService* newsService_ = nullptr;
   WeatherService* weatherService_ = nullptr;
+  TcpRemoteService* tcpRemoteService_ = nullptr;
   uint8_t activeNetwork_ = 0;
   wl_status_t lastStatus_ = WL_IDLE_STATUS;
   uint32_t lastLogMs_ = 0;
@@ -50,6 +54,7 @@ private:
   bool connectCycleActive_ = false;
   bool attemptInProgress_ = false;
   bool wifiScanHidden_ = false;
+  bool tcpRemoteEnabled_ = false;
   uint32_t syncOnlyStartedMs_ = 0;
   uint32_t syncOnlyConnectedAtMs_ = 0;
   uint32_t mdnsRetryMs_ = 0;
