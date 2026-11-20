@@ -1,4 +1,5 @@
 #include "StationLogoClient.h"
+#include "../system/MemoryManager.h"
 
 #include <WiFi.h>
 #include <LittleFS.h>
@@ -118,14 +119,14 @@ bool StationLogoClient::storeLogoInRam(const String& logo, const char* key, cons
     Serial.printf("[LOGO] rejected non-PNG/JPEG image from %s\n", source ? source : "(unknown)");
     return false;
   }
-  uint8_t* copy=static_cast<uint8_t*>(heap_caps_malloc(logo.length(), MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT));
-  if (!copy) copy=static_cast<uint8_t*>(heap_caps_malloc(logo.length(), MALLOC_CAP_8BIT));
+  uint8_t* copy=static_cast<uint8_t*>(MemoryManager::allocate(logo.length(), MALLOC_CAP_SPIRAM|MALLOC_CAP_8BIT, "StationLogo"));
+  if (!copy) copy=static_cast<uint8_t*>(MemoryManager::allocate(logo.length(), MALLOC_CAP_INTERNAL|MALLOC_CAP_8BIT, "StationLogo"));
   if (!copy) { Serial.println("[LOGO] not enough RAM for image"); return false; }
   memcpy(copy, logo.c_str(), logo.length());
   if (!logoMutex_ || xSemaphoreTake(logoMutex_, pdMS_TO_TICKS(100)) != pdTRUE) {
-    heap_caps_free(copy); return false;
+    MemoryManager::deallocate(copy); return false;
   }
-  if (logoData_) heap_caps_free(logoData_);
+  if (logoData_) MemoryManager::deallocate(logoData_);
   logoData_=copy; logoLength_=logo.length(); logoIsJpg_=jpg;
   strncpy(logoKey_,key,sizeof(logoKey_)-1); logoKey_[sizeof(logoKey_)-1]=0;
   xSemaphoreGive(logoMutex_);
