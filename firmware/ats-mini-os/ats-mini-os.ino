@@ -437,7 +437,7 @@ void loop() {
   MemoryManager::update();
   performance.update();
   if (firstLoopDiagnostics) BootDiagnostics::write("[LOOP][TRACE] performance.update done");
-  wifi.update();
+  wifi.update(systemClock.synchronized());
   if (eibiDownloadPending && wifi.connected() && wifi.dataServicesAllowed()) {
     const bool started = eibi.beginDownload(true);
     eibiDownloadPending = false;
