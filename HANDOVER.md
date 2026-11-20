@@ -3392,3 +3392,19 @@ Commits:
 3. mDNS-Lifecycle und TCP-Port 60000 bei AP-only, AP+STA, CONNECT, OFF und SYNC_ONLY prüfen.
 4. Webserver-Handler-/Speicherverhalten abschließend gegen die synchronen Mini_OS-Routen prüfen; AsyncWebServer bleibt bis zu einer separaten Kompatibilitätsentscheidung unangetastet.
 5. Danach abschließende Testanweisung für den Nutzer-Build erstellen. Kein Build oder Flash durch den Assistenten.
+
+
+## WLAN-Zeitdienst und TCP-Protokoll – Nachprüfung (2026-11-20)
+
+- `ClockService` stoppt SNTP jetzt, sobald keine WLAN-Verbindung mehr besteht (einschließlich SYNC_ONLY-Abschaltung und Routerverlust); bei der nächsten Verbindung wird SNTP neu gestartet.
+- Das SNTP-Intervall ist auf fünf Minuten gesetzt, passend zur Referenz-Konfiguration. Die ESP-IDF-5.5-API stellt `esp_sntp_set_sync_interval()`, `esp_sntp_restart()` und `esp_sntp_stop()` bereit; die konkrete Funktion muss trotzdem im Nutzer-Build gegen den eingebundenen ESP32-Core bestätigt werden.
+- Der SYNC_ONLY-Startzeitstempel verwendet auch bei `millis()==0` einen gültigen Sentinel, sodass der 30-Sekunden-Verbindungs-Timeout nicht ausbleiben kann.
+- Reguläre Reconnect-Versuche werden übersprungen, wenn kein WLAN-Profil gespeichert ist; dadurch entstehen keine nutzlosen 10-Sekunden-Wiederholungen.
+- TCP-Remote-Control: FM-Speicherfrequenzen werden auf dem Draht im ATS-Mini-Dev-Format (10-kHz-Einheiten) gesendet und beim Empfang in Mini_OS-interne kHz konvertiert. Einstellungsänderungen werden gesammelt nach zwei Sekunden Inaktivität gespeichert, statt bei jedem einzelnen Tastendruck NVS zu beschreiben.
+- TCP-Referenzkommandos sind weiterhin nur teilweise vollständig: Sleep, Calibration, Screenshot und Theme-Editor bleiben als nicht implementierte Mini_OS-Funktionen gekennzeichnet. Statusfelder für nicht verfügbare Messwerte liefern Platzhalterwerte. Das ist keine vollständige Funktionsparität.
+
+Commits:
+- SNTP-Lifecycle/5-Minuten-Intervall: `bdd1a84dfaaacf7bb5ee0df863757ec6d50d4b89`
+- TCP-FM-Speicherformat und gebündelte Persistenz: `9288ce0bc3efa7e2f55cef2033c2cfb3b8a8e24b`, `4b80dccbb55e2cecc61d17393c9cbdcc6fa43152`
+- SYNC_ONLY-Zeitstempel: `29a51bd7910405686d9383ce06cb8db2ea490aa7`
+- Kein Build, keine GitHub Action und kein Hardwaretest ausgeführt.
