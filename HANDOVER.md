@@ -497,7 +497,6 @@ Dies ist nur ein Compile-/Bring-up-Scaffold. Es implementiert noch keinen nutzba
 
 
 ## 25. Dauerhafte Regel des Nutzers: strikt modulare Entwicklung
-
 Der Nutzer hat ausdrücklich festgelegt, dass diese Regel **immer** gelten muss und in Übergaben bei vollen Chats festgehalten werden soll:
 
 - Jede fachlich eigenständige Funktion erhält eigene `.h`- und `.cpp`-Dateien.
@@ -998,7 +997,6 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 - Keine GitHub Actions selbst starten. Der Nutzer startet den manuellen Workflow und schickt den Run-Link.
 - Kein Flashen und keine Änderungen an Bootloader, APP0/APP1, Recovery oder Partitionstabelle. Die 8-MB-Profile sind Compile-Referenz und dürfen nicht auf das 16-MB-Gerät geflasht werden. Das bekannte Backup und der derzeitige Bootloader bleiben unangetastet.
 - GPIO-Referenz hilft bei der Portierung, garantiert aber nicht, dass sämtliche Funktionen ohne Hardwaretest funktionieren.
-
 ### Geprüfte GPIOs aus `ats-mini-dev/ats-mini/Common.h`
 | Funktion | GPIO | Referenzverhalten |
 |---|---:|---|
@@ -1497,8 +1495,7 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - **Branch:** `dev/first-build-preparation`
 - **Workflow:** `ATS Mini OS - First Compile (manual only)`
 - **Commit / HEAD:** `ad24099b5a4221bb82164e4c1bbe6facc8300a7e` – `Label brightness adjustment in display menu`
-- **Ergebnis:** `completed / success`; beide Compile-only-Jobs erfolgreich:
-  - `Compile-only / esp32s3-qspi`
+- **Ergebnis:** `completed / success`; beide Compile-only-Jobs erfolgreich:  - `Compile-only / esp32s3-qspi`
   - `Compile-only / esp32s3-ospi`
 - Die Schritte zum Kompilieren des ATS Mini OS, zur read-only Prüfung der App-Image-Grenzen und zur Erstellung/Upload der Firmware-, Source-, Compile-Log- und Build-Notes-Artefakte waren erfolgreich.
 - **Wichtig:** Es war ein Compile-only-Build. Das Gerät wurde nicht geflasht und die neue Helligkeitssteuerung ist noch nicht am ATS Mini V4 hardwareseitig getestet.
@@ -1997,8 +1994,7 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 
 ### Neue/angepasste Dateien
 - Neu: `firmware/ats-mini-os/src/eibi/EiBiService.h` und `EiBiService.cpp` – eigenständiger Dienst für Download, Parsing, LittleFS-Speicherung und UTC-Schedule-Lookup.
-- `firmware/ats-mini-os/ats-mini-os.ino` – Dienstinitialisierung nach StorageDiscovery, UTC-Zeit und aktuelle Frequenz an den Dienst übergeben, EiBi-Menüaktion unter Einstellungen ergänzen.
-- `firmware/ats-mini-os/src/display/DisplayDriver.h/.cpp` – EiBi-Anzeigestatus separat an den LW/MW/KW-Renderer übergeben.
+- `firmware/ats-mini-os/ats-mini-os.ino` – Dienstinitialisierung nach StorageDiscovery, UTC-Zeit und aktuelle Frequenz an den Dienst übergeben, EiBi-Menüaktion unter Einstellungen ergänzen.- `firmware/ats-mini-os/src/display/DisplayDriver.h/.cpp` – EiBi-Anzeigestatus separat an den LW/MW/KW-Renderer übergeben.
 - `firmware/ats-mini-os/src/display/DisplayLayoutSW.h` – TEF6686-LW/MW/KW-Ansicht mit eigener EiBi-PS-Zeile und RT-Download-/Fehleranzeige ergänzt.
 - `firmware/ats-mini-os/src/display/DisplayDriver.cpp` – Menüeintrag `EiBi Fahrplan laden` ergänzt.
 
@@ -2498,7 +2494,6 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Commit: `a1cd3d62ce3f7275ab0e0bbb947f8f135e9983d6`.
 - No workflow/build started and no device flashed. User runs compile-only build and APP1 test. If the feed starts working, certificate validation / CA-bundle handling is implicated; restore proper certificate verification after diagnosis. If it still fails, investigate the socket/connect path rather than assuming a certificate problem.
 
-
 ## Wetterdienst-Wechsel auf Bright Sky / DWD – 2026-11-10
 
 - Wetterdatenquelle in `src/weather/WeatherService.cpp` von Open-Meteo Forecast auf **Bright Sky** umgestellt. Bright Sky stellt DWD-Daten über JSON-Endpunkte bereit; kein API-Key erforderlich.
@@ -2997,8 +2992,7 @@ Prüfstatus:
 ## FT8/FT4 – Erweiterte Slot-/Timing-Diagnose (2026-11-17)
 
 - Diagnoseinstrumentierung im aktiven Branch `dev/first-build-preparation` ergänzt; Ziel ist die Eingrenzung, warum im Hardwarelog Audioblöcke eintreffen, aber `slots=0` bleibt.
-- `FtxDecoder` stellt Diagnosewerte für Initialisierung, FFT-Blockgröße, gefüllte Waterfall-Blöcke, Maximum, Sample-Pufferfüllstand und internen Collecting-Status bereit.
-- `FtxDecoderService` zählt verarbeitete Chunks, Slotstart-Versuche/Erfolge/Fehler, erkannte Slotgrenzen und Zeitstempel-Lücken. Es protokolliert Slotstarts, Slotenden, Startfehler, Zeitlücken und Decode-Aufrufe mit UTC-Zeitstempeln und Waterfall-Füllstand.
+- `FtxDecoder` stellt Diagnosewerte für Initialisierung, FFT-Blockgröße, gefüllte Waterfall-Blöcke, Maximum, Sample-Pufferfüllstand und internen Collecting-Status bereit.- `FtxDecoderService` zählt verarbeitete Chunks, Slotstart-Versuche/Erfolge/Fehler, erkannte Slotgrenzen und Zeitstempel-Lücken. Es protokolliert Slotstarts, Slotenden, Startfehler, Zeitlücken und Decode-Aufrufe mit UTC-Zeitstempeln und Waterfall-Füllstand.
 - Der periodische `[FTX][DIAG]`-Datensatz enthält jetzt zusätzlich Pipeline-/Timing-Zähler und den letzten Chunk-/Grenzzeitpunkt.
 - BootDiagnostics-Formatpuffer von 256 auf 512 Byte erweitert, damit die längere periodische Diagnosezeile nicht abgeschnitten wird.
 - Änderungen: `FtxDecoder.h`, `FtxDecoderService.h/.cpp`, `ats-mini-os.ino`, `BootDiagnostics.cpp`.
@@ -3089,3 +3083,45 @@ Prüfstatus:
 - Code-Commit: `1d82872a731da5aa0f67f432aba68ef5eb67c31e`.
 - Build-/Gerätestatus: Änderung committet; Build und Gerätetest stehen noch aus. Nutzer startet Builds selbst.
 - Nächster Schritt: Nutzer baut und vergleicht die Anzeige. Prüfen, ob Konturen wieder klarer sind, die Blockecken aber weniger hart wirken und weiße Signalspitzen erhalten bleiben. Falls nötig nur den geringen 12-%-Glättungsanteil feinjustieren.
+
+## WLAN/Webserver und systemweiter Speichervergleich – Arbeitsplan (2026-11-20)
+
+### Ziel und Grundsatz
+- Der Nutzer hat festgelegt, dass Mini_OS schrittweise mit der Stock-Firmware hinsichtlich Verhalten, Speicherverwaltung und Ressourcen-Allokation verglichen werden soll – nicht nur WLAN/Webserver, sondern langfristig alle wichtigen Grundfunktionen.
+- Ziel ist ein robustes, ressourcenschonendes Mini_OS mit nachvollziehbaren Speicherlebenszyklen. Stock dient als technische Referenz; die Umsetzung in Mini_OS bleibt modular und folgt dessen Architektur.
+- Bei jedem Bereich werden Heap/PSRAM/interner SRAM, temporäre und dauerhafte Puffer, Task-Stacks, parallele Operationen, Fehlerpfade und vollständige Freigabe geprüft. Keine unbewiesenen Annahmen: Unterschiede und Risiken werden anhand der tatsächlichen Quelltexte festgehalten.
+- Keine pauschale Übernahme von Stock-Code. Erst vergleichen und begründen, dann gezielt modular anpassen.
+
+### Bereits umgesetzt – WLAN-Grundlage (noch nicht Build-/Hardware-verifiziert)
+Auf `dev/first-build-preparation` wurden im aktiven Repository `firetvstick2k2-afk/Mini_OS` folgende WLAN-Änderungen committed:
+- Neue Dateien: `firmware/ats-mini-os/src/network/WifiScanner.h` und `WifiScanner.cpp`.
+- Geändert: `firmware/ats-mini-os/src/network/WifiClient.h` und `WifiClient.cpp`.
+- Ziel der Änderung: gespeicherte WLAN-Netze asynchron scannen, gefundene passende Netze anhand des Empfangspegels priorisieren und Verbindungsversuche mit begrenzten Zeitfenstern durchführen. Verbindungszyklus: bis zu 30 Sekunden, einzelner Versuch bis zu 5 Sekunden, erneuter Scan nach 1 Sekunde. Auto-Reconnect wird während des eigenen Verbindungszyklus deaktiviert und nach erfolgreicher Verbindung aktiviert.
+- Neue Moduldateien: Commit `e8aa80cce54ca524b4e363a5b4f464ee1335ee1a` (`WifiScanner.h`) und `68f5bf7186a012f2760de464650878314c2ffb2b` (`WifiScanner.cpp`).
+- Integrationsänderungen: `WifiClient.h` Commit `bb1a669082bb845ea000ce61f7a2b320feda7fff`; `WifiClient.cpp` Commits `f184733d205767c4805df48afc4ced69aea6a6e1` und `1f19ec392f580f6c3c8835cf38b29bb564a6d378`.
+- Die aktuellen Dateien wurden nach den Änderungen erneut aus GitHub abgerufen. Es wurde kein Build, keine GitHub Action und kein Flash ausgeführt.
+- **Offene technische Prüfung vor Build-Freigabe:** Arduino-ESP32-Version und Signaturen für asynchronen Scan sowie `WiFi.begin(ssid, password, channel, bssid)` prüfen; außerdem Verhalten des BSSID-/Passwortparameters, Scanfehlerpfade und versteckte SSIDs mit Stock vergleichen. Der Scanner ist ein erster Integrationsstand, noch nicht als compile- oder hardwaregeprüft freigegeben.
+
+### Vorhandene Mini_OS-Speicherverwaltung – Ausgangsbefund
+- `firmware/ats-mini-os/src/system/MemoryManager.h/.cpp` existiert bereits.
+- Der aktuelle Manager ist primär ein zentraler, lesender Heap-Monitor: PSRAM und internen SRAM jeweils mit Gesamtgröße, freiem Speicher, größtem freien Block, Minimum-Free und daraus abgeleiteter Fragmentierung; periodische Ausgabe alle 15 Sekunden sowie Stage-Logs.
+- Er protokolliert Reset-Grund, Stack-High-Water-Mark und Fehlerzahlen für optionale Allokationen.
+- `MemoryManager::allocate()` und `deallocate()` kapseln `heap_caps_malloc/free`; vorhandene Allokationen der übrigen Module werden dadurch nicht automatisch einzeln erfasst. Derzeit ist das daher noch kein vollständiges zentrales Allocation-/Ownership-System.
+- Die Failure-Zähler werden pro Modul in einer begrenzten Anzahl Slots gesammelt. Das ist Diagnose, keine Aussage über alle aktiven Speicherblöcke.
+- Der Quelltext wurde gelesen; ein Vergleich der konkreten Stock-Allokationspfade und eine vollständige Inventarisierung aller Mini_OS-Allokationen stehen noch aus.
+
+### Nächste Schritte – in dieser Reihenfolge
+1. **WLAN statisch absichern:** Plattform-/Framework-Version aus der tatsächlichen Buildkonfiguration lesen; API-Signaturen und Scan-/Connect-Lifecycle mit Stock abgleichen; Scannerfehler, leere SSID-Liste, AP+STA und versteckte SSIDs prüfen. Erst danach als buildbereit markieren.
+2. **Allocation-Inventar erstellen:** Im Mini_OS nach `malloc/calloc/realloc/free`, `new/delete`, `heap_caps_malloc/free`, String-/JSON-/HTTP-/TLS-Puffern, Tasks und großen statischen/globalen Buffern suchen. Für jede Stelle Größe, Speicher-Capabilities, Lebensdauer, Besitzer, Freigabepfad und Fehlerbehandlung erfassen.
+3. **Stock-Vergleich:** Die entsprechenden Stock-Netzwerk-, Webserver-, HTTP/TLS-, NTP- und Service-Pfade anhand konkreter Dateien vergleichen. Unterschiede mit Belegen und Auswirkungen dokumentieren.
+4. **MemoryManager gezielt weiterentwickeln:** Nur dort Wrapper/Diagnose ergänzen, wo sie reale Allokationen und Freigaben zuverlässig erfassen. Keine Doppelverwaltung und keine unnötigen Kopien; Ownership und Freigabe müssen klar bleiben.
+5. **Webserver:** Stock-Verhalten, Servertyp, Client-/Request-Lebensdauer, Authentifizierung, mDNS, Timeouts und parallele Requests prüfen. Danach modular in Mini_OS abbilden, ohne vorhandene Mini_OS-Dienste (News, Weather, EiBi, StationLogo) zu verlieren.
+6. **Weitere Grundfunktionen:** Schrittweise Display/Grafik, Audio/FFT/Decoder, Scanner, Storage/NVS/LittleFS und Hintergrunddienste auf dieselbe Weise vergleichen. Priorität jeweils nach Speicherbedarf und Risiko wählen.
+
+### Prüf- und Änderungsregeln
+- Jede Funktion wird getrennt als **Quelltext geprüft**, **angepasst**, **statisch verifiziert**, **Build erfolgreich** oder **am Gerät getestet** gekennzeichnet. Diese Status dürfen nicht gleichgesetzt werden.
+- Nach jeder Codeänderung HANDOVER.md im selben Branch aktualisieren und den Dokumentationsstand anschließend erneut aus GitHub verifizieren.
+- Keine zusätzlichen Branches; ausschließlich `dev/first-build-preparation`, sofern der Nutzer nichts anderes ausdrücklich festlegt.
+- Der Nutzer startet Builds und Flash-/Gerätetests selbst. Keine GitHub Actions oder Flashvorgänge durch ChatGPT.
+- Nutzerentscheidung bleibt bestehen: `secure.setInsecure()` in `StationLogoClient` ist absichtlich so gewählt und wird nicht ohne ausdrücklichen Auftrag geändert.
+- Die Mini_OS-Zeitzone Europe/Berlin soll erhalten bleiben, sofern kein begründeter Änderungsbedarf entsteht.
