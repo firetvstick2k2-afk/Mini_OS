@@ -3270,3 +3270,19 @@ Mini_OS (firetvstick2k2-afk/Mini_OS, Branch dev/first-build-preparation):
 - Statische Prüfung: Quelltext und Schnittstellen gegengeprüft; kein Build und kein Hardwaretest ausgeführt.
 
 Commit: c1b617ca17a3547d1932e23e0d05957df28febe5 (API) / f3ac51130ce625f0b822637924168afdc674d887 (Tracking-Implementierung).
+
+
+## Arbeitsfortschritt – WLAN-Lifecycle, Hidden Scan und SYNC_ONLY (2026-11-20)
+
+- `WifiClient` bindet den vorhandenen asynchronen `WifiScanner` korrekt ein; die fehlende Memberdeklaration und der fehlende Include wurden ergänzt.
+- Hidden-SSID-Suche ist jetzt persistent über `network/wifiscanhidden` konfigurierbar und wird im WLAN-Webformular angeboten. Der nichtblockierende Scan übergibt die Einstellung an `WiFi.scanNetworks()`; Standard bleibt `false`.
+- WLAN-Verbindungsabbrüche starten nach erkanntem Verlust eine neue asynchrone Kandidatensuche über alle drei gespeicherten Netze. Nach einem erfolglosen 30-Sekunden-Zyklus werden reguläre Modi in Intervallen erneut versuchen; AP bleibt bei AP-Modi verfügbar.
+- `SYNC_ONLY` verwendet den vorhandenen asynchronen `ClockService`/SNTP-Pfad. Webserver und Datenworker werden in diesem Modus nicht gestartet. Nach erfolgreicher Synchronisation oder 5 Sekunden NTP-Wartezeit wird WLAN beendet; bei fehlender Routerverbindung erfolgt Abschaltung nach 30 Sekunden.
+- mDNS (`atsmini.local`, HTTP/TCP 80) wird nur bei aktivem lokalen Netzwerk gestartet und bei WLAN-Abschaltung/Moduswechsel beendet.
+- Webserver-Routen werden nur einmal registriert; erneutes Starten nach Suspend erzeugt keine doppelten Handler. WLAN-Status liefert zusätzlich Modus, RSSI, AP-Status/Clients, Hidden-Scan und mDNS-Status; SSID wird JSON-escaped.
+- Die Mini_OS-Webserver-Architektur (`WebServer`) bleibt bewusst erhalten. Die Referenz verwendet `ESPAsyncWebServer`; ein Wechsel wäre ein separater Kompatibilitäts-/Ressourcenumbau und ist für diese Lifecycle-Portierung nicht erforderlich.
+- AP-Parameter bleiben Mini_OS-kompatibel: Setup-SSID `MINI-OS-WEB`, offen/SSID sichtbar, IP `10.1.1.1`, Kanal 10, maximal 3 Clients. Damit werden die wesentlichen Referenz-Netzwerkparameter übernommen, ohne den bestehenden Setup-Namen zu ändern.
+- TCP-Remote-Control (Port 60000) ist noch nicht portiert: die Referenz-Kommandos hängen direkt an deren globaler Radio-/UI-Implementierung. Vor einer kompatiblen Adapter-Implementierung müssen die Mini_OS-Radio-Kommandoschnittstellen gesondert zugeordnet werden.
+- Statische Prüfung: Änderungen und Call-Sites geprüft; kein Build, kein GitHub-Actions-Lauf und kein Hardwaretest ausgeführt.
+
+Commits: e1ce98c12d758ecc422993d39521cf442c1b3f08 (Schnittstelle) / c7a6805d42951909bfc5c8dc887baccad536f96e (WLAN-Lifecycle) / 2f02e407ea8c2fb565e6355fdac19646b94b3c57 (Loop-Anbindung).
