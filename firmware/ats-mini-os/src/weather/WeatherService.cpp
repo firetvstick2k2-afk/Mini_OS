@@ -69,7 +69,14 @@ bool WeatherService::begin() {
     BootDiagnostics::write("[WEATHER] worker already running");
     return true;
   }
-  loadSettings();
+  if (!settingsLoaded_) {
+    loadSettings();
+    settingsLoaded_ = true;
+  }
+  if (!hasConfiguredLocation()) {
+    BootDiagnostics::write("[WEATHER] worker not started: no postal code configured");
+    return false;
+  }
   Snapshot initial;
   publish(initial);
   const BaseType_t created = xTaskCreatePinnedToCore(taskEntry, "WeatherWorker", 12288, this, 1, &taskHandle_, 0);
