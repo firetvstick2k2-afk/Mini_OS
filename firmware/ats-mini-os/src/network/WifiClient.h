@@ -64,6 +64,9 @@ private:
   bool serverStarted_ = false;
   bool routesRegistered_ = false;
   bool mdnsStarted_ = false;
+  bool newsWorkerStarted_ = false;
+  bool weatherWorkerStarted_ = false;
+  uint32_t lastWorkerStartAttemptMs_ = 0;
   bool apActive_ = false;
   bool started_ = false;
   Mode mode_ = Mode::AP_CONNECT;
