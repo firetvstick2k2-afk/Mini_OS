@@ -497,8 +497,7 @@ Dies ist nur ein Compile-/Bring-up-Scaffold. Es implementiert noch keinen nutzba
 
 
 ## 25. Dauerhafte Regel des Nutzers: strikt modulare Entwicklung
-Der Nutzer hat ausdrücklich festgelegt, dass diese Regel **immer** gelten muss und in Übergaben bei vollen Chats festgehalten werden soll:- Jede fachlich eigenständige Funktion erhält eigene `.h`- und `.cpp`-Dateien.- `.ino` bleibt möglichst klein und enthält nur Einstiegspunkt sowie Setup-/Loop-Verdrahtung.
-- Eine Änderung an einer Funktion darf unabhängige Funktionen nicht kaputtmachen. Keine Sammeldateien, keine direkten Eingriffe in fremde Modul-Interna und keine versteckten Seiteneffekte.
+Der Nutzer hat ausdrücklich festgelegt, dass diese Regel **immer** gelten muss und in Übergaben bei vollen Chats festgehalten werden soll:- Jede fachlich eigenständige Funktion erhält eigene `.h`- und `.cpp`-Dateien.- `.ino` bleibt möglichst klein und enthält nur Einstiegspunkt sowie Setup-/Loop-Verdrahtung.- Eine Änderung an einer Funktion darf unabhängige Funktionen nicht kaputtmachen. Keine Sammeldateien, keine direkten Eingriffe in fremde Modul-Interna und keine versteckten Seiteneffekte.
 - Module interagieren über klar definierte Schnittstellen; gemeinsame Ressourcen haben genau einen Besitzer.
 - Vor Änderungen Abhängigkeiten/Aufrufer prüfen, betroffene Module gezielt anpassen und Prüfungen dokumentieren.
 - Bei jeder Übergabe Branch, Commits, Fortschritt, offene Punkte und Build-/Flash-Status ergänzen.
@@ -997,8 +996,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 ### Geprüfte GPIOs aus `ats-mini-dev/ats-mini/Common.h`| Funktion | GPIO | Referenzverhalten |
 |---|---:|---|| Radio-LDO | 15 | HIGH = ein |
 | SI4735 Reset | 16 | Reset || I²C SDA / SCL | 18 / 17 | Daten / Takt |
-| Audio-Mute | 3 | HIGH = stumm |
-| Audioverstärker Enable | 10 | HIGH = ein |
+| Audio-Mute | 3 | HIGH = stumm || Audioverstärker Enable | 10 | HIGH = ein |
 | Display-Backlight | 38 | PWM, Referenz nutzt 16 kHz / 8 Bit |
 | Encoder A / B | 2 / 1 | Drehgeber |
 | Encoder-Taste | 21 | Eingang |
@@ -1497,8 +1495,7 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - `DisplayDriver.h`:
   - Helligkeitswert mit Standardwert 180 ergänzt.  - Getter `brightness()` und Setter `setBrightness(uint8_t)` ergänzt.
   - Änderungsmarker für die Menü-Neuzeichnung ergänzt.
-- `DisplayDriver.cpp`:
-  - Menüpunkt von „Helligkeit (spaeter)“ auf „Display-Helligkeit“ geändert.
+- `DisplayDriver.cpp`:  - Menüpunkt von „Helligkeit (spaeter)“ auf „Display-Helligkeit“ geändert.
   - Helligkeitswert und Balkenanzeige im Display-Untermenü ergänzt.
   - Helligkeit wird über LovyanGFX und die ATS-Mini-V4-Backlight-Ansteuerung (GPIO 38) gesetzt.
   - Untergrenze 10; der Wert wird im Menü in 5er-Schritten verändert.
@@ -1997,8 +1994,7 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - FM-RDS-PS/RT und `RadioSnapshot` bleiben vollständig getrennt und unverändert.- Der Dienst verwendet ausschließlich ein bereits von `StorageDiscovery` sicher erkanntes und gemountetes LittleFS. Wenn kein gültiger Storage-Anker gefunden wurde, wird der Download abgelehnt; es wird niemals formatiert oder ein unbekanntes Flash-Segment beschrieben.
 
 ### Relevante Code-Commits
-- `6f4076f1b7d531fb2127c01f0561cec1010a2e27` – EiBi-Service-Schnittstelle
-- `b3bb8b46543248336573c9f3596455b2acd8440a`, `16066527d7671d3bca60682daeb713b575dcde19`, `95ba0e009a8f62cbacf9d440fa28b6c3c1e183d0`, `029b273a2208469200568739dfecf60a52b13ae1`, `875cbe15c48fff517c5303ad9a38d3d7e2c9eb44`, `1e4d64225772b3a8c3b015b5d3064f5abc62c73b`, `c9f60e26f2607d77f61b95bdd0733d74c85865f9` – Download/Parser, UTC-Lookup, sichere Dateiaustauschlogik und C++11-Kompatibilität
+- `6f4076f1b7d531fb2127c01f0561cec1010a2e27` – EiBi-Service-Schnittstelle- `b3bb8b46543248336573c9f3596455b2acd8440a`, `16066527d7671d3bca60682daeb713b575dcde19`, `95ba0e009a8f62cbacf9d440fa28b6c3c1e183d0`, `029b273a2208469200568739dfecf60a52b13ae1`, `875cbe15c48fff517c5303ad9a38d3d7e2c9eb44`, `1e4d64225772b3a8c3b015b5d3064f5abc62c73b`, `c9f60e26f2607d77f61b95bdd0733d74c85865f9` – Download/Parser, UTC-Lookup, sichere Dateiaustauschlogik und C++11-Kompatibilität
 - `5f5b4cbb3f8dbe275ba15eeeec0660a688c12db7`, `f9bb301734f02c2019b57d1fe1610124eb1c5bb6` – EiBi-PS/RT im LW/MW/KW-TEF-Renderer
 - `0e1846d006aa56df872b916e2ba667ecca7d60d3`, `367c7d5633ef01f5bcb8598c36168025023249e3`, `0fbee25189a890fece7d2a06f3691271ad48a119` – Display-Schnittstelle und Renderer-Anbindung
 - `1b84e1701c7815f03d388466cdf38ac84a562fca`, `13a23c963e45300a1e4783e0fa5b83d688ff8a6e` – Laufzeit-/Menüintegration
@@ -2497,8 +2493,7 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 - Compilerfehler in `WeatherService.cpp`: `timegm()` ist in der verwendeten ESP-IDF/Newlib-Toolchain nicht verfügbar; außerdem war `startDay` wegen seiner Deklaration innerhalb der Record-Schleife außerhalb des Scopes nicht sichtbar.
 - `timegm()` wurde durch eine kleine portable gregorianische Tagesnummer-Funktion ersetzt. Startdatum wird einmal vor der Record-Schleife berechnet; Tagesindex und Wochentagsberechnung nutzen diese Tagesnummer.
 - Entfernt wurde die dadurch nicht mehr benötigte Hilfsfunktion `weekdayFromDate`.
-- **Commits:** `8f259c1`, `0c50e4c`.
-- **Status:** Quelltext erneut aus GitHub abgerufen und betroffene Stellen kontrolliert. Noch kein neuer Compile-Lauf; Nutzer soll Compile-only-Workflow erneut starten. Kein Flash.
+- **Commits:** `8f259c1`, `0c50e4c`.- **Status:** Quelltext erneut aus GitHub abgerufen und betroffene Stellen kontrolliert. Noch kein neuer Compile-Lauf; Nutzer soll Compile-only-Workflow erneut starten. Kein Flash.
 
 
 ## 2026-11-10 – Boot-/HTTPS-Diagnostik nach Weather-Worker-Isolation
@@ -2997,8 +2992,7 @@ Prüfstatus:
 - Dieses `HANDOVER.md` ist die zentrale, maßgebliche Projektübergabe über Chat-Sitzungen hinweg; Modell-Erinnerungen sind nur Zusatz und ersetzen das Dokument nicht.
 - Zu Beginn jeder neuen ATS-Mini-OS-Sitzung: zuerst dieses Dokument aus dem aktiven GitHub-Repository und Branch lesen, danach die betroffenen Dateien/Commits im tatsächlichen Branch prüfen. Niemals allein aus Chat-Erinnerung oder älteren Zusammenfassungen weiterarbeiten.
 - Während einer Arbeitssitzung neue Entscheidungen, bestätigte Nutzerwünsche, Änderungen, Commit-SHAs, Build-/Teststatus und nächste Schritte festhalten.
-- Nach jeder Codeänderung durch ChatGPT HANDOVER.md im selben aktiven Branch aktualisieren und anschließend den Dokumentations-Commit sowie den tatsächlichen Dateistand verifizieren.
-- Buildstatus strikt unterscheiden: nicht gestartet / läuft / fehlgeschlagen / erfolgreich vom Nutzer bestätigt. Gerätetest/Flash ebenfalls nur nach ausdrücklicher Bestätigung als erledigt markieren.
+- Nach jeder Codeänderung durch ChatGPT HANDOVER.md im selben aktiven Branch aktualisieren und anschließend den Dokumentations-Commit sowie den tatsächlichen Dateistand verifizieren.- Buildstatus strikt unterscheiden: nicht gestartet / läuft / fehlgeschlagen / erfolgreich vom Nutzer bestätigt. Gerätetest/Flash ebenfalls nur nach ausdrücklicher Bestätigung als erledigt markieren.
 - Wichtige feste Grenzen: Nutzer startet Builds selbst; keine GitHub Actions eigenständig starten und nicht flashen. Keine Änderungen an nicht betroffenen Layouts/Modulen. Referenzrepository ATS Mini Dev nur als Referenz verwenden; aktives Ziel bleibt Mini_OS.
 
 
@@ -3193,3 +3187,14 @@ Auf `dev/first-build-preparation` wurden im aktiven Repository `firetvstick2k2-a
 - Quelltexte geprüft und Befunde dokumentiert.
 - In diesem Audit-Schritt keine Codeänderung und keine Verhaltensänderung vorgenommen.
 - Kein Build, keine GitHub Action, kein Flash und kein Hardwaretest ausgeführt.
+
+## Prioritätsentscheidung: zuerst Stock-Grundfunktionen, StationLogo später (2026-11-20)
+
+- Nutzerentscheidung: Die Optimierung des StationLogo-Downloads wird ausdrücklich zurückgestellt und als letzte Baustelle behandelt.
+- Das vorhandene DAB-Style-StationLogo gilt als funktionierend und darf bis dahin nicht verändert werden.
+- Keine Änderung an `StationLogoClient.cpp/.h`; der zuvor besprochene Streaming-Umbau wurde wegen nicht vollständig verifizierter automatischer Ersetzung nicht gespeichert.
+- Aktuelle Priorität ist die Funktionsparität der grundlegenden ATS-Mini-Firmware-Funktionen mit Max Arnolds Stock-Firmware (Upstream `esp32-si4732/ats-mini`), bevor Komfortdienste und Optimierungen angefasst werden.
+- Vorgehen: systematisch Stock-Quelle gegen Mini_OS vergleichen, fehlende bzw. abweichende Grundfunktionen priorisieren, jede Funktion modular in Mini_OS integrieren und bestehende Mini_OS-Erweiterungen (News, Weather, EiBi, StationLogo und eigene UI) nicht unnötig entfernen.
+- Bereits begonnene WLAN-Grundlage bleibt Teil dieser Priorität: asynchroner Scan, stärkstes gespeichertes Netzwerk zuerst, feste 5-s Versuchszeit, 30-s Gesamtfenster, Setup-AP bleibt erreichbar. Optionale Stock-Funktionen wie Hidden-SSID-Probing, vollständige WLAN-Modi, NTP-Sync-Only-Verhalten, mDNS und Webserver-Verhalten werden im Zuge der Grundfunktionsprüfung eingeordnet.
+- Nach der Grundfunktions-Parität folgen Netzwerk-Speicheroptimierung und Webserver-Ausbau; StationLogo-Streaming ist ausdrücklich zuletzt vorgesehen.
+- Keine Builds, GitHub Actions oder Hardware-Flashs durch den Assistenten. Der Nutzer führt Builds/Tests selbst aus.
