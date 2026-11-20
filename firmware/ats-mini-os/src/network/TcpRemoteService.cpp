@@ -179,9 +179,11 @@ void TcpRemoteService::printMemories() {
     const MemoryService::Entry& entry = memories_->entry(i);
     if (!entry.frequencyKHz || entry.bandIndex >= BandManager::count()) continue;
     const RadioBandDefinition& band = BandManager::at(entry.bandIndex);
+    const RadioModulation mode = static_cast<RadioModulation>(entry.modulation);
+    const uint32_t remoteFrequency = mode == RadioModulation::FM
+      ? entry.frequencyKHz / 10U : entry.frequencyKHz;
     client_.printf("#%02u,%s,%lu,%s", static_cast<unsigned>(i + 1),
-      band.name, static_cast<unsigned long>(entry.frequencyKHz),
-      modeName(static_cast<RadioModulation>(entry.modulation)));
+      band.name, static_cast<unsigned long>(remoteFrequency), modeName(mode));
     if (entry.name[0]) client_.printf(",%s", entry.name);
     client_.print("\r\n");
   }
@@ -275,14 +277,16 @@ bool TcpRemoteService::setMemory(char* value) {
     return false;
   }
   const uint8_t slot = static_cast<uint8_t>(slotNumber - 1);
+  RadioModulation mode;
+  if (!parseMode(modeText, mode)) { sendError("Unknown modulation"); return false; }
   if (frequencyKHz == 0) {
     if (!memories_->erase(slot)) { sendError("Could not clear memory slot"); return false; }
     client_.printf("#%lu,%s,0,%s\r\n", static_cast<unsigned long>(slotNumber), bandText, modeText);
     return true;
   }
-
-  RadioModulation mode;
-  if (!parseMode(modeText, mode)) { sendError("Unknown modulation"); return false; }
+  // ATS-Mini-Dev's memory protocol uses 10-kHz units for FM, but kHz
+  // for AM/SSB. Mini_OS stores every modulation internally in kHz.
+  if (mode == RadioModulation::FM) frequencyKHz *= 10U;
   int bandIndex = -1;
   for (uint8_t i = 0; i < BandManager::count(); ++i) {
     const RadioBandDefinition& band = BandManager::at(i);
