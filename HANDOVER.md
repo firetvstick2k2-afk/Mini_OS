@@ -3294,3 +3294,11 @@ Commits: e1ce98c12d758ecc422993d39521cf442c1b3f08 (Schnittstelle) / c7a6805d4295
 - mDNS-Retry-Timestamp ist ebenfalls gegen `millis()==0` abgesichert.
 - Der WLAN-Setup-Name in der Statusseite entspricht jetzt der tatsächlich gestarteten SSID `MINI-OS-WEB`.
 - Commit: ea9061909a69c27644b5ed74a2bf3b69a72d7192.
+
+
+## MemoryManager – Live-Allocation- und Capability-Diagnose (2026-11-20)
+
+- Modulstatistiken weisen nun zusätzlich aktuelle und maximale Belegung nach internem RAM, PSRAM und sonstigen angeforderten Capabilities aus.
+- Neue Abfrage `getLiveAllocations()` liefert für jede aktive Tracking-Allokation Adresse, Größe, angeforderte Capability-Maske, Modul und Alter. Damit lassen sich hängen gebliebene, explizit verwaltete Allokationen gezielt eingrenzen.
+- Die Klassifizierung folgt bewusst den angeforderten `heap_caps_malloc()`-Capabilities; bei nicht eindeutigen Anforderungen wird der Bereich als `OTHER` ausgewiesen und nicht geraten.
+- Commits: cc2a7ba954a74aefa2e07ef782a32f63cf131957 (API) / 060b85ebd5619f9026beaaa0d33b9ab6d84b7275 (Implementierung).
