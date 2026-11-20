@@ -3408,3 +3408,17 @@ Commits:
 - TCP-FM-Speicherformat und gebündelte Persistenz: `9288ce0bc3efa7e2f55cef2033c2cfb3b8a8e24b`, `4b80dccbb55e2cecc61d17393c9cbdcc6fa43152`
 - SYNC_ONLY-Zeitstempel: `29a51bd7910405686d9383ce06cb8db2ea490aa7`
 - Kein Build, keine GitHub Action und kein Hardwaretest ausgeführt.
+
+
+## WLAN-Abschlussreview – weitere Korrekturen (2026-11-20)
+
+- Keine gespeicherten WLAN-Profile mehr: der Reconnect-Timer startet keine leeren 10-Sekunden-Zyklen und erzeugt keine wiederholten nutzlosen Scans.
+- Die MemoryManager-Modulübersicht bleibt auch nach Freigabe aller Puffer sichtbar, damit historische Peak-Werte nicht aus dem Diagnosebericht verschwinden.
+- Der feste Modul-Snapshot des MemoryManager liegt jetzt im statischen Speicher statt auf dem Loop-Task-Stack. Damit wird der Diagnosebericht selbst nicht unnötig zum temporären Stack-Peak.
+- AP-Start und statische AP-IP-Konfiguration werden auf Rückgabefehler geprüft und diagnostiziert.
+- TCP-Memory-Protokoll-FM-Frequenzen wurden auf ATS-Mini-Dev-Einheiten korrigiert; FM-Werte werden beim Empfang sicher skaliert. Einstellungsänderungen werden gesammelt nach zwei Sekunden persistiert.
+- Statische Quellprüfung nach den letzten Änderungen: Klammer-/Stringzustände in WifiClient, WifiScanner, TcpRemoteService, ClockService, WeatherService und MemoryManager sind ausgeglichen. Geprüft wurden außerdem die geänderten Worker-/Webserver-/Hidden-Probe-Aufrufstellen. Das ist kein Ersatz für den Compiler.
+- Commits: `73eb6ede1995486fda5a3c7e131f214ba81c7172`, `cee762028204a53fe892c8bcaf7428b4ca657a7d`, `60c23417a0b580153293e30974560d732b660fa0`.
+- Noch kein Build, keine Actions, kein Flash und kein Hardwaretest.
+
+**WLAN-Implementierung ist auf Quelltextebene weitgehend abgeschlossen.** Offen bleibt der abschließende Nutzer-Build und Hardwaretest, insbesondere der reale AP/STA-Wechsel, Hidden-SSID-Probe, Reconnect nach Router-Neustart, SYNC_ONLY-Zeitabgleich, mDNS und TCP-Port 60000.
