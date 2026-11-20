@@ -3422,3 +3422,9 @@ Commits:
 - Noch kein Build, keine Actions, kein Flash und kein Hardwaretest.
 
 **WLAN-Implementierung ist auf Quelltextebene weitgehend abgeschlossen.** Offen bleibt der abschließende Nutzer-Build und Hardwaretest, insbesondere der reale AP/STA-Wechsel, Hidden-SSID-Probe, Reconnect nach Router-Neustart, SYNC_ONLY-Zeitabgleich, mDNS und TCP-Port 60000.
+
+
+## TCP-Remote-Protokoll – Echo-Korrektur (2026-11-20)
+
+- Beim Parsen des `#`-Memory-Kommandos werden die Kommas im Eingabepuffer durch Nullterminatoren ersetzt. Der ursprüngliche Befehl wird deshalb vor dem Parsen separat gesichert und anschließend vollständig zurückgesendet; andernfalls wäre nur die Slotnummer echoed worden.
+- Commit: `3113122099547dd14f42caa1648bed8195d3af97`.
