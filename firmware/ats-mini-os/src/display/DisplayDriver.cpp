@@ -858,20 +858,20 @@ void drawLegacyCWPage(Canvas& c,const RadioSnapshot& state,bool blocked,const ch
 template <typename Canvas>
 void drawFtxDecoderPage(Canvas& c, const RadioSnapshot& state, uint8_t selection,
                         FtxDecoderService* service, bool wifiOff, bool utcSynced) {
-  constexpr uint16_t navy=0x0008, blue=0x0359, frame=0x047D;
+  constexpr uint16_t navy=0x0008, blueA=0x0359, blueB=0x047D;
   c.fillScreen(navy);
   const bool ft4 = selection == 1;
-  c.fillRect(8,5,304,25,blue);
-  c.drawRect(8,5,304,25,frame);
+  c.fillRect(8,5,304,27,blueA);
+  c.drawRect(8,5,304,27,blueB);
   c.setTextDatum(ML_DATUM);
-  c.setTextColor(0xFFFF,blue);
+  c.setTextColor(0xFFFF,blueA);
   c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
   char header[48];
   if (state.modulation == RadioModulation::FM)
     snprintf(header,sizeof(header),"%s  %.2f MHz",ft4?"FT4":"FT8",state.frequencyKHz/1000.0f);
   else
     snprintf(header,sizeof(header),"%s  %lu kHz",ft4?"FT4":"FT8",static_cast<unsigned long>(state.frequencyKHz));
-  c.drawString(header,14,11);
+  c.drawString(header,14,12);
 
   if (!wifiOff || !utcSynced || !service || !service->active()) {
     c.setTextDatum(MC_DATUM);
@@ -890,59 +890,51 @@ void drawFtxDecoderPage(Canvas& c, const RadioSnapshot& state, uint8_t selection
     return;
   }
 
-  uint16_t rows=0,bins=0;
-  const bool haveWaterfall=service->copyWaterfall(ftxWaterfallBuffer,58,304,rows,bins);
-  c.fillRect(8,34,304,60,0x0000);
-  c.drawRect(8,34,304,60,frame);
-  if (haveWaterfall && bins) {
-    const uint16_t top=static_cast<uint16_t>(58-rows);
-    for(uint16_t y=0;y<rows;++y) {
-      for(uint16_t x=0;x<bins;++x) {
-        const uint8_t v=ftxWaterfallBuffer[static_cast<size_t>(y)*bins+x];
-        const uint16_t color=v<132?0x0008:v<165?0x001F:v<195?0x07FF:v<225?0x07E0:v<245?0xFFE0:0xFFFF;
-        c.drawPixel(8+x,35+top+y,color);
-      }
-    }
-  } else {
-    c.setTextDatum(MC_DATUM);
-    c.setTextColor(0x7BEF,0x0000);
-    c.setFont(&lgfx::fonts::Font0);
-    c.drawString("WAITING FOR UTC SLOT / AUDIO",160,62);
-  }
-  c.setTextDatum(TL_DATUM);
-  c.setTextColor(0x7BEF,navy);
-  c.setFont(&lgfx::fonts::Font0);
-  c.drawString("250 Hz",8,96);
-  c.drawString("1750 Hz",274,96);
-
+  // The old waterfall is intentionally omitted. Two large CW-style decode rows
+  // make the actual FT8 text readable on the 320x170 panel.
   FtxDecodedMessage messages[FtxDecoderService::kResultCapacity]{};
   const size_t count=service->copyResults(messages,FtxDecoderService::kResultCapacity);
-  for(size_t i=0;i<count && i<2;++i) {
-    const int y=107+static_cast<int>(i)*25;
-    struct tm utc{};
-    char timeText[16]="--:--Z";
-    if(messages[i].slotUtc && gmtime_r(&messages[i].slotUtc,&utc))
-      snprintf(timeText,sizeof(timeText),"%02d:%02dZ",utc.tm_hour,utc.tm_min);
-    char meta[48];
-    snprintf(meta,sizeof(meta),"%s  %.0fHz  SNR %+.0fdB",timeText,
-      messages[i].audioFrequencyHz,messages[i].snrDb);
-    c.setTextColor(0x07E0,navy);
-    c.drawString(meta,10,y);
-    c.setTextColor(0xFFFF,navy);
-    char textLine[36];
-    strncpy(textLine,messages[i].text,sizeof(textLine)-1);
-    textLine[sizeof(textLine)-1]=0;
-    c.drawString(textLine,10,y+10);
+  const uint16_t rowColors[2]={blueA,blueB};
+  for (size_t row=0; row<2; ++row) {
+    const int y=39+static_cast<int>(row)*53;
+    const uint16_t panel=rowColors[row];
+    c.fillRect(8,y,304,47,panel);
+    c.drawRect(8,y,304,47,0x04BF);
+    char line[FTX_MAX_MESSAGE_LENGTH+1]={0};
+    if (row<count) {
+      strncpy(line,messages[row].text,sizeof(line)-1);
+    } else if (!count && row==0) {
+      snprintf(line,sizeof(line),"WAITING FOR FT8");
+    } else if (!count) {
+      snprintf(line,sizeof(line),"NO DECODE YET");
+    }
+    if (line[0]) {
+      c.setTextDatum(MC_DATUM);
+      c.setTextColor(0xFFFF,panel);
+      c.setFont(&lgfx::fonts::Font4);
+      while (strlen(line)>1 && c.textWidth(line)>282) line[strlen(line)-1]=0;
+      c.drawCenterString(line,160,y+10);
+    }
   }
-  if(!count) {
-    c.setTextColor(0xBDF7,navy);
-    c.drawString("No decoded messages in the latest slot",10,116);
-  }
-  c.setTextDatum(MC_DATUM);
-  c.setTextColor(0x7BEF,navy);
-  c.drawString("ROTATE: FT8 / FT4   CLICK: START   LONG: EXIT",160,164);
-}
 
+  // This LED reports audio activity at the ADC input, not a successful FT8 decode.
+  const uint16_t audioLevel=service->audioLevel();
+  const bool signalActive=audioLevel>=18;
+  c.setTextDatum(MR_DATUM);
+  c.setFont(&lgfx::fonts::Font0);
+  c.setTextColor(signalActive?0x07E0:0x7BEF,blueA);
+  c.drawString(signalActive?"AUDIO":"QUIET",284,14);
+  if (signalActive && ((millis()/180)&1)) c.fillCircle(298,18,5,0x07E0);
+  else {
+    c.drawCircle(298,18,5,signalActive?0x07E0:0x7BEF);
+    if (signalActive) c.fillCircle(298,18,2,0x07E0);
+  }
+
+  c.setTextDatum(MC_DATUM);
+  c.setTextColor(0xBDF7,navy);
+  c.setFont(&lgfx::fonts::Font0);
+  c.drawString("ROTATE: FT8 / FT4   CLICK: START   LONG: EXIT",160,151);
+}
 bool DisplayDriver::begin(uint8_t initialBrightness) {
 #if !defined(LILYGO_SI473X)
   // ATS Mini V4 has a separate backlight MOSFET on GPIO38; panel brightness
