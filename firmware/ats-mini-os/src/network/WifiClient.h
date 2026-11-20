@@ -54,6 +54,8 @@ private:
   bool connectCycleActive_ = false;
   bool attemptInProgress_ = false;
   bool wifiScanHidden_ = false;
+  uint8_t hiddenProbeIndex_ = 0;
+  bool hiddenProbeCompleted_ = false;
   bool tcpRemoteEnabled_ = false;
   uint32_t syncOnlyStartedMs_ = 0;
   uint32_t syncOnlyConnectedAtMs_ = 0;
