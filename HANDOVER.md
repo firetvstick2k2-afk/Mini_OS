@@ -498,7 +498,6 @@ Dies ist nur ein Compile-/Bring-up-Scaffold. Es implementiert noch keinen nutzba
 
 ## 25. Dauerhafte Regel des Nutzers: strikt modulare Entwicklung
 Der Nutzer hat ausdrücklich festgelegt, dass diese Regel **immer** gelten muss und in Übergaben bei vollen Chats festgehalten werden soll:
-
 - Jede fachlich eigenständige Funktion erhält eigene `.h`- und `.cpp`-Dateien.
 - `.ino` bleibt möglichst klein und enthält nur Einstiegspunkt sowie Setup-/Loop-Verdrahtung.
 - Eine Änderung an einer Funktion darf unabhängige Funktionen nicht kaputtmachen. Keine Sammeldateien, keine direkten Eingriffe in fremde Modul-Interna und keine versteckten Seiteneffekte.
@@ -997,8 +996,7 @@ Die Header- und Implementierungsdateien der offiziellen PU2CLR-Version 2.1.8 wur
 - Keine GitHub Actions selbst starten. Der Nutzer startet den manuellen Workflow und schickt den Run-Link.
 - Kein Flashen und keine Änderungen an Bootloader, APP0/APP1, Recovery oder Partitionstabelle. Die 8-MB-Profile sind Compile-Referenz und dürfen nicht auf das 16-MB-Gerät geflasht werden. Das bekannte Backup und der derzeitige Bootloader bleiben unangetastet.
 - GPIO-Referenz hilft bei der Portierung, garantiert aber nicht, dass sämtliche Funktionen ohne Hardwaretest funktionieren.
-### Geprüfte GPIOs aus `ats-mini-dev/ats-mini/Common.h`
-| Funktion | GPIO | Referenzverhalten |
+### Geprüfte GPIOs aus `ats-mini-dev/ats-mini/Common.h`| Funktion | GPIO | Referenzverhalten |
 |---|---:|---|
 | Radio-LDO | 15 | HIGH = ein |
 | SI4735 Reset | 16 | Reset |
@@ -1497,8 +1495,7 @@ Zuerst die vorhandene Menü-Engine, TunerDriver-/RadioCore-Schnittstellen und di
 - **Commit / HEAD:** `ad24099b5a4221bb82164e4c1bbe6facc8300a7e` – `Label brightness adjustment in display menu`
 - **Ergebnis:** `completed / success`; beide Compile-only-Jobs erfolgreich:  - `Compile-only / esp32s3-qspi`
   - `Compile-only / esp32s3-ospi`
-- Die Schritte zum Kompilieren des ATS Mini OS, zur read-only Prüfung der App-Image-Grenzen und zur Erstellung/Upload der Firmware-, Source-, Compile-Log- und Build-Notes-Artefakte waren erfolgreich.
-- **Wichtig:** Es war ein Compile-only-Build. Das Gerät wurde nicht geflasht und die neue Helligkeitssteuerung ist noch nicht am ATS Mini V4 hardwareseitig getestet.
+- Die Schritte zum Kompilieren des ATS Mini OS, zur read-only Prüfung der App-Image-Grenzen und zur Erstellung/Upload der Firmware-, Source-, Compile-Log- und Build-Notes-Artefakte waren erfolgreich.- **Wichtig:** Es war ein Compile-only-Build. Das Gerät wurde nicht geflasht und die neue Helligkeitssteuerung ist noch nicht am ATS Mini V4 hardwareseitig getestet.
 
 ### In Build #114 kompilierte Änderungen
 
@@ -1997,7 +1994,6 @@ Der Nutzer hat ausdrücklich festgelegt: **ATS Mini DEV (13HN2709/ats-mini-dev) 
 - `firmware/ats-mini-os/ats-mini-os.ino` – Dienstinitialisierung nach StorageDiscovery, UTC-Zeit und aktuelle Frequenz an den Dienst übergeben, EiBi-Menüaktion unter Einstellungen ergänzen.- `firmware/ats-mini-os/src/display/DisplayDriver.h/.cpp` – EiBi-Anzeigestatus separat an den LW/MW/KW-Renderer übergeben.
 - `firmware/ats-mini-os/src/display/DisplayLayoutSW.h` – TEF6686-LW/MW/KW-Ansicht mit eigener EiBi-PS-Zeile und RT-Download-/Fehleranzeige ergänzt.
 - `firmware/ats-mini-os/src/display/DisplayDriver.cpp` – Menüeintrag `EiBi Fahrplan laden` ergänzt.
-
 ### Verhalten
 - Der Menüpunkt startet den Download und schließt das Menü zurück zur Radioanzeige.
 - Der HTTP-Feed wird in begrenzten Datenblöcken verarbeitet; die Anzeige erhält einen eigenen Downloadstatus.
@@ -2497,8 +2493,7 @@ No partition profile, `sketch.yaml`, LittleFS formatting, bootloader/bootmanager
 ## Wetterdienst-Wechsel auf Bright Sky / DWD – 2026-11-10
 
 - Wetterdatenquelle in `src/weather/WeatherService.cpp` von Open-Meteo Forecast auf **Bright Sky** umgestellt. Bright Sky stellt DWD-Daten über JSON-Endpunkte bereit; kein API-Key erforderlich.
-- Die Weboberfläche bleibt bewusst bei **einem einzigen PLZ-Feld**. Kein zusätzlicher Ortsname nötig, solange die automatische Zuordnung funktioniert.
-- Standortauflösung: deutsche PLZ wird zunächst über OpenPLZ `/de/Localities` in den zugehörigen Ort bzw. die Gemeinde aufgelöst. Anschließend wird Open-Meteo ausschließlich als Ortsnamen-Geocoder verwendet; die Wetterdaten selbst kommen von Bright Sky.
+- Die Weboberfläche bleibt bewusst bei **einem einzigen PLZ-Feld**. Kein zusätzlicher Ortsname nötig, solange die automatische Zuordnung funktioniert.- Standortauflösung: deutsche PLZ wird zunächst über OpenPLZ `/de/Localities` in den zugehörigen Ort bzw. die Gemeinde aufgelöst. Anschließend wird Open-Meteo ausschließlich als Ortsnamen-Geocoder verwendet; die Wetterdaten selbst kommen von Bright Sky.
 - Bright Sky `/current_weather` liefert die aktuellen DWD-basierten Bedingungen; `/weather` liefert stündliche Werte/Prognosen, aus denen die fünf Tageskarten aggregiert werden.
 - TLS-Zertifikatsprüfung bleibt über das eingebaute ESP32-CA-Bundle aktiviert. HTTP-Antwortgrößenlimit auf 48 KB erhöht; Diagnoselogs unterscheiden PLZ-Auflösung, Geocoding, aktuelle Werte und Prognose.
 - Die bestehende Snapshot-Schnittstelle, 15-Minuten-Aktualisierung, 1-Minuten-Fehlerwiederholung, Web-PLZ-Speicherung und Wetteranzeige wurden nicht absichtlich geändert. Kein zusätzliches Eingabefeld und keine Layoutänderung.
@@ -2998,7 +2993,6 @@ Prüfstatus:
 - Änderungen: `FtxDecoder.h`, `FtxDecoderService.h/.cpp`, `ats-mini-os.ino`, `BootDiagnostics.cpp`.
 - Commits: `c9711d2d1fe4a7dd14e141ed6ec2535d51a6d3ee`, `08a6530eec2ec18e81c279fa534d6773ea61db5c`, `b68817bf9c935bdcf8dd007da613908f676a25fe`, `f5b6c6a06534344710ecdffc353f6ffcb0dd9a0c`, `fa41d6b8e8828244e04f2f40b1d17f8c0970a74f`.
 - Änderungen wurden aus dem Zielbranch erneut abgerufen und stichprobenartig geprüft. Kein Build, keine GitHub Action und kein Flash gestartet; Nutzer startet den Compile-/Hardwaretest selbst. CW-Decoder, Display-Layouts und Audio-Hardwarepfad wurden nicht geändert.
-
 ## FM Live FFT Waterfall – ADC-Pegelskalierung (2026-11-18)
 
 - Aktiver Arbeitszweig bleibt `firetvstick2k2-afk/Mini_OS`, Branch `dev/first-build-preparation`.
@@ -3125,3 +3119,34 @@ Auf `dev/first-build-preparation` wurden im aktiven Repository `firetvstick2k2-a
 - Der Nutzer startet Builds und Flash-/Gerätetests selbst. Keine GitHub Actions oder Flashvorgänge durch ChatGPT.
 - Nutzerentscheidung bleibt bestehen: `secure.setInsecure()` in `StationLogoClient` ist absichtlich so gewählt und wird nicht ohne ausdrücklichen Auftrag geändert.
 - Die Mini_OS-Zeitzone Europe/Berlin soll erhalten bleiben, sofern kein begründeter Änderungsbedarf entsteht.
+
+### WLAN-Umbau – Access-Point-Einstellungen an Stock angeglichen (2026-11-20)
+
+**Ausgangslage / Vergleich**
+- Stock `Network.cpp` startet den Access Point mit festem Kanal 10, sichtbarer SSID, maximal drei Clients und setzt die Sendeleistung auf `WIFI_POWER_17dBm`.
+- Mini_OS verwendete zuvor `WiFi.softAP(SETUP_AP_SSID)` ohne expliziten Kanal und ohne explizites Clientlimit. Die Sendeleistung wurde nicht über die WLAN-Start-Events gesetzt.
+- Die Setup-SSID `ATS-Mini-OS-Setup` und die Setup-IP `10.1.1.1` sind Mini_OS-eigene Entscheidungen und bleiben erhalten.
+
+**Änderung**
+- In `firmware/ats-mini-os/src/network/WifiClient.cpp` wurden Kanal 10 und maximal drei Clients als benannte Konstanten ergänzt.
+- Der Setup-AP wird jetzt mit explizitem Kanal 10, sichtbarer SSID und maximal drei Clients gestartet. Die IP-Konfiguration bleibt `10.1.1.1/24`.
+- WLAN-Sendeleistung wird über einmalig registrierte AP_START- und STA_START-Events auf `WIFI_POWER_17dBm` gesetzt. Das folgt dem Mechanismus aus Stock, damit die Einstellung nach dem jeweiligen Interface-Start greift.
+- Die Mini_OS-SSID, Authentifizierungsart (offener Setup-AP) und IP-Adresse wurden nicht geändert.
+
+**Warum**
+- Explizite Funkparameter vermeiden Abhängigkeit von Framework-Defaults, die sich zwischen Versionen unterscheiden können.
+- Kanal und Clientlimit entsprechen Stock. Die Eventbehandlung stellt sicher, dass die Sendeleistung sowohl beim AP- als auch beim STA-Start gesetzt wird.
+- Dies ist ein gezielter WLAN-Verhaltensabgleich, keine Änderung am Speicherallocator.
+
+**Datei / Commit**
+- Datei: `firmware/ats-mini-os/src/network/WifiClient.cpp`
+- Commit: `35fd4e58f3d4d72511f6333ea8e55fb7723f5080`
+
+**Prüfstatus**
+- Quelltextänderung committed.
+- Noch nicht kompiliert und nicht am Gerät getestet. Keine GitHub Action und kein Flash gestartet.
+- Nach dem Commit wird die Datei erneut aus dem Zielbranch abgerufen und auf die neuen Konstanten, Eventregistrierung und AP-Startparameter geprüft.
+
+**Nächster Schritt und Begründung**
+- Zuerst den WLAN-Scan-Lifecycle gegen Stock vervollständigen: Stock behält Scanresultate für optionale Hidden-SSID-Probes, während Mini_OS sie nach dem Kandidatenabgleich löscht. Zu prüfen ist eine modulare Probe-Phase, die gespeicherte Zugangsdaten nur für tatsächlich verborgene Scan-Einträge testet und den bestehenden 30-s-Gesamtzeitrahmen einhält.
+- Parallel wird das Speicher-Inventar der Netzwerkdienste vorbereitet. Besonders StationLogo lädt Bilddaten derzeit zunächst in einen `String` und kopiert sie anschließend in einen separaten PSRAM-/SRAM-Puffer; diese Doppelhaltung ist ein konkreter Kandidat für einen späteren streamenden Ein-Puffer-Pfad. Die bewusste `secure.setInsecure()`-Einstellung bleibt unberührt.
