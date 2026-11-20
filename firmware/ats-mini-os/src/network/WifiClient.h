@@ -66,6 +66,7 @@ private:
   bool mdnsStarted_ = false;
   bool newsWorkerStarted_ = false;
   bool weatherWorkerStarted_ = false;
+  bool weatherConfigChecked_ = false;
   uint32_t lastWorkerStartAttemptMs_ = 0;
   bool apActive_ = false;
   bool started_ = false;
