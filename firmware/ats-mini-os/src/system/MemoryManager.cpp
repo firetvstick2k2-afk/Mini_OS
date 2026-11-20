@@ -21,12 +21,19 @@ struct ModuleRecord {
   uint32_t liveAllocations;
   uint32_t totalSuccessfulAllocations;
   uint32_t allocationFailures;
+  size_t currentInternalBytes;
+  size_t peakInternalBytes;
+  size_t currentPsramBytes;
+  size_t peakPsramBytes;
+  size_t currentOtherBytes;
+  size_t peakOtherBytes;
 };
 
 struct AllocationRecord {
   void* pointer;
   size_t bytes;
   uint32_t capabilities;
+  uint32_t allocatedAtMs;
   uint8_t moduleIndex;
   uint8_t region;
   bool active;
@@ -200,7 +207,7 @@ void* allocate(size_t bytes, uint32_t capabilities, const char* module) {
   }
   if (slot < ALLOCATION_SLOTS) {
     const uint8_t moduleIndex = moduleIndexLocked(module);
-    allocations[slot] = {pointer, bytes, capabilities, moduleIndex, region, true};
+    allocations[slot] = {pointer, bytes, capabilities, millis(), moduleIndex, region, true};
     ModuleRecord& moduleRecord = modules[moduleIndex];
     moduleRecord.currentBytes += bytes;
     updatePeak(moduleRecord.currentBytes, moduleRecord.peakBytes);
@@ -213,12 +220,18 @@ void* allocate(size_t bytes, uint32_t capabilities, const char* module) {
     if (region == REGION_INTERNAL) {
       trackedStats.currentInternalBytes += bytes;
       updatePeak(trackedStats.currentInternalBytes, trackedStats.peakInternalBytes);
+      moduleRecord.currentInternalBytes += bytes;
+      updatePeak(moduleRecord.currentInternalBytes, moduleRecord.peakInternalBytes);
     } else if (region == REGION_PSRAM) {
       trackedStats.currentPsramBytes += bytes;
       updatePeak(trackedStats.currentPsramBytes, trackedStats.peakPsramBytes);
+      moduleRecord.currentPsramBytes += bytes;
+      updatePeak(moduleRecord.currentPsramBytes, moduleRecord.peakPsramBytes);
     } else {
       trackedStats.currentOtherBytes += bytes;
       updatePeak(trackedStats.currentOtherBytes, trackedStats.peakOtherBytes);
+      moduleRecord.currentOtherBytes += bytes;
+      updatePeak(moduleRecord.currentOtherBytes, moduleRecord.peakOtherBytes);
     }
     recorded = true;
   } else {
@@ -252,12 +265,16 @@ void deallocate(void* pointer) {
     ModuleRecord& moduleRecord = modules[moduleIndex];
     if (moduleRecord.currentBytes >= bytes) moduleRecord.currentBytes -= bytes;
     if (moduleRecord.liveAllocations) --moduleRecord.liveAllocations;
-    if (region == REGION_INTERNAL && trackedStats.currentInternalBytes >= bytes)
-      trackedStats.currentInternalBytes -= bytes;
-    else if (region == REGION_PSRAM && trackedStats.currentPsramBytes >= bytes)
-      trackedStats.currentPsramBytes -= bytes;
-    else if (region == REGION_OTHER && trackedStats.currentOtherBytes >= bytes)
-      trackedStats.currentOtherBytes -= bytes;
+    if (region == REGION_INTERNAL) {
+      if (trackedStats.currentInternalBytes >= bytes) trackedStats.currentInternalBytes -= bytes;
+      if (moduleRecord.currentInternalBytes >= bytes) moduleRecord.currentInternalBytes -= bytes;
+    } else if (region == REGION_PSRAM) {
+      if (trackedStats.currentPsramBytes >= bytes) trackedStats.currentPsramBytes -= bytes;
+      if (moduleRecord.currentPsramBytes >= bytes) moduleRecord.currentPsramBytes -= bytes;
+    } else {
+      if (trackedStats.currentOtherBytes >= bytes) trackedStats.currentOtherBytes -= bytes;
+      if (moduleRecord.currentOtherBytes >= bytes) moduleRecord.currentOtherBytes -= bytes;
+    }
     tracked = true;
     break;
   }
@@ -290,6 +307,12 @@ size_t getModuleStats(ModuleStats* out, size_t capacity) {
     target.name[sizeof(target.name) - 1] = '\0';
     target.currentBytes = modules[i].currentBytes;
     target.peakBytes = modules[i].peakBytes;
+    target.currentInternalBytes = modules[i].currentInternalBytes;
+    target.peakInternalBytes = modules[i].peakInternalBytes;
+    target.currentPsramBytes = modules[i].currentPsramBytes;
+    target.peakPsramBytes = modules[i].peakPsramBytes;
+    target.currentOtherBytes = modules[i].currentOtherBytes;
+    target.peakOtherBytes = modules[i].peakOtherBytes;
     target.liveAllocations = modules[i].liveAllocations;
     target.totalSuccessfulAllocations = modules[i].totalSuccessfulAllocations;
     target.allocationFailures = modules[i].allocationFailures;
@@ -297,4 +320,26 @@ size_t getModuleStats(ModuleStats* out, size_t capacity) {
   portEXIT_CRITICAL(&statsMux);
   return copied;
 }
+
+size_t getLiveAllocations(TrackedAllocation* out, size_t capacity) {
+  if (!out || !capacity) return 0;
+  size_t copied = 0;
+  const uint32_t now = millis();
+  portENTER_CRITICAL(&statsMux);
+  for (size_t i = 0; i < ALLOCATION_SLOTS && copied < capacity; ++i) {
+    const AllocationRecord& allocation = allocations[i];
+    if (!allocation.active) continue;
+    TrackedAllocation& target = out[copied++];
+    target.address = reinterpret_cast<uintptr_t>(allocation.pointer);
+    target.bytes = allocation.bytes;
+    target.capabilities = allocation.capabilities;
+    target.ageMs = now - allocation.allocatedAtMs;
+    const char* module = modules[allocation.moduleIndex].name;
+    strncpy(target.module, module, sizeof(target.module) - 1);
+    target.module[sizeof(target.module) - 1] = '\0';
+  }
+  portEXIT_CRITICAL(&statsMux);
+  return copied;
+}
+
 }
