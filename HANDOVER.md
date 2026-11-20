@@ -3302,3 +3302,16 @@ Commits: e1ce98c12d758ecc422993d39521cf442c1b3f08 (Schnittstelle) / c7a6805d4295
 - Neue Abfrage `getLiveAllocations()` liefert für jede aktive Tracking-Allokation Adresse, Größe, angeforderte Capability-Maske, Modul und Alter. Damit lassen sich hängen gebliebene, explizit verwaltete Allokationen gezielt eingrenzen.
 - Die Klassifizierung folgt bewusst den angeforderten `heap_caps_malloc()`-Capabilities; bei nicht eindeutigen Anforderungen wird der Bereich als `OTHER` ausgewiesen und nicht geraten.
 - Commits: cc2a7ba954a74aefa2e07ef782a32f63cf131957 (API) / 060b85ebd5619f9026beaaa0d33b9ab6d84b7275 (Implementierung).
+
+
+## Arbeitsfortschritt – TCP-Remote-Control (2026-11-20)
+
+- Separate Klasse `TcpRemoteService` auf Port 60000 ergänzt; `WifiClient` steuert nur Start/Stop und Verfügbarkeit.
+- TCP ist wie in ATS-Mini-Dev standardmäßig ausgeschaltet (`TCP_OFF`-Verhalten). Aktivierung ist persistent über die WLAN-Webseite möglich; bei OFF/SYNC_ONLY/Suspend oder fehlender Netzwerkschnittstelle wird der Listener beendet.
+- Nichtblockierender Client-/Command-Loop mit begrenztem Zeilenpuffer, Ein-Client-Limit, Disconnect-Erkennung und optionaler Statusausgabe umgesetzt.
+- Kommandos mit Mini_OS-Äquivalent: Encoder-Drehung/Klick, Band, Modulation, Step, Bandwidth, AGC, Volume, Display-Helligkeit, Frequenz setzen, Memory-Slots auflisten/speichern/löschen und Statusstream.
+- Radio-/Display-Einstellungen werden nach 2 Sekunden Inaktivität gesammelt gespeichert, statt bei jedem Kommando NVS zu beschreiben.
+- Bewusste Abweichungen: Sleep-Steuerung, Kalibrierung, Screenshot-Transfer und benutzerdefinierter Theme-Editor sind in Mini_OS derzeit nicht vorhanden und antworten mit einer klaren Fehlermeldung. Der Statusdatensatz erhält die Feldreihenfolge des Referenzprotokolls; nicht verfügbare Kalibrier-/Tuning-Capacitor-/Spannungswerte werden als 0 geliefert. Das ist ein kompatibler Kernumfang, aber kein vollständiger Funktionsersatz für diese vier Referenzfunktionen.
+- Statische Prüfung steht noch aus; kein Build, kein GitHub-Actions-Lauf und kein Hardwaretest ausgeführt.
+
+Commits: 3f80964ef7f7ceae817a221009f9bf094f11b81d (Schnittstelle) / ab1731dd29542439cb172d19b2e8d5a8ccfb08c7 (Implementierung).
