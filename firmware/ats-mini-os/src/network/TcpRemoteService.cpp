@@ -39,6 +39,9 @@ void TcpRemoteService::begin(RadioCore* radio, MemoryService* memories,
 }
 
 void TcpRemoteService::stop() {
+  if (persistPending_) persistRadioState();
+  persistPending_ = false;
+  persistDueMs_ = 0;
   client_.stop();
   if (serverStarted_) server_.end();
   serverStarted_ = false;
@@ -127,6 +130,11 @@ void TcpRemoteService::update(bool networkAvailable, bool enabled) {
     lastStatusMs_ = now;
     ++remoteSequence_;
     printStatus();
+  }
+  if (persistPending_ && now - persistDueMs_ >= 2000) {
+    persistRadioState();
+    persistPending_ = false;
+    persistDueMs_ = 0;
   }
 }
 
@@ -233,7 +241,8 @@ bool TcpRemoteService::setFrequency(const char* value) {
   client_.print('F');
   client_.print(value);
   client_.print("\r\n");
-  persistRadioState();
+  persistPending_ = true;
+  persistDueMs_ = millis();
   if (display_) display_->notifyTuning();
   return true;
 }
@@ -243,6 +252,8 @@ bool TcpRemoteService::setMemory(char* value) {
     sendError("Memory service unavailable");
     return false;
   }
+  char echoed[LINE_CAPACITY] = {};
+  strncpy(echoed, value, sizeof(echoed) - 1);
   char* slotText = value;
   char* bandText = strchr(slotText, ',');
   if (!bandText) { sendError("Expected slot,band,frequency,mode"); return false; }
@@ -374,7 +385,6 @@ void TcpRemoteService::processCommand(char command) {
       if (next < 0) next = 0;
       if (next > 63) next = 63;
       changed = radio_->setVolume(static_cast<uint8_t>(next));
-      if (changed && settings_) settings_->saveVolume(static_cast<uint8_t>(next));
       break;
     }
     case 'L':
@@ -384,7 +394,6 @@ void TcpRemoteService::processCommand(char command) {
       if (next < 10) next = 10;
       if (next > 255) next = 255;
       display_->setBrightness(static_cast<uint8_t>(next));
-      if (settings_) settings_->saveDisplayBrightness(static_cast<uint8_t>(next));
       changed = true;
       break;
     }
