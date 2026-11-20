@@ -3499,3 +3499,47 @@ Als Nächstes werden die noch unvollständigen bzw. nur teilweise übernommenen 
 - Die FT8-/FT4-DSP-, UTC-Slot-, Queue-, Timing- und Decode-Logik wurde nicht verändert. Der Wasserfall-Datenpfad im Decoder bleibt vorerst erhalten; nur seine Darstellung auf Seite 28 entfällt.
 - Geänderte Dateien: DisplayDriver.cpp, FtxDecoderService.h, FtxDecoderService.cpp.
 - Kein Build, keine GitHub Action und kein Flash gestartet. Nutzer führt den Compile-only-Build und den anschließenden Hardwaretest selbst aus.
+
+## Diamond Radio – FT8-Menüfunktionen und Beobachtungen (2026-11-20)
+
+### Sichtbare Funktionen im Menü „FT8 + WF Actions“
+Aus den vom Nutzer bereitgestellten Fotos sind folgende Einträge erkennbar:
+- **Waterfall Colors** – Einstellung der Wasserfall-Farben.
+- **Noise Filter** – Rauschfilter; genaue Wirkungsweise und Position im Signalweg noch nicht untersucht.
+- **Audio Input: ADC** – aktuell angezeigte Audio-Eingangsquelle ist ADC. Verfügbare Alternativen und technische Bedeutung noch nicht untersucht.
+- **Volume** – Lautstärkeeinstellung; anhand der Fotos ist nicht feststellbar, ob sie ausschließlich den Lautsprecher oder auch den Decoder-Audiosignalweg beeinflusst.
+- **Clear Stations** – Funktion zum Löschen der empfangenen/gespeicherten Stationsliste.
+- **Change FT8 Band** – Bandwechsel innerhalb des FT8-Menüs.
+- Zusätzlich sichtbar: **FT8 + WF Actions**, **Exit FT8 + WF** und **Back**.
+
+### Nutzerbeobachtung
+- Beim Diamond Radio wurden zunächst keine FT8-Nachrichten angezeigt. Nachdem der Nutzer im FT8-Extra-Menü den Eintrag **Volume** erhöht hatte und das Empfangssignal über den Lautsprecher besser hörbar war, erschienen anschließend FT8-Nachrichten.
+- Es ist **nicht geklärt**, ob die Volume-Einstellung nur den Lautsprecherpegel oder zugleich den zum Decoder geführten ADC-/Audiopegel verändert. Die Beobachtung ist ein wichtiger Hinweis, aber noch kein Beleg für eine Kopplung.
+- Der FT8-Decoder in Mini_OS startet derzeit, setzt aber nach ungefähr 20–30 Sekunden zurück. Laut Nutzer tritt der Reset ausschließlich im FT8-Decoder auf; zuvor gab es ein ähnliches Problem mit dem neu hinzugefügten FFT-Layout. Ursache noch unbekannt. Keine Diagnose ohne seriellen Reset-Log behaupten.
+- Das neue große, wasserfallfreie FT8-Textlayout gefällt dem Nutzer und soll als Gestaltungsrichtung erhalten bleiben. Zuerst Stabilität herstellen; keine weiteren Decoder-/Menüänderungen vor der Ursachenanalyse.
+
+### Für die spätere Diamond-Funktionsanalyse offen
+Der Nutzer möchte die Menüs später vollständig fotografieren und gemeinsam auswerten. Besonders nachzusehen:
+1. Untermenü **Audio Input**: verfügbare Eingangsquellen und Bedeutung.
+2. Untermenü **Noise Filter**: Modi/Werte und tatsächliche Wirkung.
+3. Untermenü **Volume**: Wertebereich und Verhalten.
+4. Ggf. **Change FT8 Band** und weitere Untermenüs/Funktionen.
+
+Die Fotos/Beobachtungen dienen als Referenz für eine spätere Funktionsmatrix; nicht ungeprüft übernehmen.
+
+### Zielbild für Mini_OS
+- FT8 soll vollständig lokal und offline funktionieren, ohne WLAN/Internet und ohne Smartphone/Hotspot.
+- Lokale UTC-Zeitquelle (z. B. bereits vorhandene RDS-Zeitübernahme) nutzen; keine zusätzliche Netzwerkverbindung nur für FT8 voraussetzen.
+- Energieverbrauch minimieren: während FT8 keine unnötigen WLAN-/Internetdienste oder Hintergrundabfragen; CPU-/DSP-Last, Displayaktivität und Speicherverbrauch später messen und optimieren.
+- Lautsprecher-Volume, ADC-/Decoder-Eingangspegel und tatsächliche Dekodierempfindlichkeit strikt unterscheiden. Keine automatische Lautstärke-/Gain-Änderung implementieren, bevor der Diamond-Signalweg und Mini_OS-Audiofluss geklärt sind.
+- Später prüfen, ob Noise Filter und Audio-Input-Optionen sinnvoll und hardwarekompatibel in Mini_OS abgebildet werden können.
+
+### Nächste Reihenfolge
+1. Aktuellen Build und FT8-Reset untersuchen; seriellen Log vom FT8-Start bis zum Reset erfassen. Keine weiteren Features parallel verändern.
+2. FT8-Decoder stabilisieren und das neue Großtextlayout beibehalten.
+3. Anschließend systemweites Memory-/Ressourcen-Audit für Mini_OS durchführen (SRAM, PSRAM, größter freier Block/Fragmentierung, Tasks/Stack, Puffer, Allokations-/Freigabepfade).
+4. Danach die Diamond-FT8-Menüs und weitere halbfertige ATS-Mini-Dev-Übernahmen anhand einer Referenz-/Ziel-Matrix untersuchen.
+5. Offline-/Akkuoptimierung als ausdrückliches FT8-Ziel berücksichtigen.
+
+**Status:** Nur Dokumentation der Nutzerbeobachtungen und späteren Prüfpunkte. Keine weitere Codeänderung, kein Build, keine GitHub Action und kein Flash im Rahmen dieses Dokumentationsschritts.
+
