@@ -61,6 +61,7 @@ bool FtxDecoderService::enter(FtxMode mode, bool wifiOff, bool utcSynchronized, 
     lastBlockStartUs_ = 0;
     droppedBlocks_ = 0;
     receivedBlocks_ = completedSlots_ = decodedSlots_ = 0;
+    audioLevel_ = 0;
     slotStartAttempts_ = slotStartSuccesses_ = slotStartFailures_ = 0;
     boundaryHits_ = timestampGaps_ = chunksProcessed_ = 0;
     lastChunkStartUs_ = lastChunkEndUs_ = lastBoundaryUs_ = lastChunkDeltaUs_ = 0;
@@ -128,6 +129,16 @@ void FtxDecoderService::onAudioSamples(void* context, const int16_t* samples,
   memcpy(chunk.samples, samples, count * sizeof(int16_t));
   chunk.count = static_cast<uint8_t>(count);
   chunk.utcStartMicros = utcStartMicros;
+  // Measure AC audio activity without changing or delaying the decoder sample path.
+  int64_t sum = 0;
+  for (size_t i = 0; i < count; ++i) sum += samples[i];
+  const int32_t mean = static_cast<int32_t>(sum / static_cast<int64_t>(count));
+  uint64_t squareSum = 0;
+  for (size_t i = 0; i < count; ++i) {
+    const int32_t centered = static_cast<int32_t>(samples[i]) - mean;
+    squareSum += static_cast<uint64_t>(static_cast<int64_t>(centered) * centered);
+  }
+  self->audioLevel_ = static_cast<uint16_t>(sqrtf(static_cast<float>(squareSum / count)));
   ++self->receivedBlocks_;
   if (xQueueSend(self->queue_, &chunk, 0) != pdTRUE) ++self->droppedBlocks_;
 }
