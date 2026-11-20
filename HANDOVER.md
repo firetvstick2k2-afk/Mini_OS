@@ -3490,3 +3490,12 @@ Als Nächstes werden die noch unvollständigen bzw. nur teilweise übernommenen 
 
 **Arbeitsreihenfolge:** MemoryManager-/Allokationsaudit zuerst; danach die unvollständigen Grundfunktionen anhand einer Referenz-/Ziel-Matrix priorisieren und einzeln vervollständigen. WLAN bleibt bis zum Nutzer-Build und Hardwaretest als quelltextseitig bearbeitet, aber nicht praktisch abgenommen markiert. Der Nutzer führt Builds und Gerätetests selbst aus.
 
+
+## FT8/FT4 – CW-artiges Großtextlayout ohne Wasserfall (2026-11-20)
+- FT8-/FT4-Seite (Displayseite 28) auf eine textorientierte Anzeige umgestellt: der bisherige FT8-Wasserfall wird nicht mehr gerendert; stattdessen erscheinen zwei große, farblich abwechselnde Textzeilen im Stil des CW-Decoder-Overlays.
+- Die beiden Zeilen verwenden eine größere Display-Schrift und zeigen die letzten verfügbaren Decodergebnisse. Solange noch keine Nachricht decodiert wurde, erscheinen „WAITING FOR FT8“ und „NO DECODE YET“.
+- Ergänzt wurde eine einfache Audioaktivitätsanzeige: FtxDecoderService berechnet pro eingehendem Audioblock den AC-RMS-Pegel und stellt ihn über audioLevel() bereit. Eine kleine grüne LED pulsiert bei einem vorläufigen Schwellenwert von 18 ADC-Pegeln; andernfalls bleibt sie als ruhige Anzeige sichtbar.
+- **Wichtige Abgrenzung:** Die LED zeigt lediglich Audioaktivität am ADC-Eingang, keinen FT8-Sync und keinen erfolgreichen Decode. Schwellenwert und Anzeige müssen am Gerät mit realem Empfang und Rauschen geprüft/ggf. angepasst werden.
+- Die FT8-/FT4-DSP-, UTC-Slot-, Queue-, Timing- und Decode-Logik wurde nicht verändert. Der Wasserfall-Datenpfad im Decoder bleibt vorerst erhalten; nur seine Darstellung auf Seite 28 entfällt.
+- Geänderte Dateien: DisplayDriver.cpp, FtxDecoderService.h, FtxDecoderService.cpp.
+- Kein Build, keine GitHub Action und kein Flash gestartet. Nutzer führt den Compile-only-Build und den anschließenden Hardwaretest selbst aus.
