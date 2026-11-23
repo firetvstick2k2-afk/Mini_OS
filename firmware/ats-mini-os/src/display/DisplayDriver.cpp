@@ -1,4 +1,5 @@
 #include "DisplayDriver.h"
+#include "../radio/BandOpeningService.h"
 #include "ThemeManager.h"
 // #include "DisplayLayoutAM.h"  // Legacy LW/MW/KW layout disabled; retained as source only.
 #include "DisplayLayoutHJB.h"
@@ -354,6 +355,92 @@ void drawWeatherScreen(Canvas& c, const WeatherService::Snapshot* weather, uint8
 }
 
 template <typename Canvas>
+void drawBandOpeningScreen(Canvas& c, const BandOpeningService::Snapshot* snapshot, uint8_t page) {
+  constexpr uint16_t BLUE=0x001F, CYAN=0x07FF, GREEN=0x07E0;
+  constexpr uint16_t YELLOW=0xFFE0, RED=0xF800, GREY=0x8410, WHITE=0xFFFF, DARK=0x0000;
+  c.fillScreen(DARK);
+  c.drawRoundRect(3,3,c.width()-6,c.height()-6,7,BLUE);
+  c.setTextDatum(TL_DATUM);
+  c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+  c.setTextColor(CYAN,DARK);
+  c.drawString("HF BANDOEFFNUNGS-MONITOR",10,7);
+  char pageText[16]; snprintf(pageText,sizeof(pageText),"%u/%u",static_cast<unsigned>(page+1),static_cast<unsigned>(BandOpeningService::kPageCount));
+  c.setFont(&lgfx::fonts::Font2); c.setTextColor(WHITE,DARK); c.drawRightString(pageText,c.width()-10,10);
+  c.drawFastHLine(9,27,c.width()-18,BLUE);
+
+  // Show a dedicated connection/data wait screen instead of 29 misleading grey rows.
+  if (!snapshot || snapshot->waitingForWifi || !snapshot->valid) {
+    c.setTextDatum(MC_DATUM);
+    c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+    if (!snapshot || snapshot->waitingForWifi) {
+      c.setTextColor(YELLOW,DARK);
+      c.drawCenterString("WARTE AUF WLAN",c.width()/2,67);
+      c.setFont(&lgfx::fonts::Font2); c.setTextColor(WHITE,DARK);
+      c.drawCenterString("Verbinde mit gespeichertem Netzwerk",c.width()/2,94);
+      c.drawCenterString("Die Abfrage startet automatisch",c.width()/2,114);
+    } else if (snapshot->fetching) {
+      c.setTextColor(GREEN,DARK);
+      c.drawCenterString("WLAN VERBUNDEN",c.width()/2,67);
+      c.setFont(&lgfx::fonts::Font2); c.setTextColor(WHITE,DARK);
+      c.drawCenterString("Lade HF-Banddaten ...",c.width()/2,96);
+    } else if (snapshot->fetchFailed) {
+      c.setTextColor(RED,DARK);
+      c.drawCenterString("HF-DATEN NICHT ERHALTEN",c.width()/2,67);
+      c.setFont(&lgfx::fonts::Font2); c.setTextColor(WHITE,DARK);
+      c.drawCenterString("Neuer Versuch in 5 Minuten",c.width()/2,96);
+    } else {
+      c.setTextColor(YELLOW,DARK);
+      c.drawCenterString("WLAN VERBUNDEN",c.width()/2,67);
+      c.setFont(&lgfx::fonts::Font2); c.setTextColor(WHITE,DARK);
+      c.drawCenterString("Bereite HF-Abfrage vor ...",c.width()/2,96);
+    }
+    c.drawFastHLine(9,145,c.width()-18,BLUE);
+    c.setFont(&lgfx::fonts::Font0); c.setTextColor(GREY,DARK);
+    c.drawCenterString("Bitte warten",c.width()/2,153);
+    return;
+  }
+
+  const uint8_t first=static_cast<uint8_t>(page*BandOpeningService::kBandsPerPage);
+  for(uint8_t slot=0;slot<BandOpeningService::kBandsPerPage;++slot) {
+    const uint8_t index=static_cast<uint8_t>(first+slot);
+    if(index>=BandOpeningService::kBandCount) break;
+    const auto& band=BandOpeningService::band(index);
+    const int y=39+slot*53;
+    const auto row=snapshot->rows[index];
+    auto overall=row.day;
+    if(overall==BandOpeningService::Status::Unknown) overall=row.night;
+    else if(row.night!=BandOpeningService::Status::Unknown && static_cast<uint8_t>(row.night)<static_cast<uint8_t>(overall)) overall=row.night;
+    uint16_t dot=GREY;
+    if(overall==BandOpeningService::Status::Poor) dot=RED;
+    else if(overall==BandOpeningService::Status::Fair) dot=YELLOW;
+    else if(overall==BandOpeningService::Status::Good) dot=GREEN;
+    c.fillCircle(24,y+17,13,dot); c.drawCircle(24,y+17,14,WHITE);
+    c.setTextDatum(TL_DATUM); c.setFont(&lgfx::fonts::FreeSansBold9pt7b);
+    c.setTextColor(WHITE,DARK); c.drawString(band.name,49,y+1);
+    c.setFont(&lgfx::fonts::Font2); c.setTextColor(CYAN,DARK);
+    char range[40];
+    if(band.minimumKHz>=1000)
+      snprintf(range,sizeof(range),"%.3f - %.3f MHz",band.minimumKHz/1000.0f,band.maximumKHz/1000.0f);
+    else snprintf(range,sizeof(range),"%lu - %lu kHz",static_cast<unsigned long>(band.minimumKHz),static_cast<unsigned long>(band.maximumKHz));
+    c.drawString(range,49,y+23);
+    c.setTextDatum(TR_DATUM); c.setTextColor(GREY,DARK);
+    if(index==BandOpeningService::kBandCount-1 && snapshot->fmMufValid && !snapshot->fmMufStale) {
+      char mufText[24]; snprintf(mufText,sizeof(mufText),"MUF %.1f MHz",snapshot->fmMufMHz);
+      c.drawString(mufText,c.width()-10,y+23);
+    } else c.drawString(band.type,c.width()-10,y+23);
+    c.drawFastHLine(49,y+48,c.width()-61,0x2104);
+  }
+  c.drawFastHLine(9,145,c.width()-18,BLUE);
+  c.setTextDatum(TL_DATUM); c.setFont(&lgfx::fonts::Font0); c.setTextColor(GREY,DARK);
+  int year=0,month=0,day=0,hour=0,minute=0;
+  char stamp[32] = "Zeitstempel unbekannt";
+  if(sscanf(snapshot->sourceUpdated,"%4d-%2d-%2dT%2d:%2d",&year,&month,&day,&hour,&minute)==5)
+    snprintf(stamp,sizeof(stamp),"Stand: %02d.%02d.%04d %02d:%02d UTC",day,month,year,hour,minute);
+  c.drawString(stamp,10,150);
+  if(snapshot->stale) c.drawRightString("ALT",c.width()-10,150);
+}
+
+template <typename Canvas>
 void drawMoonScreen(Canvas& c, const MoonCalendar::Snapshot* moon) {
   const int w=c.width();
   constexpr uint16_t BLUE=0x001F, CYAN=0x07FF, GREEN=0x07E0;
@@ -480,18 +567,19 @@ void drawFrequencyKeypad(Canvas& c, const FrequencyKeypad::View& view) {
 }
 
 template <typename Canvas>
-void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const MoonCalendar::Snapshot* moonSnapshot) {
+void drawMenu(Canvas& canvas, uint8_t page, uint8_t selection, uint8_t volume, uint8_t brightness, uint8_t layoutMode, RadioModulation modulation, uint32_t frequencyKHz, uint8_t themeIndex, bool sliderAdjustmentActive, uint8_t wifiMode, bool wifiConnected, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const MoonCalendar::Snapshot* moonSnapshot, const BandOpeningService::Snapshot* bandOpeningSnapshot) {
   const int w = canvas.width();
   const int h = canvas.height();
   if (page == 18) { drawWeatherScreen(canvas, weatherSnapshot, selection); return; }
   if (page == 20) { drawMoonScreen(canvas, moonSnapshot); return; }
+  if (page == 29) { drawBandOpeningScreen(canvas, bandOpeningSnapshot, selection); return; }
   // Main-menu order follows ATS Mini Dev. The previously unsupported VHF spectrum
   // placeholder is now used for the FT8 / FT4 decoder. A trailing * remains an inert item.
   static const char* const mainItems[] = {
     "Zurück", "Decoder-Frequenzen", "FT8 / FT4 Decoder", "CW DECODER", "Modulation", "Bänder", "Lautstärke",
     "Keypad", "DUAL RX*", "VFO A/B*", "Frequenz*", "BFO", "STEP", "Suche", "Scannen",
     "Speicher", "Rauschsperre", "Bandbreite", "AGC/Dämpfung", "Auto-Lautstärke",
-    "Soft-Mute", "Einstellungen", "Wetterbericht", "Mondkalender"
+    "Soft-Mute", "Einstellungen", "Wetterbericht", "Mondkalender", "HF Bandöffnungsmonitor"
   };
   static const char* const volumeItems[] = {
     "Zurück", "Lautstärke", "Stumm (später)"
@@ -1003,7 +1091,7 @@ void DisplayDriver::setAmLayout(uint8_t mode) {
 void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConnected,
                            const char* lastInputEvent,uint32_t inputEventCount,
                            StationLogoClient* logoClient, bool menuOpen,
-                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading, const NewsService::Snapshot* newsSnapshot, uint8_t wifiMode, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const FrequencyKeypad::View* keypadView, const MoonCalendar::Snapshot* moonSnapshot, bool cwWifiBlocked, const char* cwText, bool cwSignal, uint8_t memorySlot, uint8_t memoryCount, uint16_t scanCount, uint16_t scanCapacity, uint8_t scanState, uint8_t seekState, const ScanService::Point* scanPoints, bool memoryEditActive, const char* memoryEditName, uint8_t memoryEditCursor, FtxDecoderService* ftxService, bool ftxWifiOff, bool ftxUtcSynchronized) {
+                           uint8_t menuPage, uint8_t menuSelection, uint8_t volume, const char* filePath, FileManager::Entry* fileEntries, uint8_t fileCount, uint8_t fileSelection, uint8_t fileMode, uint8_t fileActionSelection, const char* fileSelectedName, const char* fileMessage, bool sliderAdjustmentActive, const char* eibiStation, const char* eibiStatus, bool eibiAvailable, bool eibiDownloading, const NewsService::Snapshot* newsSnapshot, uint8_t wifiMode, const char* wifiSsid, const char* wifiIp, bool bootLogEnabled, const WeatherService::Snapshot* weatherSnapshot, const FrequencyKeypad::View* keypadView, const MoonCalendar::Snapshot* moonSnapshot, bool cwWifiBlocked, const char* cwText, bool cwSignal, uint8_t memorySlot, uint8_t memoryCount, uint16_t scanCount, uint16_t scanCapacity, uint8_t scanState, uint8_t seekState, const ScanService::Point* scanPoints, bool memoryEditActive, const char* memoryEditName, uint8_t memoryEditCursor, FtxDecoderService* ftxService, bool ftxWifiOff, bool ftxUtcSynchronized, const BandOpeningService::Snapshot* bandOpeningSnapshot) {
   if(!ready_)return;
   const uint32_t now=millis();
   const bool returningToRadio = !menuOpen && lastMenuOpen_;
@@ -1031,18 +1119,19 @@ void DisplayDriver::render(const RadioSnapshot& s,bool radioReady,bool wifiConne
   lastMenuBootLogEnabled_=bootLogEnabled;
   if (menuOpen) {
     if(menuPage>=30 && menuPage<=40){const uint8_t category=static_cast<uint8_t>(menuPage-30);if(useSprite_){sprite_.fillSprite(BLACK);drawDecoderFrequencyPage(sprite_,category,menuSelection);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawDecoderFrequencyPage(device_,category,menuSelection);}return;}
-    if(menuPage==22 || menuPage==23 || menuPage==24 || menuPage==29){if(useSprite_){sprite_.fillSprite(BLACK);drawRadioUtilityPage(sprite_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawRadioUtilityPage(device_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);}return;}
+    if(menuPage==29){if(useSprite_){sprite_.fillSprite(BLACK);drawBandOpeningScreen(sprite_,bandOpeningSnapshot,menuSelection);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawBandOpeningScreen(device_,bandOpeningSnapshot,menuSelection);}return;}
+    if(menuPage==22 || menuPage==23 || menuPage==24){if(useSprite_){sprite_.fillSprite(BLACK);drawRadioUtilityPage(sprite_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawRadioUtilityPage(device_,menuPage,menuSelection,s,memorySlot,memoryCount,memoryEditActive,memoryEditName,memoryEditCursor,scanCount,scanCapacity,scanState,seekState,scanPoints);}return;}
     if(menuPage==21){if(useSprite_){sprite_.fillSprite(BLACK);drawLegacyCWPage(sprite_,s,cwWifiBlocked,cwText,cwSignal);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawLegacyCWPage(device_,s,cwWifiBlocked,cwText,cwSignal);}return;}
     if(menuPage==28){if(useSprite_){sprite_.fillSprite(BLACK);drawFtxDecoderPage(sprite_,s,menuSelection,ftxService,ftxWifiOff,ftxUtcSynchronized);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFtxDecoderPage(device_,s,menuSelection,ftxService,ftxWifiOff,ftxUtcSynchronized);}return;}
     if(menuPage==19 && keypadView){if(useSprite_){sprite_.fillSprite(BLACK);drawFrequencyKeypad(sprite_,*keypadView);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFrequencyKeypad(device_,*keypadView);}return;}
     if(menuPage==6){if(useSprite_){sprite_.fillSprite(BLACK);drawFileMenu(sprite_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);sprite_.pushSprite(0,0);}else{device_.fillScreen(BLACK);drawFileMenu(device_,filePath,fileEntries,fileCount,fileSelection,fileMode,fileActionSelection,fileSelectedName,fileMessage);}return;}
     if (useSprite_) {
       sprite_.fillSprite(BLACK);
-      drawMenu(sprite_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled, weatherSnapshot, moonSnapshot);
+      drawMenu(sprite_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled, weatherSnapshot, moonSnapshot, bandOpeningSnapshot);
       sprite_.pushSprite(0,0);
     } else {
       device_.fillScreen(BLACK);
-      drawMenu(device_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled, weatherSnapshot, moonSnapshot);
+      drawMenu(device_, menuPage, menuSelection, volume, brightness_, s.modulation == RadioModulation::FM ? fmLayout_ : amLayout_, s.modulation, s.frequencyKHz, themeIndex_, sliderAdjustmentActive, wifiMode, wifiConnected, wifiSsid, wifiIp, bootLogEnabled, weatherSnapshot, moonSnapshot, bandOpeningSnapshot);
     }
     return;
   }
